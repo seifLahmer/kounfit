@@ -2,6 +2,21 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Sparkles, Bot } from "lucide-react";
@@ -93,8 +108,45 @@ export default function AdminPage() {
             <CardHeader>
               <CardTitle>Gestion des Commandes</CardTitle>
             </CardHeader>
-            <CardContent>
-               <p>Le contenu pour la gestion des commandes sera bientôt disponible.</p>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground">
+                Visualisez et filtrez toutes les commandes des clients.
+              </p>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Filtrer par région</label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Toutes les régions" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les régions</SelectItem>
+                    <SelectItem value="tunis">Tunis</SelectItem>
+                    <SelectItem value="ariana">Ariana</SelectItem>
+                    <SelectItem value="ben arous">Ben Arous</SelectItem>
+                    <SelectItem value="manouba">La Manouba</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Client</TableHead>
+                      <TableHead>Région</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Total</TableHead>
+                      <TableHead>Statut</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground h-24">
+                        Aucune commande trouvée pour cette région
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
