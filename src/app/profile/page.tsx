@@ -1,3 +1,4 @@
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -26,6 +27,10 @@ import {
 } from "@/components/ui/select"
 import { MainLayout } from "@/components/main-layout"
 import { toast } from "@/hooks/use-toast"
+import { updateUserProfile } from "@/lib/services/userService"
+import { auth } from "@/lib/firebase"
+import { useState } from "react"
+import { Loader2 } from "lucide-react"
 
 const profileFormSchema = z.object({
   fullName: z.string().min(2, "Le nom doit contenir au moins 2 caractères."),
@@ -60,18 +65,42 @@ const defaultValues: Partial<ProfileFormValues> = {
 }
 
 export default function ProfilePage() {
+  const [loading, setLoading] = useState(false);
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues,
     mode: "onChange",
   })
 
-  function onSubmit(data: ProfileFormValues) {
-    toast({
-      title: "Profil mis à jour !",
-      description: "Vos informations ont été enregistrées avec succès.",
-    })
-    console.log(data)
+  async function onSubmit(data: ProfileFormValues) {
+    setLoading(true);
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      toast({
+        title: "Erreur",
+        description: "Vous devez être connecté pour mettre à jour votre profil.",
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
+    }
+
+    try {
+      await updateUserProfile(currentUser.uid, data);
+      toast({
+        title: "Profil mis à jour !",
+        description: "Vos informations ont été enregistrées avec succès.",
+      })
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast({
+        title: "Erreur de sauvegarde",
+        description: "Une erreur s'est produite lors de la mise à jour de votre profil.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -258,8 +287,9 @@ export default function ProfilePage() {
               )}
             />
 
-            <Button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white font-bold h-12 text-lg">
-              Sauvegarder les changements
+            <Button type="submit" disabled={loading} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold h-12 text-lg">
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {loading ? "Sauvegarde..." : "Sauvegarder les changements"}
             </Button>
           </form>
         </Form>
