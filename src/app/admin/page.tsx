@@ -1,7 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
@@ -19,7 +22,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Sparkles, Bot } from "lucide-react";
+import { Sparkles, Bot, ShieldAlert } from "lucide-react";
 
 export default function AdminPage() {
   return (
@@ -96,10 +99,29 @@ export default function AdminPage() {
         <TabsContent value="traiteurs">
           <Card>
             <CardHeader>
-              <CardTitle>Gestion des Traiteurs</CardTitle>
+              <CardTitle>Ajouter un nouveau traiteur</CardTitle>
+              <CardDescription>
+                Créez un profil pour un utilisateur traiteur.
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-               <p>Le contenu pour la gestion des traiteurs sera bientôt disponible.</p>
+            <CardContent className="space-y-6">
+              <Alert>
+                <ShieldAlert className="h-4 w-4" />
+                <AlertTitle>Action Manuelle Requise</AlertTitle>
+                <AlertDescription>
+                  Pour des raisons de sécurité, vous devez d'abord créer le compte du
+                  traiteur dans la console Firebase Authentication (avec un email/mot de
+                  passe), puis copier son UID et le coller dans le champ ci-dessous.
+                </AlertDescription>
+              </Alert>
+              <div className="space-y-2">
+                <Label htmlFor="caterer-uid">UID du Traiteur (Firebase Auth)</Label>
+                <Input id="caterer-uid" placeholder="Copiez l'UID depuis la console Firebase" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="caterer-name">Nom Complet</Label>
+                <Input id="caterer-name" placeholder="Ex: Jean Traiteur" />
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
