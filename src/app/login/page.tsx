@@ -30,8 +30,13 @@ export default function LoginPage() {
 
   const onSubmit = (data: LoginFormValues) => {
     console.log("Login submitted", data);
-    // On successful login, redirect to the main app dashboard
-    router.push("/home");
+    // Check if the email is the admin email
+    if (data.email === "zakaria.benhajji@edu.isetcom.tn") {
+      router.push("/admin");
+    } else {
+      // On successful login for other users, redirect to the main app dashboard
+      router.push("/home");
+    }
   };
 
   return (
