@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Sparkles, Bot, ShieldAlert } from "lucide-react";
+import { Sparkles, Bot, ShieldAlert, Trash2 } from "lucide-react";
 
 export default function AdminPage() {
   return (
@@ -97,33 +98,68 @@ export default function AdminPage() {
           </Card>
         </TabsContent>
         <TabsContent value="traiteurs">
-          <Card>
-            <CardHeader>
-              <CardTitle>Ajouter un nouveau traiteur</CardTitle>
-              <CardDescription>
-                Créez un profil pour un utilisateur traiteur.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <Alert>
-                <ShieldAlert className="h-4 w-4" />
-                <AlertTitle>Action Manuelle Requise</AlertTitle>
-                <AlertDescription>
-                  Pour des raisons de sécurité, vous devez d'abord créer le compte du
-                  traiteur dans la console Firebase Authentication (avec un email/mot de
-                  passe), puis copier son UID et le coller dans le champ ci-dessous.
-                </AlertDescription>
-              </Alert>
-              <div className="space-y-2">
-                <Label htmlFor="caterer-uid">UID du Traiteur (Firebase Auth)</Label>
-                <Input id="caterer-uid" placeholder="Copiez l'UID depuis la console Firebase" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="caterer-name">Nom Complet</Label>
-                <Input id="caterer-name" placeholder="Ex: Jean Traiteur" />
-              </div>
-            </CardContent>
-          </Card>
+           <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Ajouter un nouveau traiteur</CardTitle>
+                <CardDescription>
+                  Créez un profil pour un utilisateur traiteur.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <Alert>
+                  <ShieldAlert className="h-4 w-4" />
+                  <AlertTitle>Action Manuelle Requise</AlertTitle>
+                  <AlertDescription>
+                    Pour des raisons de sécurité, vous devez d'abord créer le compte du
+                    traiteur dans la console Firebase Authentication (avec un email/mot de
+                    passe), puis copier son UID et le coller dans le champ ci-dessous.
+                  </AlertDescription>
+                </Alert>
+                <div className="space-y-2">
+                  <Label htmlFor="caterer-uid">UID du Traiteur (Firebase Auth)</Label>
+                  <Input id="caterer-uid" placeholder="Copiez l'UID depuis la console Firebase" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="caterer-name">Nom Complet</Label>
+                  <Input id="caterer-name" placeholder="Ex: Jean Traiteur" />
+                </div>
+                 <div className="space-y-2">
+                  <Label htmlFor="caterer-email">Email du Traiteur</Label>
+                  <Input id="caterer-email" placeholder="Ex: traiteur@exemple.com" />
+                </div>
+                <Button className="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white">
+                  Ajouter le Traiteur
+                </Button>
+              </CardContent>
+            </Card>
+
+             <Card>
+              <CardHeader>
+                <CardTitle>Liste des Traiteurs</CardTitle>
+              </CardHeader>
+              <CardContent>
+                 <div className="border rounded-md">
+                   <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nom</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center text-muted-foreground h-24">
+                          Aucun traiteur n'a encore été ajouté.
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
         <TabsContent value="commandes">
           <Card>
