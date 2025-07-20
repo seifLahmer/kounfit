@@ -1,100 +1,112 @@
+
+"use client"
+
+import { useState } from "react"
+import Image from "next/image"
 import { MainLayout } from "@/components/main-layout"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Printer, ShoppingCart } from "lucide-react"
+import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { ShoppingCart, Plus, Minus, Trash2 } from "lucide-react"
 
-const shoppingListData = {
-  produce: [
-    { id: "prod1", name: "Spinach", quantity: "2 cups" },
-    { id: "prod2", name: "Avocado", quantity: "2 medium" },
-    { id: "prod3", name: "Tomatoes", quantity: "1 pint" },
-    { id: "prod4", name: "Onion", quantity: "1 large" },
-    { id: "prod5", name: "Garlic", quantity: "3 cloves" },
-    { id: "prod6", name: "Lemon", quantity: "1" },
-  ],
-  protein: [
-    { id: "prot1", name: "Chicken Breast", quantity: "2 lbs" },
-    { id: "prot2", name: "Salmon Fillet", quantity: "1 lb" },
-    { id: "prot3", name: "Eggs", quantity: "1 dozen" },
-    { id: "prot4", name: "Tofu (firm)", quantity: "1 block" },
-  ],
-  pantry: [
-    { id: "pant1", name: "Quinoa", quantity: "1 cup" },
-    { id: "pant2", name: "Olive Oil", quantity: "1 bottle" },
-    { id: "pant3", name: "Balsamic Vinegar", quantity: "1 bottle" },
-    { id: "pant4", name: "Almonds", quantity: "1/2 cup" },
-  ],
-  dairy: [
-    { id: "dair1", name: "Greek Yogurt", quantity: "1 container" },
-    { id: "dair2", name: "Feta Cheese", quantity: "1 block" },
-  ],
+const initialCartItem = {
+  id: 1,
+  name: "Simple Tomato Side",
+  weight: "200g",
+  price: 40.0,
+  quantity: 2,
+  image: "https://placehold.co/120x100.png",
 }
 
-type Ingredient = { id: string; name: string; quantity: string }
-type Category = keyof typeof shoppingListData
+export default function ShoppingCartPage() {
+  const [cartItem, setCartItem] = useState(initialCartItem)
 
-const CategoryTitle: Record<Category, string> = {
-  produce: "Produce",
-  protein: "Protein",
-  pantry: "Pantry & Grains",
-  dairy: "Dairy & Alternatives",
-}
+  const handleQuantityChange = (amount: number) => {
+    setCartItem((prev) => ({
+      ...prev,
+      quantity: Math.max(0, prev.quantity + amount),
+    }))
+  }
 
-export default function ShoppingListPage() {
+  const subtotal = cartItem.price * cartItem.quantity
+  const tax = subtotal * 0.08
+  const total = subtotal + tax
+
   return (
     <MainLayout>
-      <div className="flex-1 space-y-4 p-4 sm:p-8 pt-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-              <ShoppingCart />
-              Shopping List
-            </h2>
-            <p className="text-muted-foreground">
-              Ingredients for your selected meal plan: "Mediterranean Delight"
-            </p>
-          </div>
-          <Button variant="outline">
-            <Printer className="mr-2 h-4 w-4" />
-            Print List
-          </Button>
-        </div>
-        <Card>
-          <CardContent className="p-6">
-            <div className="grid gap-8">
-              {(Object.keys(shoppingListData) as Category[]).map(
-                (category) => (
-                  <div key={category}>
-                    <h3 className="text-xl font-semibold tracking-tight mb-4">
-                      {CategoryTitle[category]}
-                    </h3>
-                    <div className="space-y-4">
-                      {shoppingListData[category].map(
-                        (item: Ingredient) => (
-                          <div key={item.id} className="flex items-center space-x-3">
-                            <Checkbox id={item.id} />
-                            <div className="grid gap-1.5 leading-none">
-                              <Label htmlFor={item.id} className="text-base font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                {item.name}
-                              </Label>
-                              <p className="text-sm text-muted-foreground">
-                                {item.quantity}
-                              </p>
-                            </div>
-                          </div>
-                        )
-                      )}
-                    </div>
-                    <Separator className="mt-6" />
+      <div className="flex flex-col h-full">
+        <header className="p-4 flex items-center gap-3">
+          <ShoppingCart className="w-8 h-8 text-red-500" />
+          <h1 className="text-2xl font-bold text-red-500">Votre Panier</h1>
+        </header>
+        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+          <Card>
+            <CardContent className="p-4 flex gap-4">
+              <Image
+                src={cartItem.image}
+                alt={cartItem.name}
+                width={120}
+                height={100}
+                className="rounded-lg object-cover"
+                data-ai-hint="tomato side dish"
+              />
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold">{`${cartItem.name} (${cartItem.weight})`}</h2>
+                  <p className="text-red-500 font-bold mt-1">{cartItem.price.toFixed(2)} DT</p>
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="w-7 h-7 rounded-full"
+                      onClick={() => handleQuantityChange(-1)}
+                    >
+                      <Minus className="w-4 h-4" />
+                    </Button>
+                    <span className="font-bold">{cartItem.quantity}</span>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="w-7 h-7 rounded-full"
+                      onClick={() => handleQuantityChange(1)}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
                   </div>
-                )
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                  <Button variant="ghost" size="icon">
+                    <Trash2 className="w-5 h-5 text-muted-foreground" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4 space-y-4">
+              <h2 className="text-lg font-bold">Résumé de la commande</h2>
+              <div className="space-y-2 text-muted-foreground">
+                <div className="flex justify-between">
+                  <span>Sous-total</span>
+                  <span>{subtotal.toFixed(2)} DT</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Taxe estimée (8%)</span>
+                  <span>{tax.toFixed(2)} DT</span>
+                </div>
+              </div>
+              <Separator />
+              <div className="flex justify-between font-bold text-xl">
+                <span>Total</span>
+                <span>{total.toFixed(2)} DT</span>
+              </div>
+              <Button className="w-full bg-red-600 hover:bg-red-700 text-white font-bold text-lg h-12">
+                Passer la commande
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </MainLayout>
   )
