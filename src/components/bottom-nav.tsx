@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -61,19 +62,18 @@ export function BottomNav() {
             const linkContent = (
               <div className={cn(
                   "flex flex-col items-center justify-center gap-1 transition-colors relative h-full w-full",
-                   isActive && !isHome ? "text-accent" : "text-muted-foreground hover:text-primary"
+                   isActive && !isHome ? "text-primary" : "text-muted-foreground hover:text-primary"
               )}>
                 {isHome ? (
                   <div className={cn(
-                    "absolute -top-6 p-4 rounded-full text-accent-foreground shadow-lg flex items-center justify-center",
-                    isActive ? "bg-accent" : "bg-gray-400"
+                    "absolute -top-6 p-4 rounded-full text-primary-foreground shadow-lg flex items-center justify-center bg-primary"
                     )}>
                     <link.icon className="h-6 w-6" />
                   </div>
                 ) : (
                   <link.icon className="h-6 w-6" />
                 )}
-                <span className={cn("text-xs capitalize", isHome ? "mt-12" : "")}>
+                <span className={cn("text-xs capitalize pt-1", isHome ? "mt-12" : "")}>
                   {link.label}
                 </span>
               </div>
@@ -81,7 +81,7 @@ export function BottomNav() {
 
             if (isLogout) {
                 return (
-                    <div key={link.href} className="flex-1 flex justify-center items-center h-full" onClick={(e: any) => handleLogoutClick(e, link.href)}>
+                    <div key={link.href} className="flex-1 flex justify-center items-center h-full cursor-pointer" onClick={(e: any) => handleLogoutClick(e, link.href)}>
                         {linkContent}
                     </div>
                 )
@@ -99,17 +99,17 @@ export function BottomNav() {
       <AlertDialog open={isLogoutAlertOpen} onOpenChange={setIsLogoutAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
+            <AlertDialogTitle>Êtes-vous sûr de vouloir vous déconnecter?</AlertDialogTitle>
             <AlertDialogDescription>
-              You will be returned to the welcome screen.
+              Vous serez redirigé vers l'écran de bienvenue.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col-reverse sm:flex-col-reverse gap-2">
+          <AlertDialogFooter className="flex-col-reverse sm:flex-row sm:gap-2">
             <AlertDialogCancel asChild>
-                <Button variant="outline" className="w-full">Cancel</Button>
+                <Button variant="outline" className="w-full">Annuler</Button>
             </AlertDialogCancel>
             <AlertDialogAction asChild>
-                <Button className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={handleLogoutConfirm}>Log Out</Button>
+                <Button className="w-full" onClick={handleLogoutConfirm} variant="destructive">Se déconnecter</Button>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -117,3 +117,4 @@ export function BottomNav() {
     </>
   )
 }
+

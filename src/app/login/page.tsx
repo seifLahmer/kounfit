@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -10,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Leaf } from "lucide-react";
+import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -47,38 +49,52 @@ export default function LoginPage() {
             <Leaf className="w-8 h-8 text-primary" />
             <span className="text-2xl font-bold">NutriTrack</span>
           </Link>
-          <CardTitle className="text-2xl">Welcome Back!</CardTitle>
-          <CardDescription>Enter your credentials to access your account.</CardDescription>
+          <CardTitle className="text-2xl">Content de vous revoir!</CardTitle>
+          <CardDescription>Entrez vos identifiants pour accéder à votre compte.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="name@example.com" {...form.register("email")} />
-              {form.formState.errors.email && (
-                <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link href="#" className="text-sm text-primary hover:underline">
-                  Forgot password?
-                </Link>
-              </div>
-              <Input id="password" type="password" {...form.register("password")} />
-               {form.formState.errors.password && (
-                <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
-              )}
-            </div>
-            <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-              Login
-            </Button>
-          </form>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <Label>Email</Label>
+                    <FormControl>
+                      <Input type="email" placeholder="nom@exemple.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center justify-between">
+                      <Label>Mot de passe</Label>
+                      <Link href="#" className="text-sm text-primary hover:underline">
+                        Mot de passe oublié?
+                      </Link>
+                    </div>
+                    <FormControl>
+                      <Input type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                Se connecter
+              </Button>
+            </form>
+          </Form>
           <div className="mt-4 text-center text-sm">
-            Don't have an account?{" "}
+            Vous n'avez pas de compte?{" "}
             <Link href="/signup" className="text-primary hover:underline">
-              Sign up
+              S'inscrire
             </Link>
           </div>
         </CardContent>

@@ -1,3 +1,4 @@
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Leaf } from "lucide-react";
@@ -8,7 +9,7 @@ export default function WelcomePage() {
       <div className="text-center space-y-8">
         <div>
           <Leaf className="w-24 h-24 text-primary mx-auto mb-4" />
-          <h1 className="text-4xl md:text-5xl font-bold text-primary">
+          <h1 className="text-4xl md:text-5xl font-bold text-foreground">
             Welcome to NutriTrack
           </h1>
           <p className="text-muted-foreground mt-2 text-lg">
@@ -16,7 +17,7 @@ export default function WelcomePage() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
+          <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
             <Link href="/login">Login</Link>
           </Button>
           <Button asChild size="lg" variant="outline">

@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -10,11 +11,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Leaf } from "lucide-react";
+import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
+
 
 const signupSchema = z.object({
-  fullName: z.string().min(2, "Full name must be at least 2 characters."),
-  email: z.string().email("Please enter a valid email address."),
-  password: z.string().min(6, "Password must be at least 6 characters."),
+  fullName: z.string().min(2, "Le nom complet doit comporter au moins 2 caractères."),
+  email: z.string().email("Veuillez saisir une adresse e-mail valide."),
+  password: z.string().min(6, "Le mot de passe doit comporter au moins 6 caractères."),
 });
 
 type SignupFormValues = z.infer<typeof signupSchema>;
@@ -44,40 +47,60 @@ export default function SignupPage() {
             <Leaf className="w-8 h-8 text-primary" />
             <span className="text-2xl font-bold">NutriTrack</span>
           </Link>
-          <CardTitle className="text-2xl">Create an Account</CardTitle>
-          <CardDescription>Start your fitness journey with us today.</CardDescription>
+          <CardTitle className="text-2xl">Créer un compte</CardTitle>
+          <CardDescription>Commencez votre parcours de remise en forme avec nous dès aujourd'hui.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input id="fullName" type="text" placeholder="John Doe" {...form.register("fullName")} />
-              {form.formState.errors.fullName && (
-                <p className="text-sm text-destructive">{form.formState.errors.fullName.message}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="name@example.com" {...form.register("email")} />
-              {form.formState.errors.email && (
-                <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" {...form.register("password")} />
-               {form.formState.errors.password && (
-                <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
-              )}
-            </div>
-            <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-              Create Account
-            </Button>
-          </form>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+               <FormField
+                control={form.control}
+                name="fullName"
+                render={({ field }) => (
+                  <FormItem>
+                    <Label>Nom et Prénom</Label>
+                    <FormControl>
+                      <Input placeholder="John Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <Label>Email</Label>
+                    <FormControl>
+                      <Input type="email" placeholder="nom@exemple.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                     <Label>Mot de passe</Label>
+                    <FormControl>
+                       <Input type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                Créer un compte
+              </Button>
+            </form>
+          </Form>
           <div className="mt-4 text-center text-sm">
-            Already have an account?{" "}
+            Vous avez déjà un compte?{" "}
             <Link href="/login" className="text-primary hover:underline">
-              Login
+              Se connecter
             </Link>
           </div>
         </CardContent>
