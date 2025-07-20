@@ -1,0 +1,86 @@
+import { MainLayout } from "@/components/main-layout"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { BookCopy, PlusCircle } from "lucide-react"
+
+const savedPlans = [
+  {
+    title: "High-Protein Kickstart",
+    description: "A plan focused on muscle gain and satiety, perfect for active individuals.",
+    tags: ["High Protein", "Low Carb"],
+    days: 7,
+  },
+  {
+    title: "Mediterranean Delight",
+    description: "Enjoy the flavors of the Mediterranean with this heart-healthy and delicious plan.",
+    tags: ["Balanced", "Heart-Healthy"],
+    days: 5,
+  },
+  {
+    title: "Vegan Power Week",
+    description: "A fully plant-based meal plan packed with nutrients and energy.",
+    tags: ["Vegan", "High Fiber"],
+    days: 7,
+  },
+  {
+    title: "Quick & Easy Lunches",
+    description: "A collection of simple and fast lunch ideas for a busy week.",
+    tags: ["Quick Meals", "Lunch"],
+    days: 5,
+  },
+]
+
+export default function MealPlansPage() {
+  return (
+    <MainLayout>
+      <div className="flex-1 space-y-4 p-4 sm:p-8 pt-6">
+        <div className="flex items-center justify-between space-y-2">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+              <BookCopy />
+              Saved Meal Plans
+            </h2>
+            <p className="text-muted-foreground">
+              Your collection of custom and saved meal plans.
+            </p>
+          </div>
+          <Button>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Create New Plan
+          </Button>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {savedPlans.map((plan, index) => (
+            <Card key={index} className="flex flex-col">
+              <CardHeader>
+                <CardTitle>{plan.title}</CardTitle>
+                <CardDescription>{plan.description}</CardDescription>
+              </CardHeader>
+              <CardContent className="flex-grow">
+                <div className="flex flex-wrap gap-2">
+                  {plan.tags.map((tag) => (
+                    <Badge key={tag} variant="secondary">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <div className="text-sm text-muted-foreground">{plan.days}-day plan</div>
+                <Button variant="outline">View Plan</Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </MainLayout>
+  )
+}
