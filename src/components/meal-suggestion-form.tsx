@@ -54,9 +54,8 @@ export function MealSuggestionForm() {
     setMealPlan(null)
 
     try {
-      const { mealSuggestions } = await run(generateMealSuggestions, values)
-      const parsedPlan: MealPlan = JSON.parse(mealSuggestions)
-      setMealPlan(parsedPlan)
+      const plan = await run(generateMealSuggestions, values)
+      setMealPlan(plan);
     } catch (e) {
       console.error(e)
       setError("Failed to generate meal suggestions. The AI might be busy, or the response was not in the correct format. Please try again.")

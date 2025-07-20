@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import type { MealPlan } from '@/lib/types';
 
 const GenerateMealSuggestionsInputSchema = z.object({
   dietaryRequirements: z
@@ -27,14 +28,24 @@ const GenerateMealSuggestionsInputSchema = z.object({
 });
 export type GenerateMealSuggestionsInput = z.infer<typeof GenerateMealSuggestionsInputSchema>;
 
+const MealSchema = z.object({
+    name: z.string().describe("The name of the meal."),
+    description: z.string().describe("A brief description of the meal."),
+    calories: z.number().describe("Estimated calories for the meal."),
+    macros: z.object({
+        protein: z.string().describe("Protein content in grams (e.g., '30g')."),
+        carbs: z.string().describe("Carbohydrate content in grams (e.g., '50g')."),
+        fat: z.string().describe("Fat content in grams (e.g., '20g')."),
+    }),
+});
+
 const GenerateMealSuggestionsOutputSchema = z.object({
-  mealSuggestions: z
-    .string()
-    .describe(
-      'A list of meal suggestions that match the dietary requirements, preferences, calorie goal, and macro ratio of the user.'
-    ),
+  breakfast: MealSchema.describe("The breakfast suggestion."),
+  lunch: MealSchema.describe("The lunch suggestion."),
+  dinner: MealSchema.describe("The dinner suggestion."),
 });
 export type GenerateMealSuggestionsOutput = z.infer<typeof GenerateMealSuggestionsOutputSchema>;
+
 
 export async function generateMealSuggestions(
   input: GenerateMealSuggestionsInput
@@ -48,7 +59,7 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateMealSuggestionsOutputSchema},
   prompt: `You are a personal nutritionist that specializes in creating custom meal plans based on dietary requirements and preferences.
 
-  You will generate a list of meal suggestions based on the user's dietary requirements, preferences, calorie goal, and macro ratio. Be as descriptive as possible. Suggest three meals (breakfast, lunch, dinner) as JSON format.
+  You will generate a list of meal suggestions based on the user's dietary requirements, preferences, calorie goal, and macro ratio. Be as descriptive as possible. Suggest three meals (breakfast, lunch, dinner) and provide the response in a structured JSON format.
 
   Dietary Requirements: {{{dietaryRequirements}}}
   Preferences: {{{preferences}}}
@@ -68,4 +79,3 @@ const generateMealSuggestionsFlow = ai.defineFlow(
     return output!;
   }
 );
-
