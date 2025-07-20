@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import {
   User,
   Heart,
-  Grid3x3,
+  LayoutGrid,
   ShoppingCart,
   LogOut,
 } from "lucide-react"
@@ -20,14 +20,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "./ui/button"
 
 const links = [
   { href: "/profile", label: "Profile", icon: User },
-  { href: "/favourites", label: "Favourites", icon: Heart },
-  { href: "/", label: "Home", icon: Grid3x3 },
+  { href: "/meal-plans", label: "Plans", icon: Heart },
+  { href: "/home", label: "Home", icon: LayoutGrid },
   { href: "/shopping-list", label: "Cart", icon: ShoppingCart },
   { href: "/logout", label: "Logout", icon: LogOut },
 ]
@@ -45,15 +44,14 @@ export function BottomNav() {
   }
 
   const handleLogoutConfirm = () => {
-    // In a real app, you'd handle logout logic here
     console.log("Logging out...")
     setIsLogoutAlertOpen(false)
-    router.push('/') // Redirect to welcome/login screen
+    router.push('/welcome')
   }
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-50 md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t z-50 md:hidden">
         <div className="flex justify-around items-center h-16">
           {links.map((link) => {
             const isActive = pathname === link.href
@@ -63,12 +61,12 @@ export function BottomNav() {
             const linkContent = (
               <div className={cn(
                   "flex flex-col items-center justify-center gap-1 transition-colors relative h-full w-full",
-                  isActive && !isHome ? "text-red-500" : "text-gray-500 hover:text-red-500"
+                   isActive && !isHome ? "text-accent" : "text-muted-foreground hover:text-primary"
               )}>
                 {isHome ? (
                   <div className={cn(
-                    "absolute -top-6 p-4 rounded-full text-white shadow-lg flex items-center justify-center",
-                    isActive ? "bg-red-500" : "bg-gray-400"
+                    "absolute -top-6 p-4 rounded-full text-accent-foreground shadow-lg flex items-center justify-center",
+                    isActive ? "bg-accent" : "bg-gray-400"
                     )}>
                     <link.icon className="h-6 w-6" />
                   </div>
@@ -111,7 +109,7 @@ export function BottomNav() {
                 <Button variant="outline" className="w-full">Cancel</Button>
             </AlertDialogCancel>
             <AlertDialogAction asChild>
-                <Button className="w-full bg-red-600 hover:bg-red-700" onClick={handleLogoutConfirm}>Log Out</Button>
+                <Button className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={handleLogoutConfirm}>Log Out</Button>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
