@@ -17,6 +17,13 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { MainLayout } from "@/components/main-layout"
 import { toast } from "@/hooks/use-toast"
 
@@ -29,6 +36,13 @@ const profileFormSchema = z.object({
   weight: z.coerce.number().min(30, "Le poids doit être un nombre positif."),
   height: z.coerce.number().min(100, "La taille doit être un nombre positif."),
   deliveryAddress: z.string().optional(),
+  region: z.string().optional(),
+  activityLevel: z.string({
+    required_error: "Veuillez sélectionner un niveau d'activité.",
+  }),
+  mainGoal: z.string({
+    required_error: "Veuillez sélectionner un objectif principal.",
+  }),
 })
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>
@@ -39,6 +53,10 @@ const defaultValues: Partial<ProfileFormValues> = {
   biologicalSex: "male",
   weight: 80,
   height: 180,
+  deliveryAddress: "Rue de Russie, Ariana",
+  region: "Tunis",
+  activityLevel: "moderately_active",
+  mainGoal: "maintain",
 }
 
 export default function ProfilePage() {
@@ -58,7 +76,7 @@ export default function ProfilePage() {
 
   return (
     <MainLayout>
-      <div className="p-4 space-y-6 max-w-lg mx-auto">
+      <div className="p-4 space-y-6 max-w-lg mx-auto pb-24">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="flex flex-col items-center space-y-4">
@@ -172,13 +190,77 @@ export default function ProfilePage() {
                 <FormItem>
                   <FormLabel>Adresse de livraison</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} placeholder="Rue de Russie, Ariana" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="region"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Région/Ville</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Tunis" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="activityLevel"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Niveau d'Activité</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionnez votre niveau d'activité" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="sedentary">Sédentaire</SelectItem>
+                      <SelectItem value="lightly_active">Légèrement actif</SelectItem>
+                      <SelectItem value="moderately_active">Modérément actif</SelectItem>
+                      <SelectItem value="very_active">Très actif</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="mainGoal"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Objectif Principal</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionnez votre objectif principal" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="lose_weight">Perdre du poids</SelectItem>
+                      <SelectItem value="maintain">Maintien</SelectItem>
+                      <SelectItem value="gain_muscle">Prendre du muscle</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white font-bold h-12 text-lg">
+              Sauvegarder les changements
+            </Button>
           </form>
         </Form>
       </div>
