@@ -3,12 +3,11 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
-  Home,
-  Heart,
   User,
+  Heart,
+  Grid3x3,
   ShoppingCart,
   LogOut,
-  Grid3x3
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -34,16 +33,19 @@ export function BottomNav() {
             <Link key={link.href} href={link.href} className="flex-1 flex justify-center items-center h-full">
               <div className={cn(
                   "flex flex-col items-center justify-center gap-1 transition-colors relative h-full w-full",
-                  isActive ? "text-red-500" : "text-gray-500 hover:text-red-500"
+                  isActive && !isHome ? "text-red-500" : "text-gray-500 hover:text-red-500"
               )}>
                 {isHome ? (
-                  <div className="absolute -top-6 bg-red-500 p-4 rounded-full text-white shadow-lg flex items-center justify-center">
+                  <div className={cn(
+                    "absolute -top-6 p-4 rounded-full text-white shadow-lg flex items-center justify-center",
+                    isActive ? "bg-red-500" : "bg-gray-400"
+                    )}>
                     <link.icon className="h-6 w-6" />
                   </div>
                 ) : (
                   <link.icon className="h-6 w-6" />
                 )}
-                <span className={cn("text-xs", isHome ? "mt-12" : "")}>
+                <span className={cn("text-xs capitalize", isHome ? "mt-12" : "")}>
                   {link.label}
                 </span>
               </div>

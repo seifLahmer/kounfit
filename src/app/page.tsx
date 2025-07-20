@@ -1,12 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { Bell, ChevronLeft, ChevronRight, Heart, Home, LogOut, User, ShoppingCart } from "lucide-react"
+import { Bell, ChevronLeft, ChevronRight, Sunrise, Sun, Moon, Cookie, Plus, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { MainLayout } from "@/components/main-layout"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 
 
 const Day = ({ day, date, isToday, isSelected, onClick }: { day: string; date: number; isToday?: boolean; isSelected?: boolean; onClick: () => void }) => (
@@ -36,7 +37,7 @@ const daysOfWeek = [
 
 const NutrientCircle = ({ label, value, goal, colorClass }: { label: string, value: number, goal: number, colorClass: string }) => {
   const percentage = goal > 0 ? (value / goal) * 100 : 0
-  const circumference = 2 * Math.PI * 28 // 2 * pi * radius
+  const circumference = 2 * Math.PI * 28
   const strokeDashoffset = circumference - (percentage / 100) * circumference
 
   return (
@@ -72,6 +73,43 @@ const NutrientCircle = ({ label, value, goal, colorClass }: { label: string, val
     </div>
   )
 }
+
+const MealItem = ({ icon: Icon, name, calories, goal }: { icon: React.ElementType, name: string, calories: number, goal: number }) => (
+   <AccordionItem value={name} className="border-b-0">
+    <Card className="mb-2 shadow-sm">
+      <CardContent className="p-0">
+        <AccordionTrigger className="p-4 text-base hover:no-underline">
+          <div className="flex items-center gap-4 w-full">
+            <div className="bg-gray-100 p-3 rounded-full">
+              <Icon className="w-5 h-5 text-gray-600" />
+            </div>
+            <div className="text-left">
+              <p className="font-semibold">{name}</p>
+              <p className="text-sm text-muted-foreground">{calories} / {goal} kcal</p>
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              <Button size="icon" variant="ghost" className="text-red-500 h-8 w-8">
+                <Plus />
+              </Button>
+            </div>
+          </div>
+        </AccordionTrigger>
+      </CardContent>
+    </Card>
+    <AccordionContent>
+      <div className="p-4 pt-0">
+        <p>Details about {name}.</p>
+      </div>
+    </AccordionContent>
+  </AccordionItem>
+)
+
+const mealData = [
+    { icon: Sunrise, name: "Petit Déjeuner", calories: 0, goal: 690 },
+    { icon: Sun, name: "Déjeuner", calories: 0, goal: 966 },
+    { icon: Moon, name: "Dîner", calories: 0, goal: 828 },
+    { icon: Cookie, name: "Collation", calories: 0, goal: 276 },
+]
 
 export default function HomePage() {
   const [selectedDate, setSelectedDate] = useState(18)
@@ -141,11 +179,11 @@ export default function HomePage() {
                     r="45"
                     strokeLinecap="round"
                     transform="rotate(-90 50 50)"
-                    style={{ strokeDasharray: `${2 * Math.PI * 45}`, strokeDashoffset: `${2 * Math.PI * 45}` }}
+                    style={{ strokeDasharray: `${(1500 / 2759) * 2 * Math.PI * 45}`, strokeDashoffset: '0' }}
                   />
                 </svg>
                 <div className="absolute text-center">
-                  <p className="text-4xl font-bold">0</p>
+                  <p className="text-4xl font-bold">1500</p>
                   <p className="text-muted-foreground">/ 2759 kcal</p>
                 </div>
               </div>
@@ -154,14 +192,24 @@ export default function HomePage() {
             <div>
               <p className="text-center font-semibold text-lg mb-4">Répartition des Nutriments</p>
               <div className="grid grid-cols-2 gap-y-6">
-                <NutrientCircle label="Protéines" value={0} goal={160} colorClass="text-blue-500" />
-                <NutrientCircle label="Lipides" value={0} goal={64} colorClass="text-yellow-500" />
-                <NutrientCircle label="Glucides" value={0} goal={386} colorClass="text-green-500" />
-                <NutrientCircle label="Sucres" value={0} goal={30} colorClass="text-purple-500" />
+                <NutrientCircle label="Protéines" value={80} goal={160} colorClass="text-blue-500" />
+                <NutrientCircle label="Lipides" value={40} goal={64} colorClass="text-yellow-500" />
+                <NutrientCircle label="Glucides" value={200} goal={386} colorClass="text-green-500" />
+                <NutrientCircle label="Fibres" value={15} goal={30} colorClass="text-purple-500" />
               </div>
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardContent className="p-4">
+             <h2 className="text-lg font-bold text-center text-red-500 mb-4">Repas de la Journée</h2>
+             <Accordion type="single" collapsible className="w-full">
+                {mealData.map(meal => <MealItem key={meal.name} {...meal} />)}
+            </Accordion>
+          </CardContent>
+        </Card>
+
       </div>
     </MainLayout>
   )
