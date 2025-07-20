@@ -87,10 +87,15 @@ const MealItem = ({ icon: Icon, name, calories, goal }: { icon: React.ElementTyp
               <p className="font-semibold">{name}</p>
               <p className="text-sm text-muted-foreground">{calories} / {goal} kcal</p>
             </div>
-            <div className="ml-auto flex items-center gap-2">
-              <Button size="icon" variant="ghost" className="text-red-500 h-8 w-8">
-                <Plus />
-              </Button>
+            <div 
+              className="ml-auto flex items-center justify-center h-8 w-8 text-red-500 rounded-full hover:bg-red-100"
+              onClick={(e) => {
+                e.stopPropagation();
+                // Add your logic to add a meal item here
+                console.log(`Add item for ${name}`);
+              }}
+            >
+              <Plus />
             </div>
           </div>
         </AccordionTrigger>
