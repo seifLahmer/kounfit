@@ -88,28 +88,56 @@ export default function AdminPage() {
           </div>
         </TabsContent>
         <TabsContent value="composants">
-          <Card>
-            <CardHeader>
-              <CardTitle>Ajouter un composant de base</CardTitle>
-              <CardDescription>
-                Ajoutez un ingrédient de base (ex: "Blanc de poulet cuit", "Frites maison"). L'IA trouvera automatiquement ses macros pour 100g.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="component-name">Nom du composant *</Label>
-                <Input id="component-name" placeholder="Ex: Riz blanc cuit" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="component-price">Prix pour 100g (DT) *</Label>
-                <Input id="component-price" type="number" defaultValue="0" />
-              </div>
-              <Button className="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white">
-                <Sparkles className="mr-2" />
-                Ajouter et Obtenir Macros (IA)
-              </Button>
-            </CardContent>
-          </Card>
+           <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Ajouter un composant de base</CardTitle>
+                <CardDescription>
+                  Ajoutez un ingrédient de base (ex: "Blanc de poulet cuit", "Frites maison"). L'IA trouvera automatiquement ses macros pour 100g.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="component-name">Nom du composant *</Label>
+                  <Input id="component-name" placeholder="Ex: Riz blanc cuit" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="component-price">Prix pour 100g (DT) *</Label>
+                  <Input id="component-price" type="number" defaultValue="0" />
+                </div>
+                <Button className="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white">
+                  <Sparkles className="mr-2" />
+                  Ajouter et Obtenir Macros (IA)
+                </Button>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Liste des composants</CardTitle>
+              </CardHeader>
+              <CardContent>
+                 <div className="border rounded-md">
+                   <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nom</TableHead>
+                        <TableHead>Prix/100g</TableHead>
+                        <TableHead>Macros (P/G/L)</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground h-24">
+                           Aucun composant n'a encore été ajouté.
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
         <TabsContent value="traiteurs">
            <div className="space-y-6">
