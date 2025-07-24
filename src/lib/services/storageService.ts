@@ -24,6 +24,7 @@ export async function uploadProfileImage(uid: string, file: File): Promise<strin
     return downloadURL;
   } catch (error) {
     console.error("Error uploading profile image:", error);
-    throw new Error("Could not upload profile image.");
+    // Re-throw the original error for better debugging in the calling function
+    throw error;
   }
 }
