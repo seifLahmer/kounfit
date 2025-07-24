@@ -1,8 +1,8 @@
 
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
+import { getAuth, Auth } from "firebase/auth";
+import { getFirestore, Firestore } from "firebase/firestore";
+import { getStorage, FirebaseStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -13,22 +13,32 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
-let app;
-if (getApps().length === 0) {
-    if (firebaseConfig.apiKey) {
-        app = initializeApp(firebaseConfig);
-    } else {
-        console.error("Firebase API key is missing. Please check your .env file.");
-        // We can't initialize app, so we'll have to deal with app being undefined
-    }
-} else {
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
+let storage: FirebaseStorage;
+
+if (firebaseConfig.apiKey && firebaseConfig.projectId) {
+  if (getApps().length === 0) {
+    app = initializeApp(firebaseConfig);
+  } else {
     app = getApp();
+  }
+  
+  auth = getAuth(app);
+  db = getFirestore(app);
+  storage = getStorage(app);
+} else {
+  console.error(
+    "Firebase config is missing or incomplete. " +
+    "Please make sure you have a .env file with the correct Firebase credentials. " +
+    "You may need to restart your development server for the changes to take effect."
+  );
+  // Create mock instances to prevent app from crashing
+  app = {} as FirebaseApp;
+  auth = {} as Auth;
+  db = {} as Firestore;
+  storage = {} as FirebaseStorage;
 }
-
-const db = getFirestore(app);
-const auth = getAuth(app);
-const storage = getStorage(app);
-
 
 export { app, db, auth, storage };
