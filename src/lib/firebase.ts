@@ -5,12 +5,13 @@ import { getFirestore, Firestore } from "firebase/firestore";
 import { getStorage, FirebaseStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: "AIzaSyDhJXy_8JJ89CUMhj8iyldXvps_H5R7AHI",
+  authDomain: "fithelath.firebaseapp.com",
+  projectId: "fithelath",
+  storageBucket: "fithelath.firebasestorage.app",
+  messagingSenderId: "98685881966",
+  appId: "1:98685881966:web:99d8147fde3b9b5847a07f",
+  measurementId: "G-5H8DNGBVW0"
 };
 
 let app: FirebaseApp;
@@ -18,27 +19,15 @@ let auth: Auth;
 let db: Firestore;
 let storage: FirebaseStorage;
 
-if (firebaseConfig.apiKey && firebaseConfig.projectId) {
-  if (getApps().length === 0) {
-    app = initializeApp(firebaseConfig);
-  } else {
-    app = getApp();
-  }
-  
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
+if (getApps().length === 0) {
+  app = initializeApp(firebaseConfig);
 } else {
-  console.error(
-    "Firebase config is missing or incomplete. " +
-    "Please make sure you have a .env file with the correct Firebase credentials. " +
-    "You may need to restart your development server for the changes to take effect."
-  );
-  // Create mock instances to prevent app from crashing
-  app = {} as FirebaseApp;
-  auth = {} as Auth;
-  db = {} as Firestore;
-  storage = {} as FirebaseStorage;
+  app = getApp();
 }
+
+auth = getAuth(app);
+db = getFirestore(app);
+storage = getStorage(app);
+
 
 export { app, db, auth, storage };
