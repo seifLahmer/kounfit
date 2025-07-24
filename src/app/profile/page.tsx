@@ -70,6 +70,7 @@ export default function ProfilePage() {
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       fullName: "",
+      email: "",
       age: 0,
       biologicalSex: "male",
       weight: 0,
