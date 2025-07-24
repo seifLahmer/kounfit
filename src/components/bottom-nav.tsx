@@ -29,7 +29,6 @@ const links = [
   { href: "/profile", label: "Profile", icon: User },
   { href: "/meal-plans", label: "Plans", icon: Heart },
   { href: "/home", label: "Home", icon: LayoutGrid },
-  { href: "/meal-suggestions", label: "AI", icon: Bot },
   { href: "/shopping-list", label: "Cart", icon: ShoppingCart },
 ]
 
