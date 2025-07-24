@@ -10,6 +10,7 @@ import {
   LayoutGrid,
   ShoppingCart,
   LogOut,
+  Bot
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -28,8 +29,8 @@ const links = [
   { href: "/profile", label: "Profile", icon: User },
   { href: "/meal-plans", label: "Plans", icon: Heart },
   { href: "/home", label: "Home", icon: LayoutGrid },
+  { href: "/meal-suggestions", label: "AI", icon: Bot },
   { href: "/shopping-list", label: "Cart", icon: ShoppingCart },
-  { href: "/logout", label: "Logout", icon: LogOut },
 ]
 
 export function BottomNav() {
@@ -37,11 +38,9 @@ export function BottomNav() {
   const router = useRouter()
   const [isLogoutAlertOpen, setIsLogoutAlertOpen] = React.useState(false)
 
-  const handleLogoutClick = (e: React.MouseEvent, href: string) => {
-    if (href === "/logout") {
-      e.preventDefault()
-      setIsLogoutAlertOpen(true)
-    }
+  const handleLogoutClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsLogoutAlertOpen(true)
   }
 
   const handleLogoutConfirm = () => {
@@ -57,42 +56,35 @@ export function BottomNav() {
           {links.map((link) => {
             const isActive = pathname === link.href
             const isHome = link.label === "Home"
-            const isLogout = link.label === "Logout"
-
-            const linkContent = (
-              <div className={cn(
-                  "flex flex-col items-center justify-center gap-1 transition-colors relative h-full w-full",
-                   isActive && !isHome ? "text-primary" : "text-muted-foreground hover:text-primary"
-              )}>
-                {isHome ? (
-                  <div className={cn(
-                    "absolute -top-6 p-4 rounded-full text-primary-foreground shadow-lg flex items-center justify-center bg-primary"
-                    )}>
-                    <link.icon className="h-6 w-6" />
-                  </div>
-                ) : (
-                  <link.icon className="h-6 w-6" />
-                )}
-                <span className={cn("text-xs capitalize pt-1", isHome ? "mt-12" : "")}>
-                  {link.label}
-                </span>
-              </div>
-            );
-
-            if (isLogout) {
-                return (
-                    <div key={link.href} className="flex-1 flex justify-center items-center h-full cursor-pointer" onClick={(e: any) => handleLogoutClick(e, link.href)}>
-                        {linkContent}
-                    </div>
-                )
-            }
 
             return (
               <Link key={link.href} href={link.href} className="flex-1 flex justify-center items-center h-full">
-                {linkContent}
+                <div className={cn(
+                    "flex flex-col items-center justify-center gap-1 transition-colors relative h-full w-full",
+                     isActive && !isHome ? "text-accent" : "text-muted-foreground hover:text-accent"
+                )}>
+                  {isHome ? (
+                    <div className={cn(
+                      "absolute -top-6 p-4 rounded-full text-primary-foreground shadow-lg flex items-center justify-center bg-accent"
+                      )}>
+                      <link.icon className="h-6 w-6" />
+                    </div>
+                  ) : (
+                    <link.icon className="h-6 w-6" />
+                  )}
+                  <span className={cn("text-xs capitalize pt-1", isHome ? "mt-12" : "")}>
+                    {link.label}
+                  </span>
+                </div>
               </Link>
             )
           })}
+           <div className="flex-1 flex justify-center items-center h-full cursor-pointer" onClick={handleLogoutClick}>
+                <div className="flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-accent">
+                    <LogOut className="h-6 w-6" />
+                    <span className="text-xs capitalize pt-1">Logout</span>
+                </div>
+            </div>
         </div>
       </nav>
 
@@ -117,4 +109,3 @@ export function BottomNav() {
     </>
   )
 }
-
