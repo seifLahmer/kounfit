@@ -28,11 +28,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { MainLayout } from "@/components/main-layout"
-import { toast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { updateUserProfile, getUserProfile } from "@/lib/services/userService"
 import { auth } from "@/lib/firebase"
 import { uploadProfileImage } from "@/lib/services/storageService"
-import { User } from "@/lib/types"
+import type { User } from "@/lib/types"
 
 
 const profileFormSchema = z.object({
@@ -73,14 +73,24 @@ export default function ProfilePage() {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
         if (user) {
             setLoading(true);
-            const userProfile = await getUserProfile(user.uid);
-            if (userProfile) {
-                form.reset(userProfile as ProfileFormValues);
-                if (userProfile.photoURL) {
-                    setProfileImagePreview(userProfile.photoURL);
+            try {
+                const userProfile = await getUserProfile(user.uid);
+                if (userProfile) {
+                    form.reset(userProfile as ProfileFormValues);
+                    if (userProfile.photoURL) {
+                        setProfileImagePreview(userProfile.photoURL);
+                    }
                 }
+            } catch (error) {
+                console.error("Failed to fetch user profile", error);
+                toast({
+                    title: "Erreur",
+                    description: "Impossible de charger votre profil.",
+                    variant: "destructive"
+                });
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         }
     });
     return () => unsubscribe();
@@ -157,7 +167,7 @@ export default function ProfilePage() {
                 accept="image/*"
               />
               <div className="relative cursor-pointer group" onClick={handleImageClick}>
-                <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-4 border-white shadow-md">
+                 <div className="relative w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-4 border-white shadow-md">
                    {profileImagePreview ? (
                       <Image src={profileImagePreview} alt="Profile preview" layout="fill" objectFit="cover" />
                    ) : (

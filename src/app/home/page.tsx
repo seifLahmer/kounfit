@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { auth } from "@/lib/firebase"
 import { getUserProfile } from "@/lib/services/userService"
 import type { User } from "@/lib/types"
+import { useToast } from "@/hooks/use-toast"
 
 const CalorieCircle = ({ value, goal, size = "large" }: { value: number, goal: number, size?: "small" | "large" }) => {
   const radius = size === 'large' ? 56 : 28;
@@ -133,19 +134,28 @@ const MealCard = ({ icon, title, calories, meal, onAdd }: { icon: React.ReactNod
 export default function HomePage() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [user, setUser] = useState<User | null>(null)
+  const { toast } = useToast();
   const today = new Date()
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
-        const userProfile = await getUserProfile(firebaseUser.uid)
-        setUser(userProfile)
+        try {
+            const userProfile = await getUserProfile(firebaseUser.uid)
+            setUser(userProfile)
+        } catch(e) {
+            toast({
+                title: "Error fetching user",
+                description: "There was an error fetching your user data.",
+                variant: "destructive",
+            });
+        }
       } else {
         setUser(null)
       }
     })
     return () => unsubscribe()
-  }, [])
+  }, [toast])
 
   const startOfWeekDate = startOfWeek(currentDate, { weekStartsOn: 1 }) // Monday
 
