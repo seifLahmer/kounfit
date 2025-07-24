@@ -10,6 +10,7 @@ import { MainLayout } from "@/components/main-layout"
 import { addDays, format, startOfWeek } from "date-fns"
 import { fr } from "date-fns/locale"
 import { cn } from "@/lib/utils"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 const CalorieCircle = ({ value, goal, size = "large" }: { value: number, goal: number, size?: "small" | "large" }) => {
   const radius = size === 'large' ? 56 : 28;
@@ -155,13 +156,19 @@ export default function HomePage() {
   return (
     <MainLayout>
       <div className="p-4 space-y-6">
-        <header className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Welcome back, Zakaria!</h1>
-            <p className="text-muted-foreground text-sm">
-              Today is {format(today, "eeee, MMMM d'th", { locale: fr })}. Let's track your progress!
-            </p>
-          </div>
+        <header className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+                 <Avatar className="h-14 w-14">
+                    <AvatarImage src="https://placehold.co/100x100.png" alt="User avatar" data-ai-hint="user avatar" />
+                    <AvatarFallback>Z</AvatarFallback>
+                </Avatar>
+                <div>
+                    <h1 className="text-2xl font-bold">Welcome back, Zakaria!</h1>
+                    <p className="text-muted-foreground text-sm">
+                    Today is {format(today, "eeee, MMMM d'th", { locale: fr })}. Let's track your progress!
+                    </p>
+                </div>
+            </div>
           <Button variant="ghost" size="icon" className="rounded-full flex-shrink-0">
             <Bell />
           </Button>
