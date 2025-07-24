@@ -195,7 +195,7 @@ export default function HomePage() {
                     variant={"ghost"}
                     size="icon"
                     className={cn("w-10 h-10 rounded-full", {
-                      "bg-accent text-accent-foreground hover:bg-accent/90": format(day, "yyyy-MM-dd") === format(today, "yyyy-MM-dd")
+                      "bg-destructive text-destructive-foreground hover:bg-destructive/90": format(day, "yyyy-MM-dd") === format(today, "yyyy-MM-dd")
                     })}
                   >
                     {format(day, "d")}
@@ -239,3 +239,5 @@ export default function HomePage() {
     </MainLayout>
   )
 }
+
+    
