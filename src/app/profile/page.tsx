@@ -32,6 +32,7 @@ import { useToast } from "@/hooks/use-toast"
 import { updateUserProfile, getUserProfile } from "@/lib/services/userService"
 import { auth } from "@/lib/firebase"
 import { uploadProfileImage } from "@/lib/services/storageService"
+import { calculateNutritionalNeeds } from "@/lib/services/nutritionService"
 import type { User } from "@/lib/types"
 
 
@@ -74,8 +75,8 @@ export default function ProfilePage() {
       height: 0,
       deliveryAddress: "",
       region: "",
-      activityLevel: undefined,
-      mainGoal: undefined,
+      activityLevel: "sedentary",
+      mainGoal: "maintain",
       photoURL: "",
     },
     mode: "onChange",
@@ -146,8 +147,23 @@ export default function ProfilePage() {
         photoURL = await uploadProfileImage(currentUser.uid, profileImageFile);
       }
       
-      const updatedData = { ...data, photoURL };
-      await updateUserProfile(currentUser.uid, updatedData);
+      const nutritionalNeeds = calculateNutritionalNeeds({
+          age: data.age,
+          gender: data.biologicalSex,
+          weight: data.weight,
+          height: data.height,
+          activityLevel: data.activityLevel as any,
+          goal: data.mainGoal as any
+      });
+
+      const userProfileData: Partial<User> = {
+          ...data,
+          photoURL,
+          calorieGoal: nutritionalNeeds.calories,
+          macroRatio: nutritionalNeeds.macros,
+      };
+
+      await updateUserProfile(currentUser.uid, userProfileData);
 
       toast({
         title: "Profil mis à jour !",
