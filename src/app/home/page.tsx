@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { MainLayout } from "@/components/main-layout"
 import { addDays, format, startOfWeek } from "date-fns"
 import { fr } from "date-fns/locale"
+import { cn } from "@/lib/utils"
 
 const CalorieCircle = ({ value, goal, size = "large" }: { value: number, goal: number, size?: "small" | "large" }) => {
   const radius = size === 'large' ? 56 : 28;
@@ -87,7 +88,7 @@ const MealCard = ({ icon, title, calories, meal, onAdd }: { icon: React.ReactNod
         <div className="flex items-center gap-2">
           {icon}
           <div>
-            <CardTitle className="text-base font-bold">{title}</CardTitle>
+            <CardTitle className="text-base font-bold text-foreground">{title}</CardTitle>
             <CardDescription>{calories} Kcal</CardDescription>
           </div>
         </div>
@@ -194,7 +195,7 @@ export default function HomePage() {
                     variant={"ghost"}
                     size="icon"
                     className={cn("w-10 h-10 rounded-full", {
-                      "bg-red-500 text-white hover:bg-red-600": format(day, "yyyy-MM-dd") === format(today, "yyyy-MM-dd")
+                      "bg-accent text-accent-foreground hover:bg-accent/90": format(day, "yyyy-MM-dd") === format(today, "yyyy-MM-dd")
                     })}
                   >
                     {format(day, "d")}
