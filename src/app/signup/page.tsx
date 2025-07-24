@@ -53,6 +53,12 @@ export default function SignupPage() {
       fullName: "",
       email: "",
       password: "",
+      age: 0,
+      biologicalSex: "male",
+      weight: 0,
+      height: 0,
+      activityLevel: "sedentary",
+      mainGoal: "maintain",
     },
   });
 
