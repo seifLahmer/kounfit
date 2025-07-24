@@ -110,6 +110,8 @@ export default function SignupPage() {
        let description = "Une erreur s'est produite lors de l'inscription.";
        if (error.code === 'auth/email-already-in-use') {
          description = "Cette adresse e-mail est déjà utilisée par un autre compte.";
+       } else if (error.code === 'permission-denied' || error.code === 'unauthenticated') {
+           description = "La sauvegarde du profil a échoué. Veuillez vérifier les règles de sécurité de votre base de données Firestore."
        }
        toast({
          title: "Erreur d'inscription",

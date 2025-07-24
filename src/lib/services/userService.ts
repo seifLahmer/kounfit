@@ -1,5 +1,5 @@
 
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { User } from "@/lib/types";
 
@@ -14,22 +14,28 @@ const USERS_COLLECTION = "users";
 export async function updateUserProfile(uid: string, data: Partial<Omit<User, 'uid'>>) {
   try {
     const userRef = doc(db, USERS_COLLECTION, uid);
-    // Use setDoc with merge: true to create or update the document
-    // Add timestamps for creation and update
+    
+    // Check if document exists to determine if it's a create or update
+    const docSnap = await getDoc(userRef);
+
     const dataToSet = {
-        ...data,
-        uid,
-        updatedAt: serverTimestamp(),
-        createdAt: data.createdAt || serverTimestamp() // Only set createdAt on initial creation
+      ...data,
+      uid,
+      updatedAt: serverTimestamp(),
+      // Only set createdAt on initial creation
+      ...(docSnap.exists() ? {} : { createdAt: serverTimestamp() }),
     };
 
+    // Use setDoc with merge: true to create or update the document
     await setDoc(userRef, dataToSet, { merge: true });
     console.log("User profile updated successfully for UID:", uid);
   } catch (error) {
     console.error("Error updating user profile:", error);
-    throw new Error("Could not update user profile.");
+    // Re-throw the original error for better debugging in the calling function
+    throw error;
   }
 }
+
 
 /**
  * Retrieves a user's profile from Firestore.
@@ -42,7 +48,15 @@ export async function getUserProfile(uid: string): Promise<User | null> {
     const docSnap = await getDoc(userRef);
 
     if (docSnap.exists()) {
-      return docSnap.data() as User;
+      // Convert Firestore Timestamps to Dates
+      const data = docSnap.data() as User;
+      if (data.createdAt && data.createdAt instanceof Timestamp) {
+        data.createdAt = data.createdAt.toDate();
+      }
+      if (data.updatedAt && data.updatedAt instanceof Timestamp) {
+        data.updatedAt = data.updatedAt.toDate();
+      }
+      return data;
     } else {
       console.log("No such user profile found for UID:", uid);
       return null;
