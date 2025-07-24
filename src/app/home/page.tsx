@@ -2,9 +2,10 @@
 "use client"
 
 import { useState } from "react"
-import { Bell, ChevronLeft, ChevronRight } from "lucide-react"
+import Image from "next/image"
+import { Bell, ChevronLeft, ChevronRight, PlusCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { MainLayout } from "@/components/main-layout"
 import { format, startOfWeek, addDays, getDate, isSameDay } from "date-fns"
 import { fr } from "date-fns/locale"
@@ -49,6 +50,20 @@ const NutrientCircle = ({ label, value, goal, colorClass, unit = "g" }: { label:
   )
 }
 
+const MealRow = ({ mealType, mealName, calories, imageUrl, imageHint }: { mealType: string, mealName: string, calories: string, imageUrl: string, imageHint: string }) => (
+    <div className="flex items-center gap-4 p-2 rounded-lg hover:bg-gray-100">
+        <Image src={imageUrl} alt={mealName} width={64} height={64} className="rounded-lg object-cover" data-ai-hint={imageHint} />
+        <div className="flex-1">
+            <h4 className="font-semibold text-sm">{mealType}</h4>
+            <p className="text-muted-foreground text-sm">{mealName}</p>
+            <p className="text-xs font-medium">{calories}</p>
+        </div>
+        <Button size="icon" variant="ghost" className="rounded-full">
+            <PlusCircle className="w-5 h-5 text-primary" />
+        </Button>
+    </div>
+);
+
 
 export default function HomePage() {
 
@@ -59,7 +74,7 @@ export default function HomePage() {
   const startOfTheWeek = startOfWeek(currentDate, { locale: fr });
   const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(startOfTheWeek, i));
 
-  const formattedDate = `Today is ${capitalize(format(today, "eeee, MMMM d", { locale: fr }))}. Let's track your progress!`;
+  const formattedDate = `Aujourd'hui, ${capitalize(format(today, "eeee d MMMM", { locale: fr }))}`;
   
   const handlePrevWeek = () => {
     setCurrentDate(addDays(currentDate, -7));
@@ -77,7 +92,7 @@ export default function HomePage() {
       <div className="p-4 space-y-6">
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Welcome back, Zakaria!</h1>
+            <h1 className="text-2xl font-bold">Bonjour, Zakaria!</h1>
             <p className="text-muted-foreground text-sm">{formattedDate}</p>
           </div>
           <Button variant="ghost" size="icon" className="rounded-full">
@@ -103,12 +118,14 @@ export default function HomePage() {
               {weekDays.map(day => (
                 <div key={day.toString()} className="flex flex-col items-center space-y-2">
                   <p className="text-xs text-muted-foreground uppercase">{format(day, 'E', { locale: fr })}</p>
-                  <div className={cn(
-                    "w-8 h-8 flex items-center justify-center rounded-lg font-semibold",
-                    isSameDay(day, today) && "bg-primary text-primary-foreground"
+                  <button className={cn(
+                    "w-8 h-8 flex items-center justify-center rounded-lg font-semibold transition-colors",
+                    isSameDay(day, today) 
+                      ? "bg-primary text-primary-foreground" 
+                      : "hover:bg-primary/10"
                   )}>
                     {getDate(day)}
-                  </div>
+                  </button>
                 </div>
               ))}
             </div>
@@ -161,7 +178,39 @@ export default function HomePage() {
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+           <CardHeader>
+             <CardTitle className="text-lg text-center text-primary">Repas du Jour</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <MealRow 
+                mealType="Petit-déjeuner"
+                mealName="Omelette aux légumes"
+                calories="350 kcal"
+                imageUrl="https://placehold.co/128x128.png"
+                imageHint="vegetable omelette"
+            />
+             <MealRow 
+                mealType="Déjeuner"
+                mealName="Poulet grillé, Riz"
+                calories="550 kcal"
+                imageUrl="https://placehold.co/128x128.png"
+                imageHint="grilled chicken rice"
+            />
+             <MealRow 
+                mealType="Dîner"
+                mealName="Saumon, Asperges"
+                calories="450 kcal"
+                imageUrl="https://placehold.co/128x128.png"
+                imageHint="salmon asparagus"
+            />
+          </CardContent>
+        </Card>
+
       </div>
     </MainLayout>
   )
 }
+
+    
