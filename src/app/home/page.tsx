@@ -92,8 +92,8 @@ const MealCard = ({ icon, title, calories, meal, onAdd }: { icon: React.ReactNod
             <CardDescription>{calories} Kcal</CardDescription>
           </div>
         </div>
-        <Button size="icon" variant="ghost" className="rounded-full w-10 h-10" onClick={onAdd}>
-          <PlusCircle className="w-6 h-6 text-primary" />
+        <Button size="icon" variant="ghost" className="rounded-full w-12 h-12" onClick={onAdd}>
+          <PlusCircle className="w-8 h-8 text-destructive" />
         </Button>
       </CardHeader>
       {meal ? (
@@ -239,5 +239,3 @@ export default function HomePage() {
     </MainLayout>
   )
 }
-
-    
