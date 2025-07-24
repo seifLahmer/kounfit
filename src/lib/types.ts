@@ -4,7 +4,7 @@ export type User = {
   uid: string;
   email: string;
   fullName: string;
-  photoURL?: string;
+  photoURL?: string | null;
   age: number;
   biologicalSex: "male" | "female";
   weight: number; // in kg

@@ -52,7 +52,7 @@ const profileFormSchema = z.object({
   mainGoal: z.string({
     required_error: "Veuillez sélectionner un objectif principal.",
   }),
-  photoURL: z.string().url().optional(),
+  photoURL: z.string().url().optional().nullable(),
 })
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>
@@ -60,7 +60,8 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>
 
 export default function ProfilePage() {
   const { toast } = useToast()
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
+  const [isSaving, setIsSaving] = React.useState(false);
   const [profileImagePreview, setProfileImagePreview] = React.useState<string | null>(null);
   const [profileImageFile, setProfileImageFile] = React.useState<File | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -77,7 +78,7 @@ export default function ProfilePage() {
       region: "",
       activityLevel: "sedentary",
       mainGoal: "maintain",
-      photoURL: "",
+      photoURL: null,
     },
     mode: "onChange",
   })
@@ -85,7 +86,6 @@ export default function ProfilePage() {
   React.useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
         if (user) {
-            setLoading(true);
             try {
                 const userProfile = await getUserProfile(user.uid);
                 if (userProfile) {
@@ -104,6 +104,8 @@ export default function ProfilePage() {
             } finally {
                 setLoading(false);
             }
+        } else {
+             setLoading(false);
         }
     });
     return () => unsubscribe();
@@ -128,7 +130,7 @@ export default function ProfilePage() {
 
 
   async function onSubmit(data: ProfileFormValues) {
-    setLoading(true);
+    setIsSaving(true);
     const currentUser = auth.currentUser;
     if (!currentUser) {
       toast({
@@ -136,17 +138,19 @@ export default function ProfilePage() {
         description: "Vous devez être connecté pour mettre à jour votre profil.",
         variant: "destructive",
       });
-      setLoading(false);
+      setIsSaving(false);
       return;
     }
 
     try {
-      let photoURL = form.getValues("photoURL");
+      let finalPhotoURL = form.getValues("photoURL");
 
       if (profileImageFile) {
-        photoURL = await uploadProfileImage(currentUser.uid, profileImageFile);
+        // Step 1: Upload new image if one is selected
+        finalPhotoURL = await uploadProfileImage(currentUser.uid, profileImageFile);
       }
       
+      // Step 2: Calculate nutritional needs
       const nutritionalNeeds = calculateNutritionalNeeds({
           age: data.age,
           gender: data.biologicalSex,
@@ -156,13 +160,15 @@ export default function ProfilePage() {
           goal: data.mainGoal as any
       });
 
+      // Step 3: Prepare the complete data object
       const userProfileData: Partial<User> = {
           ...data,
-          photoURL,
+          photoURL: finalPhotoURL, // Use the new or existing URL
           calorieGoal: nutritionalNeeds.calories,
           macroRatio: nutritionalNeeds.macros,
       };
 
+      // Step 4: Update the profile in Firestore
       await updateUserProfile(currentUser.uid, userProfileData);
 
       toast({
@@ -177,8 +183,18 @@ export default function ProfilePage() {
         variant: "destructive",
       })
     } finally {
-      setLoading(false);
+      setIsSaving(false);
     }
+  }
+
+  if (loading) {
+      return (
+          <MainLayout>
+              <div className="flex justify-center items-center h-full">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+          </MainLayout>
+      )
   }
 
   return (
@@ -377,9 +393,9 @@ export default function ProfilePage() {
               )}
             />
 
-            <Button type="submit" disabled={loading} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold h-12 text-lg">
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {loading ? "Sauvegarde..." : "Sauvegarder les changements"}
+            <Button type="submit" disabled={isSaving} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold h-12 text-lg">
+              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSaving ? "Sauvegarde..." : "Sauvegarder les changements"}
             </Button>
           </form>
         </Form>
