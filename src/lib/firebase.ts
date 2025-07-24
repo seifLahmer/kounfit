@@ -14,7 +14,18 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+let app;
+if (getApps().length === 0) {
+    if (firebaseConfig.apiKey) {
+        app = initializeApp(firebaseConfig);
+    } else {
+        console.error("Firebase API key is missing. Please check your .env file.");
+        // We can't initialize app, so we'll have to deal with app being undefined
+    }
+} else {
+    app = getApp();
+}
+
 const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
