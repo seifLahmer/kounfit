@@ -4,7 +4,9 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { Camera } from "lucide-react"
+import { Camera, Loader2 } from "lucide-react"
+import Image from "next/image"
+import * as React from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -29,8 +31,7 @@ import { MainLayout } from "@/components/main-layout"
 import { toast } from "@/hooks/use-toast"
 import { updateUserProfile } from "@/lib/services/userService"
 import { auth } from "@/lib/firebase"
-import { useState } from "react"
-import { Loader2 } from "lucide-react"
+
 
 const profileFormSchema = z.object({
   fullName: z.string().min(2, "Le nom doit contenir au moins 2 caractères."),
@@ -65,12 +66,31 @@ const defaultValues: Partial<ProfileFormValues> = {
 }
 
 export default function ProfilePage() {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = React.useState(false);
+  const [profileImage, setProfileImage] = React.useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues,
     mode: "onChange",
   })
+
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
 
   async function onSubmit(data: ProfileFormValues) {
     setLoading(true);
@@ -86,6 +106,8 @@ export default function ProfilePage() {
     }
 
     try {
+      // Here you would also handle uploading the profileImage to storage
+      // and getting back a URL to save in the user profile data.
       await updateUserProfile(currentUser.uid, data);
       toast({
         title: "Profil mis à jour !",
@@ -109,20 +131,32 @@ export default function ProfilePage() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="flex flex-col items-center space-y-4">
-              <div className="relative">
-                <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center">
-                   <Camera className="w-12 h-12 text-gray-400" />
+               <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+                accept="image/*"
+              />
+              <div className="relative cursor-pointer" onClick={handleImageClick}>
+                <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                   {profileImage ? (
+                      <Image src={profileImage} alt="Profile preview" layout="fill" objectFit="cover" />
+                   ) : (
+                      <Camera className="w-12 h-12 text-gray-400" />
+                   )}
                 </div>
-                <button
-                  type="button"
+                <div
                   className="absolute bottom-0 right-0 bg-red-500 text-white rounded-full p-2"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z" />
                   </svg>
-                </button>
+                </div>
               </div>
-               <button type="button" className="text-red-500 font-semibold">Ajouter photo</button>
+               <button type="button" className="text-red-500 font-semibold" onClick={handleImageClick}>
+                {profileImage ? "Changer la photo" : "Ajouter photo"}
+               </button>
             </div>
             
             <FormField
