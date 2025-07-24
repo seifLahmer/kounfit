@@ -66,7 +66,18 @@ export default function ProfilePage() {
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
-    defaultValues: {},
+    defaultValues: {
+      fullName: "",
+      age: 0,
+      biologicalSex: "male",
+      weight: 0,
+      height: 0,
+      deliveryAddress: "",
+      region: "",
+      activityLevel: undefined,
+      mainGoal: undefined,
+      photoURL: "",
+    },
     mode: "onChange",
   })
   
