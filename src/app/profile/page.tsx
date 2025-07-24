@@ -58,6 +58,7 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>
 
 
 export default function ProfilePage() {
+  const { toast } = useToast()
   const [loading, setLoading] = React.useState(false);
   const [profileImagePreview, setProfileImagePreview] = React.useState<string | null>(null);
   const [profileImageFile, setProfileImageFile] = React.useState<File | null>(null);
@@ -94,7 +95,7 @@ export default function ProfilePage() {
         }
     });
     return () => unsubscribe();
-  }, [form]);
+  }, [form, toast]);
 
 
   const handleImageClick = () => {
