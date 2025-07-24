@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Bell, ChevronLeft, ChevronRight, PlusCircle, Sun, Sunrise, Sunset, Heart } from "lucide-react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -11,6 +11,9 @@ import { addDays, format, startOfWeek } from "date-fns"
 import { fr } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { auth } from "@/lib/firebase"
+import { getUserProfile } from "@/lib/services/userService"
+import type { User } from "@/lib/types"
 
 const CalorieCircle = ({ value, goal, size = "large" }: { value: number, goal: number, size?: "small" | "large" }) => {
   const radius = size === 'large' ? 56 : 28;
@@ -129,7 +132,20 @@ const MealCard = ({ icon, title, calories, meal, onAdd }: { icon: React.ReactNod
 
 export default function HomePage() {
   const [currentDate, setCurrentDate] = useState(new Date())
+  const [user, setUser] = useState<User | null>(null)
   const today = new Date()
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      if (firebaseUser) {
+        const userProfile = await getUserProfile(firebaseUser.uid)
+        setUser(userProfile)
+      } else {
+        setUser(null)
+      }
+    })
+    return () => unsubscribe()
+  }, [])
 
   const startOfWeekDate = startOfWeek(currentDate, { weekStartsOn: 1 }) // Monday
 
@@ -159,11 +175,11 @@ export default function HomePage() {
         <header className="flex items-center justify-between">
             <div className="flex items-center gap-4">
                  <Avatar className="h-14 w-14">
-                    <AvatarImage src="https://placehold.co/100x100.png" alt="User avatar" data-ai-hint="user avatar" />
-                    <AvatarFallback>Z</AvatarFallback>
+                    <AvatarImage src={user?.photoURL || "https://placehold.co/100x100.png"} alt="User avatar" data-ai-hint="user avatar" />
+                    <AvatarFallback>{user?.fullName?.[0]}</AvatarFallback>
                 </Avatar>
                 <div>
-                    <h1 className="text-2xl font-bold">Welcome back, Zakaria!</h1>
+                    <h1 className="text-2xl font-bold">Welcome back, {user?.fullName?.split(' ')[0] || 'User'}!</h1>
                     <p className="text-muted-foreground text-sm">
                     Today is {format(today, "eeee, MMMM d'th", { locale: fr })}. Let's track your progress!
                     </p>
@@ -220,11 +236,11 @@ export default function HomePage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <CalorieCircle value={lunch?.calories || 0} goal={2759} />
+            <CalorieCircle value={lunch?.calories || 0} goal={user?.calorieGoal || 2000} />
              <div className="flex justify-around pt-4">
-                <NutrientCircle name="Prot" value={lunch?.protein || 0} goal={172} colorClass="text-red-500" />
-                <NutrientCircle name="Carbs" value={lunch?.carbs || 0} goal={276} colorClass="text-green-500" />
-                <NutrientCircle name="Fat" value={lunch?.fat || 0} goal={61} colorClass="text-yellow-500" />
+                <NutrientCircle name="Prot" value={lunch?.protein || 0} goal={user?.macroRatio?.protein || 150} colorClass="text-red-500" />
+                <NutrientCircle name="Carbs" value={lunch?.carbs || 0} goal={user?.macroRatio?.carbs || 250} colorClass="text-green-500" />
+                <NutrientCircle name="Fat" value={lunch?.fat || 0} goal={user?.macroRatio?.fat || 70} colorClass="text-yellow-500" />
             </div>
           </CardContent>
         </Card>

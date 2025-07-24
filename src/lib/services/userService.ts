@@ -1,5 +1,5 @@
 
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { User } from "@/lib/types";
 
@@ -11,11 +11,19 @@ const USERS_COLLECTION = "users";
  * @param uid The user's unique ID from Firebase Auth.
  * @param data The user profile data to save.
  */
-export async function updateUserProfile(uid: string, data: Partial<Omit<User, 'uid' | 'email'>>) {
+export async function updateUserProfile(uid: string, data: Partial<Omit<User, 'uid'>>) {
   try {
     const userRef = doc(db, USERS_COLLECTION, uid);
     // Use setDoc with merge: true to create or update the document
-    await setDoc(userRef, { ...data, uid }, { merge: true });
+    // Add timestamps for creation and update
+    const dataToSet = {
+        ...data,
+        uid,
+        updatedAt: serverTimestamp(),
+        createdAt: data.createdAt || serverTimestamp() // Only set createdAt on initial creation
+    };
+
+    await setDoc(userRef, dataToSet, { merge: true });
     console.log("User profile updated successfully for UID:", uid);
   } catch (error) {
     console.error("Error updating user profile:", error);

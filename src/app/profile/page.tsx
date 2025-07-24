@@ -29,8 +29,10 @@ import {
 } from "@/components/ui/select"
 import { MainLayout } from "@/components/main-layout"
 import { toast } from "@/hooks/use-toast"
-import { updateUserProfile } from "@/lib/services/userService"
+import { updateUserProfile, getUserProfile } from "@/lib/services/userService"
 import { auth } from "@/lib/firebase"
+import { uploadProfileImage } from "@/lib/services/storageService"
+import { User } from "@/lib/types"
 
 
 const profileFormSchema = z.object({
@@ -49,32 +51,41 @@ const profileFormSchema = z.object({
   mainGoal: z.string({
     required_error: "Veuillez sélectionner un objectif principal.",
   }),
+  photoURL: z.string().url().optional(),
 })
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>
 
-const defaultValues: Partial<ProfileFormValues> = {
-  fullName: "zakaria ben hajji",
-  age: 30,
-  biologicalSex: "male",
-  weight: 80,
-  height: 180,
-  deliveryAddress: "Rue de Russie, Ariana",
-  region: "Tunis",
-  activityLevel: "moderately_active",
-  mainGoal: "maintain",
-}
 
 export default function ProfilePage() {
   const [loading, setLoading] = React.useState(false);
-  const [profileImage, setProfileImage] = React.useState<string | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = React.useState<string | null>(null);
+  const [profileImageFile, setProfileImageFile] = React.useState<File | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
-    defaultValues,
+    defaultValues: {},
     mode: "onChange",
   })
+  
+  React.useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            setLoading(true);
+            const userProfile = await getUserProfile(user.uid);
+            if (userProfile) {
+                form.reset(userProfile as ProfileFormValues);
+                if (userProfile.photoURL) {
+                    setProfileImagePreview(userProfile.photoURL);
+                }
+            }
+            setLoading(false);
+        }
+    });
+    return () => unsubscribe();
+  }, [form]);
+
 
   const handleImageClick = () => {
     fileInputRef.current?.click();
@@ -83,9 +94,10 @@ export default function ProfilePage() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setProfileImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setProfileImage(reader.result as string);
+        setProfileImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
@@ -106,9 +118,15 @@ export default function ProfilePage() {
     }
 
     try {
-      // Here you would also handle uploading the profileImage to storage
-      // and getting back a URL to save in the user profile data.
-      await updateUserProfile(currentUser.uid, data);
+      let photoURL = form.getValues("photoURL");
+
+      if (profileImageFile) {
+        photoURL = await uploadProfileImage(currentUser.uid, profileImageFile);
+      }
+      
+      const updatedData = { ...data, photoURL };
+      await updateUserProfile(currentUser.uid, updatedData);
+
       toast({
         title: "Profil mis à jour !",
         description: "Vos informations ont été enregistrées avec succès.",
@@ -138,16 +156,16 @@ export default function ProfilePage() {
                 className="hidden"
                 accept="image/*"
               />
-              <div className="relative cursor-pointer" onClick={handleImageClick}>
-                <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                   {profileImage ? (
-                      <Image src={profileImage} alt="Profile preview" layout="fill" objectFit="cover" />
+              <div className="relative cursor-pointer group" onClick={handleImageClick}>
+                <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-4 border-white shadow-md">
+                   {profileImagePreview ? (
+                      <Image src={profileImagePreview} alt="Profile preview" layout="fill" objectFit="cover" />
                    ) : (
                       <Camera className="w-12 h-12 text-gray-400" />
                    )}
                 </div>
                 <div
-                  className="absolute bottom-0 right-0 bg-red-500 text-white rounded-full p-2"
+                  className="absolute bottom-1 right-1 bg-red-500 text-white rounded-full p-2 group-hover:bg-red-600 transition-colors"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z" />
@@ -155,7 +173,7 @@ export default function ProfilePage() {
                 </div>
               </div>
                <button type="button" className="text-red-500 font-semibold" onClick={handleImageClick}>
-                {profileImage ? "Changer la photo" : "Ajouter photo"}
+                {profileImagePreview ? "Changer la photo" : "Ajouter photo"}
                </button>
             </div>
             

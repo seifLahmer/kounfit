@@ -4,6 +4,7 @@ export type User = {
   uid: string;
   email: string;
   fullName: string;
+  photoURL?: string;
   age: number;
   biologicalSex: "male" | "female";
   weight: number; // in kg
@@ -20,6 +21,8 @@ export type User = {
   };
   favoriteMealIds?: string[];
   role: "client" | "caterer" | "admin";
+  createdAt?: any;
+  updatedAt?: any;
 };
 
 export type Component = {
