@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { BookCopy, PlusCircle } from "lucide-react"
+import { BookCopy, PlusCircle, Heart } from "lucide-react"
 
 const savedPlans = [
   {
@@ -45,17 +45,13 @@ export default function MealPlansPage() {
         <div className="flex items-center justify-between space-y-2">
           <div>
             <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-              <BookCopy />
-              Saved Meal Plans
+              <Heart />
+              Favourites
             </h2>
             <p className="text-muted-foreground">
-              Your collection of custom and saved meal plans.
+              Your collection of favorite meals.
             </p>
           </div>
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Create New Plan
-          </Button>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {savedPlans.map((plan, index) => (
@@ -75,11 +71,15 @@ export default function MealPlansPage() {
               </CardContent>
               <CardFooter className="flex justify-between">
                 <div className="text-sm text-muted-foreground">{plan.days}-day plan</div>
-                <Button variant="outline">View Plan</Button>
+                <Button variant="outline">View Meal</Button>
               </CardFooter>
             </Card>
           ))}
         </div>
+         <div className="pt-8 text-center text-muted-foreground">
+            <p>No favorite meals yet.</p>
+            <p className="text-sm">Click the heart icon on a meal to add it here.</p>
+          </div>
       </div>
     </MainLayout>
   )

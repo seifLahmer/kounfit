@@ -10,7 +10,6 @@ import {
   LayoutGrid,
   ShoppingCart,
   LogOut,
-  Bot
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -27,7 +26,7 @@ import { Button } from "./ui/button"
 
 const links = [
   { href: "/profile", label: "Profile", icon: User },
-  { href: "/meal-plans", label: "Plans", icon: Heart },
+  { href: "/meal-plans", label: "favourites", icon: Heart },
   { href: "/home", label: "Home", icon: LayoutGrid },
   { href: "/shopping-list", label: "Cart", icon: ShoppingCart },
 ]
@@ -60,18 +59,18 @@ export function BottomNav() {
               <Link key={link.href} href={link.href} className="flex-1 flex justify-center items-center h-full">
                 <div className={cn(
                     "flex flex-col items-center justify-center gap-1 transition-colors relative h-full w-full",
-                     isActive && !isHome ? "text-accent" : "text-muted-foreground hover:text-accent"
+                     isActive && !isHome ? "text-red-500" : "text-muted-foreground hover:text-red-500"
                 )}>
                   {isHome ? (
                     <div className={cn(
-                      "absolute -top-6 p-4 rounded-full text-primary-foreground shadow-lg flex items-center justify-center bg-accent"
+                      "absolute -top-6 p-4 rounded-full text-white shadow-lg flex items-center justify-center bg-red-500"
                       )}>
                       <link.icon className="h-6 w-6" />
                     </div>
                   ) : (
                     <link.icon className="h-6 w-6" />
                   )}
-                  <span className={cn("text-xs capitalize pt-1", isHome ? "mt-12" : "")}>
+                  <span className={cn("text-xs capitalize", isHome ? "mt-12" : "")}>
                     {link.label}
                   </span>
                 </div>
@@ -79,9 +78,9 @@ export function BottomNav() {
             )
           })}
            <div className="flex-1 flex justify-center items-center h-full cursor-pointer" onClick={handleLogoutClick}>
-                <div className="flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-accent">
+                <div className="flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-red-500">
                     <LogOut className="h-6 w-6" />
-                    <span className="text-xs capitalize pt-1">Logout</span>
+                    <span className="text-xs capitalize">Logout</span>
                 </div>
             </div>
         </div>
