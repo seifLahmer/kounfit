@@ -168,7 +168,7 @@ export default function HomePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-bold text-primary text-center">
+            <CardTitle className="text-lg font-bold text-foreground text-center">
               Votre Plan Hebdomadaire
             </CardTitle>
           </CardHeader>
@@ -191,9 +191,11 @@ export default function HomePage() {
                     {format(day, "eee", { locale: fr })}
                   </p>
                   <Button
-                    variant={format(day, "yyyy-MM-dd") === format(today, "yyyy-MM-dd") ? "default" : "ghost"}
+                    variant={"ghost"}
                     size="icon"
-                    className="w-10 h-10 rounded-full"
+                    className={cn("w-10 h-10 rounded-full", {
+                      "bg-red-500 text-white hover:bg-red-600": format(day, "yyyy-MM-dd") === format(today, "yyyy-MM-dd")
+                    })}
                   >
                     {format(day, "d")}
                   </Button>
@@ -205,19 +207,23 @@ export default function HomePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-bold text-primary text-center">
+            <CardTitle className="text-lg font-bold text-foreground text-center">
               Statistiques du Jour
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-center font-semibold">Apport Calorique</p>
             <CalorieCircle value={lunch?.calories || 0} goal={2759} />
+             <div className="flex justify-around pt-4">
+                <NutrientCircle name="Prot" value={lunch?.protein || 0} goal={172} colorClass="text-red-500" />
+                <NutrientCircle name="Carbs" value={lunch?.carbs || 0} goal={276} colorClass="text-green-500" />
+                <NutrientCircle name="Fat" value={lunch?.fat || 0} goal={61} colorClass="text-yellow-500" />
+            </div>
           </CardContent>
         </Card>
 
          <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-bold text-primary text-center">
+            <CardTitle className="text-lg font-bold text-foreground text-center">
               Repas du Jour
             </CardTitle>
           </CardHeader>
@@ -232,4 +238,3 @@ export default function HomePage() {
     </MainLayout>
   )
 }
-
