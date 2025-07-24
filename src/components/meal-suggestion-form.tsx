@@ -4,7 +4,7 @@ import { useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { run } from "@genkit-ai/next/client"
+import { runFlow } from "@genkit-ai/next/client"
 import { motion } from "framer-motion"
 
 import { generateMealSuggestions } from "@/ai/flows/generate-meal-suggestions"
@@ -54,7 +54,7 @@ export function MealSuggestionForm() {
     setMealPlan(null)
 
     try {
-      const plan = await run(generateMealSuggestions, values)
+      const plan = await runFlow(generateMealSuggestions, values)
       setMealPlan(plan);
     } catch (e) {
       console.error(e)
