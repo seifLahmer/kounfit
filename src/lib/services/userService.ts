@@ -11,11 +11,11 @@ const USERS_COLLECTION = "users";
  * @param uid The user's unique ID from Firebase Auth.
  * @param data The user profile data to save.
  */
-export async function updateUserProfile(uid: string, data: Partial<Omit<User, 'uid' | 'email' | 'role'>>) {
+export async function updateUserProfile(uid: string, data: Partial<Omit<User, 'uid' | 'email'>>) {
   try {
     const userRef = doc(db, USERS_COLLECTION, uid);
     // Use setDoc with merge: true to create or update the document
-    await setDoc(userRef, data, { merge: true });
+    await setDoc(userRef, { ...data, uid }, { merge: true });
     console.log("User profile updated successfully for UID:", uid);
   } catch (error) {
     console.error("Error updating user profile:", error);

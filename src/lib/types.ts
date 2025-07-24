@@ -4,16 +4,16 @@ export type User = {
   uid: string;
   email: string;
   fullName: string;
-  age?: number;
-  biologicalSex?: "male" | "female";
-  weight?: number; // in kg
-  height?: number; // in cm
+  age: number;
+  biologicalSex: "male" | "female";
+  weight: number; // in kg
+  height: number; // in cm
   deliveryAddress?: string;
   region?: string;
-  activityLevel?: "sedentary" | "lightly_active" | "moderately_active" | "very_active";
-  mainGoal?: "lose_weight" | "maintain" | "gain_muscle";
-  calorieGoal?: number;
-  macroRatio?: {
+  activityLevel: "sedentary" | "lightly_active" | "moderately_active" | "very_active";
+  mainGoal: "lose_weight" | "maintain" | "gain_muscle";
+  calorieGoal: number;
+  macroRatio: {
     protein: number;
     carbs: number;
     fat: number;
