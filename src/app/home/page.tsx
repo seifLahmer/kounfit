@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Bell, ChevronLeft, ChevronRight, PlusCircle, Sun, Sunrise, Sunset, Heart, Loader2 } from "lucide-react"
+import { Bell, ChevronLeft, ChevronRight, PlusCircle, Sun, Sunrise, Sunset, Heart, Loader2, Apple } from "lucide-react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
@@ -182,6 +182,7 @@ export default function HomePage() {
   
   const breakfast = null;
   const lunch = { name: "Escalope Grillée", calories: 600, protein: 30, carbs: 20, fat: 10, image: "https://placehold.co/100x100.png" };
+  const snack = null;
   const dinner = null;
 
   if (loading) {
@@ -276,6 +277,7 @@ export default function HomePage() {
           <CardContent className="space-y-4">
              <MealCard icon={<Sunrise className="text-yellow-500" />} title="Petit-déjeuner" calories={700} meal={breakfast} onAdd={() => handleAddMeal('breakfast')} />
             <MealCard icon={<Sun className="text-orange-500" />} title="Déjeuner" calories={1000} meal={lunch} onAdd={() => handleAddMeal('lunch')} />
+            <MealCard icon={<Apple className="text-green-500" />} title="Collation" calories={300} meal={snack} onAdd={() => handleAddMeal('snack')} />
             <MealCard icon={<Sunset className="text-purple-500" />} title="Dîner" calories={600} meal={dinner} onAdd={() => handleAddMeal('dinner')} />
           </CardContent>
         </Card>
