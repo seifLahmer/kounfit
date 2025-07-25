@@ -59,11 +59,12 @@ export default function LoginPage() {
     } catch (error: any) {
       console.error("Login Error:", error);
       let description = "An error occurred during login.";
+      // Handle specific Firebase authentication errors
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        description = "Invalid email or password. Please try again.";
+        description = "Email ou mot de passe invalide. Veuillez réessayer.";
       }
       toast({
-        title: "Login Failed",
+        title: "Échec de la connexion",
         description: description,
         variant: "destructive",
       });
