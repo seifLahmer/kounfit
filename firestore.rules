@@ -1,58 +1,55 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check if a user is authenticated
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    // Helper function to check if a user is the owner of a document
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    // Helper function to check if a user has a specific role
-    function hasRole(role) {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
-    }
-
-    // Users can only read and write their own data.
-    // A user document can be created if the UID matches the authenticated user.
+    // Users Collection
+    // - Anyone can create their user document (on signup).
+    // - Users can only read and update their own document.
     match /users/{userId} {
-      allow read, update: if isAuthenticated() && isOwner(userId);
-      allow create: if isAuthenticated() && isOwner(userId);
-      allow delete: if false; // Deleting users should be handled server-side or with care
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
     }
 
-    // Meals can be read by any authenticated user, but only written by admins.
+    // Admins Collection
+    // - Only authenticated users can try to read their own document.
+    // - Only existing admins can add/remove other admins.
+    match /admins/{userId} {
+       allow get: if request.auth != null && request.auth.uid == userId;
+       allow list, create, update, delete: if request.auth != null && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Caterers Collection
+    // - Only authenticated users can try to read their own document.
+    // - Only admins can add, update or remove caterers.
+     match /caterers/{userId} {
+      allow get: if request.auth != null && request.auth.uid == userId;
+      allow list, create, update, delete: if request.auth != null && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Meals Collection
+    // - Logged-in users can view meals.
+    // - Admins can create, update, delete meals.
     match /meals/{mealId} {
-      allow read: if isAuthenticated();
-      allow create, update, delete: if hasRole('admin');
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
     }
-    
-    // Components can only be read and written by admins.
+
+    // Components Collection
+    // - Only admins can manage components.
     match /components/{componentId} {
-      allow read, write: if hasRole('admin');
+      allow read, write: if request.auth != null && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Caterers can only be read and written by admins.
-    match /caterers/{catererId} {
-        allow read, write: if hasRole('admin');
-    }
-
-    // Orders:
+    // Orders Collection
     // - Clients can create their own orders.
     // - Clients can read their own orders.
-    // - Admins and Caterers can read all orders.
-    // - Admins and Caterers can update orders.
+    // - Caterers and Admins can read all orders.
+    // - Caterers and Admins can update orders.
     match /orders/{orderId} {
-      allow create: if isAuthenticated() && request.resource.data.clientId == request.auth.uid;
-      allow read: if isAuthenticated() && (isOwner(resource.data.clientId) || hasRole('admin') || hasRole('caterer'));
-      allow update: if hasRole('admin') || hasRole('caterer');
-      allow delete: if false; // Generally, orders shouldn't be deleted by clients.
+      allow create: if request.auth != null;
+      allow read: if request.auth != null && (request.auth.uid == resource.data.clientId || get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin' || get(/databases/$(database)/documents/caterers/$(request.auth.uid)).data.role == 'caterer');
+      allow update: if request.auth != null && (get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin' || get(/databases/$(database)/documents/caterers/$(request.auth.uid)).data.role == 'caterer');
     }
   }
 }
