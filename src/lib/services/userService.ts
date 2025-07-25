@@ -23,7 +23,7 @@ export async function updateUserProfile(uid: string, data: Partial<Omit<User, 'u
       uid,
       updatedAt: serverTimestamp(),
       // Only set createdAt on initial creation
-      ...(docSnap.exists() ? {} : { createdAt: serverTimestamp() }),
+      ...(docSnap.exists() ? {} : { createdAt: serverTimestamp(), role: data.role || 'client' }),
     };
 
     // Use setDoc with merge: true to create or update the document
