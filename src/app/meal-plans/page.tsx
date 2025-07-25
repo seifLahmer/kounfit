@@ -1,3 +1,6 @@
+
+"use client"
+
 import { MainLayout } from "@/components/main-layout"
 import { Button } from "@/components/ui/button"
 import {
@@ -9,7 +12,10 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { BookCopy, PlusCircle, Heart } from "lucide-react"
+import { BookCopy, PlusCircle, Heart, Loader2 } from "lucide-react"
+import { auth } from "@/lib/firebase"
+import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 
 const savedPlans = [
   {
@@ -39,6 +45,27 @@ const savedPlans = [
 ]
 
 export default function MealPlansPage() {
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (!user) {
+        router.replace("/welcome")
+      } else {
+        setLoading(false)
+      }
+    })
+    return () => unsubscribe()
+  }, [router])
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    )
+  }
   return (
     <MainLayout>
       <div className="flex-1 space-y-4 p-4 sm:p-8 pt-6">
@@ -84,3 +111,5 @@ export default function MealPlansPage() {
     </MainLayout>
   )
 }
+
+    

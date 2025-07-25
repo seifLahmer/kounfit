@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Bell, ChevronLeft, ChevronRight, PlusCircle, Sun, Sunrise, Sunset, Heart } from "lucide-react"
+import { Bell, ChevronLeft, ChevronRight, PlusCircle, Sun, Sunrise, Sunset, Heart, Loader2 } from "lucide-react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
@@ -15,6 +15,7 @@ import { auth } from "@/lib/firebase"
 import { getUserProfile } from "@/lib/services/userService"
 import type { User } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
 
 const CalorieCircle = ({ value, goal, size = "large" }: { value: number, goal: number, size?: "small" | "large" }) => {
   const radius = size === 'large' ? 56 : 28;
@@ -136,6 +137,8 @@ export default function HomePage() {
   const [user, setUser] = useState<User | null>(null)
   const { toast } = useToast();
   const today = new Date()
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
@@ -149,13 +152,16 @@ export default function HomePage() {
                 description: "There was an error fetching your user data.",
                 variant: "destructive",
             });
+        } finally {
+            setLoading(false)
         }
       } else {
         setUser(null)
+        router.replace('/welcome')
       }
     })
     return () => unsubscribe()
-  }, [toast])
+  }, [toast, router])
 
   const startOfWeekDate = startOfWeek(currentDate, { weekStartsOn: 1 }) // Monday
 
@@ -178,6 +184,13 @@ export default function HomePage() {
   const lunch = { name: "Escalope Grillée", calories: 600, protein: 30, carbs: 20, fat: 10, image: "https://placehold.co/100x100.png" };
   const dinner = null;
 
+  if (loading) {
+      return (
+          <div className="flex justify-center items-center h-screen">
+              <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+      )
+  }
 
   return (
     <MainLayout>
@@ -272,3 +285,5 @@ export default function HomePage() {
     </MainLayout>
   )
 }
+
+    

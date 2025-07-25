@@ -1,13 +1,15 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { MainLayout } from "@/components/main-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { ShoppingCart, Plus, Minus, Trash2 } from "lucide-react"
+import { ShoppingCart, Plus, Minus, Trash2, Loader2 } from "lucide-react"
+import { auth } from "@/lib/firebase"
+import { useRouter } from "next/navigation"
 
 const initialCartItem = {
   id: 1,
@@ -20,6 +22,19 @@ const initialCartItem = {
 
 export default function ShoppingCartPage() {
   const [cartItem, setCartItem] = useState(initialCartItem)
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (!user) {
+        router.replace("/welcome")
+      } else {
+        setLoading(false)
+      }
+    })
+    return () => unsubscribe()
+  }, [router])
 
   const handleQuantityChange = (amount: number) => {
     setCartItem((prev) => ({
@@ -31,6 +46,14 @@ export default function ShoppingCartPage() {
   const subtotal = cartItem.price * cartItem.quantity
   const tax = subtotal * 0.08
   const total = subtotal + tax
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <MainLayout>
@@ -111,3 +134,5 @@ export default function ShoppingCartPage() {
     </MainLayout>
   )
 }
+
+    

@@ -34,6 +34,7 @@ import { auth } from "@/lib/firebase"
 import { uploadProfileImage } from "@/lib/services/storageService"
 import { calculateNutritionalNeeds } from "@/lib/services/nutritionService"
 import type { User } from "@/lib/types"
+import { useRouter } from "next/navigation"
 
 
 const profileFormSchema = z.object({
@@ -60,6 +61,7 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>
 
 export default function ProfilePage() {
   const { toast } = useToast()
+  const router = useRouter()
   const [loading, setLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
   const [profileImagePreview, setProfileImagePreview] = React.useState<string | null>(null);
@@ -70,7 +72,6 @@ export default function ProfilePage() {
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       fullName: "",
-      email: "",
       age: 0,
       biologicalSex: "male",
       weight: 0,
@@ -106,11 +107,11 @@ export default function ProfilePage() {
                 setLoading(false);
             }
         } else {
-             setLoading(false);
+             router.replace('/welcome');
         }
     });
     return () => unsubscribe();
-  }, [form, toast]);
+  }, [form, toast, router]);
 
 
   const handleImageClick = () => {
@@ -404,3 +405,5 @@ export default function ProfilePage() {
     </MainLayout>
   )
 }
+
+    
