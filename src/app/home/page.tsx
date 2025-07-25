@@ -135,9 +135,8 @@ const MealCard = ({ icon, title, calories, meal, onAdd }: { icon: React.ReactNod
 export default function HomePage() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [user, setUser] = useState<User | null>(null)
-  const { toast } = useToast();
+  const { toast } = useToast()
   const today = new Date()
-  const router = useRouter()
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -156,12 +155,13 @@ export default function HomePage() {
             setLoading(false)
         }
       } else {
+        // This case is handled by the ClientLayout now
         setUser(null)
-        router.replace('/welcome')
+        setLoading(false)
       }
     })
     return () => unsubscribe()
-  }, [toast, router])
+  }, [toast])
 
   const startOfWeekDate = startOfWeek(currentDate, { weekStartsOn: 1 }) // Monday
 
@@ -186,14 +186,13 @@ export default function HomePage() {
 
   if (loading) {
       return (
-          <div className="flex justify-center items-center h-screen">
+          <div className="flex justify-center items-center h-full">
               <Loader2 className="h-8 w-8 animate-spin" />
           </div>
       )
   }
 
   return (
-    <MainLayout>
       <div className="p-4 space-y-6">
         <header className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -280,10 +279,6 @@ export default function HomePage() {
             <MealCard icon={<Sunset className="text-purple-500" />} title="Dîner" calories={600} meal={dinner} onAdd={() => handleAddMeal('dinner')} />
           </CardContent>
         </Card>
-
       </div>
-    </MainLayout>
   )
 }
-
-    
