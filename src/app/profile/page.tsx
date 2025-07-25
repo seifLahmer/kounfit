@@ -147,8 +147,8 @@ export default function ProfilePage() {
     try {
       let finalPhotoURL = form.getValues("photoURL");
 
+      // Step 1: If a new image file is selected, upload it
       if (profileImageFile) {
-        // Step 1: Upload new image if one is selected
         finalPhotoURL = await uploadProfileImage(currentUser.uid, profileImageFile);
       }
       
@@ -162,7 +162,7 @@ export default function ProfilePage() {
           goal: data.mainGoal as any
       });
 
-      // Step 3: Prepare the complete data object
+      // Step 3: Prepare the complete data object for Firestore
       const userProfileData: Partial<User> = {
           ...data,
           photoURL: finalPhotoURL, // Use the new or existing URL
@@ -177,11 +177,16 @@ export default function ProfilePage() {
         title: "Profil mis à jour !",
         description: "Vos informations ont été enregistrées avec succès.",
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating profile:", error);
+      let description = "Une erreur s'est produite lors de la mise à jour de votre profil.";
+      // Check for specific Firebase Storage permission error
+      if (error.code === 'storage/unauthorized' || error.code === 'storage/object-not-found') {
+          description = "Erreur de permission. Veuillez vérifier vos règles de sécurité Firebase Storage. Assurez-vous d'avoir bien copié les règles que je vous ai fournies."
+      }
       toast({
         title: "Erreur de sauvegarde",
-        description: "Une erreur s'est produite lors de la mise à jour de votre profil.",
+        description: description,
         variant: "destructive",
       })
     } finally {
