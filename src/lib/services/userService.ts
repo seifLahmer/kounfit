@@ -8,6 +8,7 @@ const USERS_COLLECTION = "users";
 
 /**
  * Creates or updates a user's profile in Firestore.
+ * It removes any undefined fields before saving.
  * @param uid The user's unique ID from Firebase Auth.
  * @param data The user profile data to save.
  */
@@ -18,8 +19,18 @@ export async function updateUserProfile(uid: string, data: Partial<Omit<User, 'u
     // Check if document exists to determine if it's a create or update
     const docSnap = await getDoc(userRef);
 
+    const cleanData: Partial<Omit<User, 'uid'>> = { ...data };
+
+    // Firestore does not support 'undefined' values. We need to remove them.
+    Object.keys(cleanData).forEach(keyStr => {
+      const key = keyStr as keyof typeof cleanData;
+      if (cleanData[key] === undefined) {
+        delete cleanData[key];
+      }
+    });
+
     const dataToSet = {
-      ...data,
+      ...cleanData,
       uid,
       updatedAt: serverTimestamp(),
       // Only set createdAt on initial creation
