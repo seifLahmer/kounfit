@@ -16,6 +16,7 @@ import { BookCopy, PlusCircle, Heart, Loader2 } from "lucide-react"
 import { auth } from "@/lib/firebase"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
+import { Main } from "next/document"
 
 const savedPlans = [
   {
@@ -111,5 +112,3 @@ export default function MealPlansPage() {
     </MainLayout>
   )
 }
-
-    
