@@ -180,10 +180,34 @@ export default function HomePage() {
     console.log(`Adding meal for ${mealType}`);
   };
   
+  // Hardcoded meals for now
   const breakfast = null;
   const lunch = { name: "Escalope Grillée", calories: 600, protein: 30, carbs: 20, fat: 10, image: "https://placehold.co/100x100.png" };
   const snack = null;
   const dinner = null;
+
+  // Calculate consumed calories and macros from the meals
+  const consumedCalories = [breakfast, lunch, snack, dinner]
+    .filter(Boolean)
+    .reduce((acc, meal) => acc + (meal?.calories || 0), 0);
+  
+  const consumedMacros = {
+    protein: [breakfast, lunch, snack, dinner].filter(Boolean).reduce((acc, meal) => acc + (meal?.protein || 0), 0),
+    carbs: [breakfast, lunch, snack, dinner].filter(Boolean).reduce((acc, meal) => acc + (meal?.carbs || 0), 0),
+    fat: [breakfast, lunch, snack, dinner].filter(Boolean).reduce((acc, meal) => acc + (meal?.fat || 0), 0),
+  }
+
+  // Get user goals, with fallback values
+  const calorieGoal = user?.calorieGoal || 2000;
+  const macroGoals = user?.macroRatio || { protein: 150, carbs: 250, fat: 70 };
+
+  // Calculate calories per meal based on percentages
+  const mealCalorieGoals = {
+      breakfast: Math.round(calorieGoal * 0.25), // 25%
+      lunch: Math.round(calorieGoal * 0.35),     // 35%
+      snack: Math.round(calorieGoal * 0.10),      // 10%
+      dinner: Math.round(calorieGoal * 0.30),    // 30%
+  };
 
   if (loading) {
       return (
@@ -259,11 +283,11 @@ export default function HomePage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <CalorieCircle value={lunch?.calories || 0} goal={user?.calorieGoal || 2000} />
+            <CalorieCircle value={consumedCalories} goal={calorieGoal} />
              <div className="flex justify-around pt-4">
-                <NutrientCircle name="Prot" value={lunch?.protein || 0} goal={user?.macroRatio?.protein || 150} colorClass="text-red-500" />
-                <NutrientCircle name="Carbs" value={lunch?.carbs || 0} goal={user?.macroRatio?.carbs || 250} colorClass="text-green-500" />
-                <NutrientCircle name="Fat" value={lunch?.fat || 0} goal={user?.macroRatio?.fat || 70} colorClass="text-yellow-500" />
+                <NutrientCircle name="Prot" value={consumedMacros.protein} goal={macroGoals.protein} colorClass="text-red-500" />
+                <NutrientCircle name="Carbs" value={consumedMacros.carbs} goal={macroGoals.carbs} colorClass="text-green-500" />
+                <NutrientCircle name="Fat" value={consumedMacros.fat} goal={macroGoals.fat} colorClass="text-yellow-500" />
             </div>
           </CardContent>
         </Card>
@@ -275,12 +299,14 @@ export default function HomePage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-             <MealCard icon={<Sunrise className="text-yellow-500" />} title="Petit-déjeuner" calories={700} meal={breakfast} onAdd={() => handleAddMeal('breakfast')} />
-            <MealCard icon={<Sun className="text-orange-500" />} title="Déjeuner" calories={1000} meal={lunch} onAdd={() => handleAddMeal('lunch')} />
-            <MealCard icon={<Apple className="text-green-500" />} title="Collation" calories={300} meal={snack} onAdd={() => handleAddMeal('snack')} />
-            <MealCard icon={<Sunset className="text-purple-500" />} title="Dîner" calories={600} meal={dinner} onAdd={() => handleAddMeal('dinner')} />
+             <MealCard icon={<Sunrise className="text-yellow-500" />} title="Petit-déjeuner" calories={mealCalorieGoals.breakfast} meal={breakfast} onAdd={() => handleAddMeal('breakfast')} />
+            <MealCard icon={<Sun className="text-orange-500" />} title="Déjeuner" calories={mealCalorieGoals.lunch} meal={lunch} onAdd={() => handleAddMeal('lunch')} />
+            <MealCard icon={<Apple className="text-green-500" />} title="Collation" calories={mealCalorieGoals.snack} meal={snack} onAdd={() => handleAddMeal('snack')} />
+            <MealCard icon={<Sunset className="text-purple-500" />} title="Dîner" calories={mealCalorieGoals.dinner} meal={dinner} onAdd={() => handleAddMeal('dinner')} />
           </CardContent>
         </Card>
       </div>
   )
 }
+
+    
