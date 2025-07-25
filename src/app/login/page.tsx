@@ -10,8 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Leaf } from "lucide-react";
+import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
+import { useState } from "react";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
+import { getUserRole } from "@/lib/services/roleService";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -22,6 +27,8 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -30,14 +37,38 @@ export default function LoginPage() {
     },
   });
 
-  const onSubmit = (data: LoginFormValues) => {
-    console.log("Login submitted", data);
-    // Check if the email is the admin email
-    if (data.email === "zakaria.benhajji@edu.isetcom.tn") {
-      router.push("/admin");
-    } else {
-      // On successful login for other users, redirect to the main app dashboard
-      router.push("/home");
+  const onSubmit = async (data: LoginFormValues) => {
+    setLoading(true);
+    try {
+      // 1. Sign in user with Firebase Auth
+      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+      const user = userCredential.user;
+
+      // 2. Get user role from Firestore
+      const role = await getUserRole(user.uid);
+
+      // 3. Redirect based on role
+      if (role === 'admin') {
+        router.push('/admin');
+      } else if (role === 'caterer') {
+        router.push('/caterer');
+      } else {
+        router.push('/home');
+      }
+
+    } catch (error: any) {
+      console.error("Login Error:", error);
+      let description = "An error occurred during login.";
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        description = "Invalid email or password. Please try again.";
+      }
+      toast({
+        title: "Login Failed",
+        description: description,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -86,8 +117,9 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-                Se connecter
+              <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={loading}>
+                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {loading ? "Connexion..." : "Se connecter"}
               </Button>
             </form>
           </Form>
