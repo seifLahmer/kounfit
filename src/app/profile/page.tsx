@@ -47,10 +47,10 @@ const profileFormSchema = z.object({
   height: z.coerce.number().min(100, "La taille doit être un nombre positif."),
   deliveryAddress: z.string().optional(),
   region: z.string().optional(),
-  activityLevel: z.string({
+  activityLevel: z.enum(["sedentary", "lightly_active", "moderately_active", "very_active"], {
     required_error: "Veuillez sélectionner un niveau d'activité.",
   }),
-  mainGoal: z.string({
+  mainGoal: z.enum(["lose_weight", "maintain", "gain_muscle"], {
     required_error: "Veuillez sélectionner un objectif principal.",
   }),
   photoURL: z.string().url().optional().nullable(),
@@ -156,8 +156,8 @@ export default function ProfilePage() {
           gender: data.biologicalSex,
           weight: data.weight,
           height: data.height,
-          activityLevel: data.activityLevel as any,
-          goal: data.mainGoal as any
+          activityLevel: data.activityLevel,
+          goal: data.mainGoal
       });
 
       const userProfileData: Partial<User> = {
@@ -384,7 +384,7 @@ export default function ProfilePage() {
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionnez votre objectif principal" />
-                      </Trigger>
+                      </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="lose_weight">Perdre du poids</SelectItem>
