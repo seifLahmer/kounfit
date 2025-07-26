@@ -69,27 +69,29 @@ export default function ProfilePage() {
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      fullName: "",
-      age: 0,
-      biologicalSex: "male",
-      weight: 0,
-      height: 0,
-      deliveryAddress: "",
-      region: "",
-      activityLevel: "sedentary",
-      mainGoal: "maintain",
-      photoURL: null,
+        fullName: "",
+        age: 0,
+        biologicalSex: "male",
+        weight: 0,
+        height: 0,
+        deliveryAddress: "",
+        region: "",
+        activityLevel: undefined, // Let the select show the placeholder
+        mainGoal: undefined,      // Let the select show the placeholder
+        photoURL: null,
     },
     mode: "onBlur",
   })
   
+  // This effect runs once on mount to load the user's profile
   React.useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
         if (user) {
             try {
                 const userProfile = await getUserProfile(user.uid);
                 if (userProfile) {
-                    form.reset(userProfile as ProfileFormValues, { keepValues: true });
+                    // Reset the form with the fetched data
+                    form.reset(userProfile as ProfileFormValues);
                     if (userProfile.photoURL) {
                         setProfileImagePreview(userProfile.photoURL);
                     }
@@ -105,11 +107,13 @@ export default function ProfilePage() {
                 setLoading(false);
             }
         } else {
+             // If no user is found, redirect to the welcome page
              router.replace('/welcome');
         }
     });
+    // Cleanup the subscription when the component unmounts
     return () => unsubscribe();
-  }, [form, toast, router]);
+  }, []); // Note: empty dependency array to run only once
 
   const handleAutoSave = useCallback(async (data: ProfileFormValues) => {
     setSaveStatus("saving");
@@ -131,26 +135,33 @@ export default function ProfilePage() {
             calorieGoal: nutritionalNeeds.calories,
             macroRatio: nutritionalNeeds.macros,
         };
-
+        
         await updateUserProfile(currentUser.uid, userProfileData);
         setTimeout(() => setSaveStatus("saved"), 500);
         setTimeout(() => setSaveStatus("idle"), 2000);
     } catch (error) {
         setSaveStatus("idle");
-        toast({ title: "Erreur de sauvegarde", variant: "destructive" });
+        toast({ title: "Erreur de sauvegarde", description: "Vos modifications n'ont pas pu être enregistrées.", variant: "destructive" });
     }
   }, [toast]);
 
+  // This effect watches for form changes to trigger auto-save
   const watchedValues = form.watch();
+  const isMounted = React.useRef(false); // To prevent saving on initial load
 
   React.useEffect(() => {
-      if (form.formState.isDirty && form.formState.isValid) {
-          const debounceTimeout = setTimeout(() => {
-             handleAutoSave(form.getValues() as ProfileFormValues)
-          }, 1500);
-          return () => clearTimeout(debounceTimeout);
-      }
-  }, [watchedValues, form.formState.isDirty, form.formState.isValid, form, handleAutoSave]);
+    if (isMounted.current && form.formState.isDirty && form.formState.isValid) {
+      const debounceTimeout = setTimeout(() => {
+         handleAutoSave(form.getValues() as ProfileFormValues)
+      }, 1500);
+      return () => clearTimeout(debounceTimeout);
+    } else {
+       // After the initial render, set isMounted to true
+       if (!loading) {
+         isMounted.current = true;
+       }
+    }
+  }, [watchedValues, form.formState.isDirty, form.formState.isValid, form, handleAutoSave, loading]);
 
 
   const handleImageClick = () => {
@@ -170,8 +181,8 @@ export default function ProfilePage() {
 
       try {
         const photoURL = await uploadProfileImage(currentUser.uid, file);
-        form.setValue("photoURL", photoURL, { shouldDirty: true });
-        // The useEffect will trigger the auto-save
+        // Set the value and mark the form as dirty to trigger the auto-save effect
+        form.setValue("photoURL", photoURL, { shouldDirty: true, shouldValidate: true });
       } catch (error) {
         toast({ title: "Erreur de téléversement", description: "L'image n'a pas pu être sauvegardée.", variant: "destructive" });
         setSaveStatus("idle");
@@ -266,7 +277,7 @@ export default function ProfilePage() {
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                       className="flex items-center space-x-6"
                     >
                       <FormItem className="flex items-center space-x-2 space-y-0">
@@ -350,7 +361,7 @@ export default function ProfilePage() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Niveau d'Activité</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionnez votre niveau d'activité" />
@@ -374,7 +385,7 @@ export default function ProfilePage() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Objectif Principal</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionnez votre objectif principal" />
@@ -397,3 +408,5 @@ export default function ProfilePage() {
     </MainLayout>
   )
 }
+
+    
