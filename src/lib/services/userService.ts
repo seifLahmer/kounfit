@@ -16,16 +16,14 @@ export async function updateUserProfile(uid: string, data: Partial<Omit<User, 'u
   try {
     const userRef = doc(db, USERS_COLLECTION, uid);
     
-    // Check if document exists to determine if it's a create or update
     const docSnap = await getDoc(userRef);
 
-    const cleanData: Partial<Omit<User, 'uid'>> = { ...data };
+    const cleanData: { [key: string]: any } = {};
 
-    // Firestore does not support 'undefined' values. We need to remove them.
-    Object.keys(cleanData).forEach(keyStr => {
-      const key = keyStr as keyof typeof cleanData;
-      if (cleanData[key] === undefined) {
-        delete cleanData[key];
+    Object.keys(data).forEach(keyStr => {
+      const key = keyStr as keyof typeof data;
+      if (data[key] !== undefined) {
+        cleanData[key] = data[key];
       }
     });
 
@@ -33,14 +31,12 @@ export async function updateUserProfile(uid: string, data: Partial<Omit<User, 'u
       ...cleanData,
       uid,
       updatedAt: serverTimestamp(),
-      // Only set createdAt on initial creation, and ensure role is set.
       ...(docSnap.exists() ? {} : { createdAt: serverTimestamp(), role: data.role || 'client' }),
     };
 
-    // Use setDoc with merge: true to create or update the document
     await setDoc(userRef, dataToSet, { merge: true });
   } catch (error) {
-    // Re-throw the original error for better debugging in the calling function
+    console.error("Error in updateUserProfile: ", error);
     throw error;
   }
 }
@@ -57,7 +53,6 @@ export async function getUserProfile(uid: string): Promise<User | null> {
     const docSnap = await getDoc(userRef);
 
     if (docSnap.exists()) {
-      // Convert Firestore Timestamps to Dates
       const data = docSnap.data() as User;
       if (data.createdAt && data.createdAt instanceof Timestamp) {
         data.createdAt = data.createdAt.toDate();
@@ -70,6 +65,9 @@ export async function getUserProfile(uid: string): Promise<User | null> {
       return null;
     }
   } catch (error) {
+    console.error("Could not fetch user profile.", error);
     throw new Error("Could not fetch user profile.");
   }
 }
+
+    

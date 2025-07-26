@@ -147,12 +147,10 @@ export default function ProfilePage() {
     try {
       let finalPhotoURL = form.getValues("photoURL");
 
-      // Step 1: If a new image file is selected, upload it
       if (profileImageFile) {
         finalPhotoURL = await uploadProfileImage(currentUser.uid, profileImageFile);
       }
       
-      // Step 2: Calculate nutritional needs
       const nutritionalNeeds = calculateNutritionalNeeds({
           age: data.age,
           gender: data.biologicalSex,
@@ -162,15 +160,13 @@ export default function ProfilePage() {
           goal: data.mainGoal as any
       });
 
-      // Step 3: Prepare the complete data object for Firestore
       const userProfileData: Partial<User> = {
           ...data,
-          photoURL: finalPhotoURL, // Use the new or existing URL
+          photoURL: finalPhotoURL,
           calorieGoal: nutritionalNeeds.calories,
           macroRatio: nutritionalNeeds.macros,
       };
 
-      // Step 4: Update the profile in Firestore
       await updateUserProfile(currentUser.uid, userProfileData);
 
       toast({
@@ -180,9 +176,10 @@ export default function ProfilePage() {
     } catch (error: any) {
       console.error("Error updating profile:", error);
       let description = "Une erreur s'est produite lors de la mise à jour de votre profil.";
-      // Check for specific Firebase Storage permission error
-      if (error.code === 'storage/unauthorized' || error.code === 'storage/object-not-found') {
-          description = "Erreur de permission. Veuillez vérifier vos règles de sécurité Firebase Storage. Assurez-vous d'avoir bien copié les règles que je vous ai fournies."
+      if (error.code === 'storage/unauthorized') {
+          description = "Erreur de permission. Veuillez vérifier vos règles de sécurité Firebase Storage."
+      } else if (error.code === 'permission-denied') {
+          description = "Erreur de permission Firestore. Vérifiez vos règles de sécurité."
       }
       toast({
         title: "Erreur de sauvegarde",
@@ -195,13 +192,13 @@ export default function ProfilePage() {
   }
 
   if (loading) {
-      return (
-          <MainLayout>
-              <div className="flex justify-center items-center h-full">
-                  <Loader2 className="h-8 w-8 animate-spin" />
-              </div>
-          </MainLayout>
-      )
+    return (
+        <MainLayout>
+            <div className="flex justify-center items-center h-full">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+        </MainLayout>
+    );
   }
 
   return (
@@ -387,7 +384,7 @@ export default function ProfilePage() {
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionnez votre objectif principal" />
-                      </SelectTrigger>
+                      </Trigger>
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="lose_weight">Perdre du poids</SelectItem>
