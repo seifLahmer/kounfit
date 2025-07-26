@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { Camera, Loader2 } from "lucide-react"
+import { Camera, Loader2, CheckCircle } from "lucide-react"
 import Image from "next/image"
 import * as React from "react"
 
@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button"
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -35,7 +34,7 @@ import { uploadProfileImage } from "@/lib/services/storageService"
 import { calculateNutritionalNeeds } from "@/lib/services/nutritionService"
 import type { User } from "@/lib/types"
 import { useRouter } from "next/navigation"
-
+import { useCallback } from "react"
 
 const profileFormSchema = z.object({
   fullName: z.string().min(2, "Le nom doit contenir au moins 2 caractères."),
@@ -62,11 +61,11 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>
 export default function ProfilePage() {
   const { toast } = useToast()
   const router = useRouter()
-  const [loading, setLoading] = React.useState(true);
-  const [isSaving, setIsSaving] = React.useState(false);
-  const [profileImagePreview, setProfileImagePreview] = React.useState<string | null>(null);
-  const [profileImageFile, setProfileImageFile] = React.useState<File | null>(null);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = React.useState(true)
+  const [isSaving, setIsSaving] = React.useState(false)
+  const [saveStatus, setSaveStatus] = React.useState<"idle" | "saving" | "saved">("idle");
+  const [profileImagePreview, setProfileImagePreview] = React.useState<string | null>(null)
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -82,7 +81,7 @@ export default function ProfilePage() {
       mainGoal: "maintain",
       photoURL: null,
     },
-    mode: "onChange",
+    mode: "onBlur",
   })
   
   React.useEffect(() => {
@@ -91,7 +90,7 @@ export default function ProfilePage() {
             try {
                 const userProfile = await getUserProfile(user.uid);
                 if (userProfile) {
-                    form.reset(userProfile as ProfileFormValues);
+                    form.reset(userProfile as ProfileFormValues, { keepValues: true });
                     if (userProfile.photoURL) {
                         setProfileImagePreview(userProfile.photoURL);
                     }
@@ -113,83 +112,75 @@ export default function ProfilePage() {
     return () => unsubscribe();
   }, [form, toast, router]);
 
+  const handleAutoSave = useCallback(async (data: ProfileFormValues) => {
+    setSaveStatus("saving");
+    const currentUser = auth.currentUser;
+    if (!currentUser) return;
+
+    try {
+        const nutritionalNeeds = calculateNutritionalNeeds({
+            age: data.age,
+            gender: data.biologicalSex,
+            weight: data.weight,
+            height: data.height,
+            activityLevel: data.activityLevel,
+            goal: data.mainGoal
+        });
+
+        const userProfileData: Partial<User> = {
+            ...data,
+            calorieGoal: nutritionalNeeds.calories,
+            macroRatio: nutritionalNeeds.macros,
+        };
+
+        await updateUserProfile(currentUser.uid, userProfileData);
+        setTimeout(() => setSaveStatus("saved"), 500);
+        setTimeout(() => setSaveStatus("idle"), 2000);
+    } catch (error) {
+        setSaveStatus("idle");
+        toast({ title: "Erreur de sauvegarde", variant: "destructive" });
+    }
+  }, [toast]);
+
+  const watchedValues = form.watch();
+
+  React.useEffect(() => {
+      if (form.formState.isDirty && form.formState.isValid) {
+          setSaveStatus("saving");
+          const subscription = form.watch((value) => {
+              const debounceTimeout = setTimeout(() => handleAutoSave(value as ProfileFormValues), 1000);
+              return () => clearTimeout(debounceTimeout);
+          });
+          return () => subscription.unsubscribe();
+      }
+  }, [form.formState.isDirty, form.formState.isValid, form, handleAutoSave]);
 
   const handleImageClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      setProfileImageFile(file);
+    const currentUser = auth.currentUser;
+    if (file && currentUser) {
+      setSaveStatus("saving");
       const reader = new FileReader();
       reader.onloadend = () => {
         setProfileImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+
+      try {
+        const photoURL = await uploadProfileImage(currentUser.uid, file);
+        form.setValue("photoURL", photoURL, { shouldDirty: true });
+        await handleAutoSave({ ...form.getValues(), photoURL });
+      } catch (error) {
+        toast({ title: "Erreur de téléversement", description: "L'image n'a pas pu être sauvegardée.", variant: "destructive" });
+        setSaveStatus("idle");
+      }
     }
   };
 
-
-  async function onSubmit(data: ProfileFormValues) {
-    setIsSaving(true);
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-      toast({
-        title: "Erreur",
-        description: "Vous devez être connecté pour mettre à jour votre profil.",
-        variant: "destructive",
-      });
-      setIsSaving(false);
-      return;
-    }
-
-    try {
-      let finalPhotoURL = form.getValues("photoURL");
-
-      if (profileImageFile) {
-        finalPhotoURL = await uploadProfileImage(currentUser.uid, profileImageFile);
-      }
-      
-      const nutritionalNeeds = calculateNutritionalNeeds({
-          age: data.age,
-          gender: data.biologicalSex,
-          weight: data.weight,
-          height: data.height,
-          activityLevel: data.activityLevel,
-          goal: data.mainGoal
-      });
-
-      const userProfileData: Partial<User> = {
-          ...data,
-          photoURL: finalPhotoURL,
-          calorieGoal: nutritionalNeeds.calories,
-          macroRatio: nutritionalNeeds.macros,
-      };
-
-      await updateUserProfile(currentUser.uid, userProfileData);
-
-      toast({
-        title: "Profil mis à jour !",
-        description: "Vos informations ont été enregistrées avec succès.",
-      })
-    } catch (error: any) {
-      console.error("Error updating profile:", error);
-      let description = "Une erreur s'est produite lors de la mise à jour de votre profil.";
-      if (error.code === 'storage/unauthorized') {
-          description = "Erreur de permission. Veuillez vérifier vos règles de sécurité Firebase Storage."
-      } else if (error.code === 'permission-denied') {
-          description = "Erreur de permission Firestore. Vérifiez vos règles de sécurité."
-      }
-      toast({
-        title: "Erreur de sauvegarde",
-        description: description,
-        variant: "destructive",
-      })
-    } finally {
-      setIsSaving(false);
-    }
-  }
 
   if (loading) {
     return (
@@ -205,7 +196,7 @@ export default function ProfilePage() {
     <MainLayout>
       <div className="p-4 space-y-6 max-w-lg mx-auto pb-24">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form className="space-y-6">
             <div className="flex flex-col items-center space-y-4">
                <input
                 type="file"
@@ -233,6 +224,11 @@ export default function ProfilePage() {
                <button type="button" className="text-red-500 font-semibold" onClick={handleImageClick}>
                 {profileImagePreview ? "Changer la photo" : "Ajouter photo"}
                </button>
+            </div>
+
+            <div className="h-6 flex items-center justify-center">
+              {saveStatus === "saving" && <div className="flex items-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enregistrement...</div>}
+              {saveStatus === "saved" && <div className="flex items-center text-sm text-green-600"><CheckCircle className="mr-2 h-4 w-4" />Modifications enregistrées!</div>}
             </div>
             
             <FormField
@@ -397,15 +393,9 @@ export default function ProfilePage() {
               )}
             />
 
-            <Button type="submit" disabled={isSaving} className="w-full bg-red-600 hover:bg-red-700 text-white font-bold h-12 text-lg">
-              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isSaving ? "Sauvegarde..." : "Sauvegarder les changements"}
-            </Button>
           </form>
         </Form>
       </div>
     </MainLayout>
   )
 }
-
-    
