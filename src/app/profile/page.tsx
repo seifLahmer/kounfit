@@ -7,7 +7,7 @@ import { z } from "zod"
 import { Camera, Loader2, CheckCircle } from "lucide-react"
 import Image from "next/image"
 import * as React from "react"
-import { useCallback } from "react"
+import { useCallback, useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
@@ -61,10 +61,11 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>
 export default function ProfilePage() {
   const { toast } = useToast()
   const router = useRouter()
-  const [loading, setLoading] = React.useState(true)
-  const [saveStatus, setSaveStatus] = React.useState<"idle" | "saving" | "saved">("idle");
-  const [profileImagePreview, setProfileImagePreview] = React.useState<string | null>(null)
-  const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const [loading, setLoading] = useState(true)
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const isMounted = useRef(false)
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -76,24 +77,22 @@ export default function ProfilePage() {
         height: 0,
         deliveryAddress: "",
         region: "",
-        activityLevel: undefined, // Let the select show the placeholder
-        mainGoal: undefined,      // Let the select show the placeholder
+        activityLevel: undefined,
+        mainGoal: undefined,
         photoURL: null,
     },
     mode: "onBlur",
   })
   
-  // This effect runs once on mount to load the user's profile
-  React.useEffect(() => {
+  useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
         if (user) {
             try {
                 const userProfile = await getUserProfile(user.uid);
                 if (userProfile) {
-                    // Reset the form with the fetched data
                     form.reset(userProfile as ProfileFormValues);
                     if (userProfile.photoURL) {
-                        setProfileImagePreview(userProfile.photoURL);
+                      setProfileImagePreview(userProfile.photoURL)
                     }
                 }
             } catch (error) {
@@ -107,18 +106,20 @@ export default function ProfilePage() {
                 setLoading(false);
             }
         } else {
-             // If no user is found, redirect to the welcome page
              router.replace('/welcome');
         }
     });
-    // Cleanup the subscription when the component unmounts
     return () => unsubscribe();
-  }, []); // Note: empty dependency array to run only once
+  }, [form, router, toast]);
 
   const handleAutoSave = useCallback(async (data: ProfileFormValues) => {
     setSaveStatus("saving");
     const currentUser = auth.currentUser;
-    if (!currentUser) return;
+    if (!currentUser) {
+        setSaveStatus("idle");
+        toast({ title: "Erreur", description: "Utilisateur non authentifié.", variant: "destructive" });
+        return;
+    };
 
     try {
         const nutritionalNeeds = calculateNutritionalNeeds({
@@ -137,6 +138,7 @@ export default function ProfilePage() {
         };
         
         await updateUserProfile(currentUser.uid, userProfileData);
+        
         setTimeout(() => setSaveStatus("saved"), 500);
         setTimeout(() => setSaveStatus("idle"), 2000);
     } catch (error) {
@@ -145,24 +147,22 @@ export default function ProfilePage() {
     }
   }, [toast]);
 
-  // This effect watches for form changes to trigger auto-save
   const watchedValues = form.watch();
-  const isMounted = React.useRef(false); // To prevent saving on initial load
 
-  React.useEffect(() => {
-    if (isMounted.current && form.formState.isDirty && form.formState.isValid) {
-      const debounceTimeout = setTimeout(() => {
-         handleAutoSave(form.getValues() as ProfileFormValues)
-      }, 1500);
-      return () => clearTimeout(debounceTimeout);
+  useEffect(() => {
+    if (isMounted.current) {
+        if (form.formState.isDirty && form.formState.isValid) {
+            const debounceTimeout = setTimeout(() => {
+                handleAutoSave(form.getValues());
+            }, 1500);
+            return () => clearTimeout(debounceTimeout);
+        }
     } else {
-       // After the initial render, set isMounted to true
        if (!loading) {
          isMounted.current = true;
        }
     }
-  }, [watchedValues, form.formState.isDirty, form.formState.isValid, form, handleAutoSave, loading]);
-
+  }, [watchedValues, form.formState.isDirty, form.formState.isValid, loading, handleAutoSave, form]);
 
   const handleImageClick = () => {
     fileInputRef.current?.click();
@@ -181,7 +181,6 @@ export default function ProfilePage() {
 
       try {
         const photoURL = await uploadProfileImage(currentUser.uid, file);
-        // Set the value and mark the form as dirty to trigger the auto-save effect
         form.setValue("photoURL", photoURL, { shouldDirty: true, shouldValidate: true });
       } catch (error) {
         toast({ title: "Erreur de téléversement", description: "L'image n'a pas pu être sauvegardée.", variant: "destructive" });
@@ -189,7 +188,6 @@ export default function ProfilePage() {
       }
     }
   };
-
 
   if (loading) {
     return (
@@ -389,7 +387,7 @@ export default function ProfilePage() {
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionnez votre objectif principal" />
-                      </SelectTrigger>
+                      </Trigger>
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="lose_weight">Perdre du poids</SelectItem>
@@ -408,5 +406,3 @@ export default function ProfilePage() {
     </MainLayout>
   )
 }
-
-    
