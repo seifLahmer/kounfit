@@ -84,6 +84,41 @@ export default function ProfilePage() {
     mode: "onBlur",
   });
   
+  const handleAutoSave = useCallback(async (data: ProfileFormValues) => {
+    const currentUser = auth.currentUser;
+    if (!currentUser || !form.formState.isValid) {
+      return;
+    }
+    
+    setSaveStatus("saving");
+
+    try {
+        const nutritionalNeeds = calculateNutritionalNeeds({
+            age: data.age,
+            gender: data.biologicalSex,
+            weight: data.weight,
+            height: data.height,
+            activityLevel: data.activityLevel,
+            goal: data.mainGoal
+        });
+
+        const userProfileData: Partial<User> = {
+            ...data,
+            calorieGoal: nutritionalNeeds.calories,
+            macroRatio: nutritionalNeeds.macros,
+        };
+        
+        await updateUserProfile(currentUser.uid, userProfileData);
+        
+        setTimeout(() => setSaveStatus("saved"), 500);
+        setTimeout(() => setSaveStatus("idle"), 2000);
+    } catch (error) {
+        setSaveStatus("idle");
+        toast({ title: "Erreur de sauvegarde", description: "Vos modifications n'ont pas pu être enregistrées.", variant: "destructive" });
+    }
+  }, [toast, form.formState.isValid]);
+
+  // Data loading effect
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
         if (user) {
@@ -113,56 +148,24 @@ export default function ProfilePage() {
   }, [form, router, toast]);
 
 
-  const handleAutoSave = useCallback(async (data: ProfileFormValues) => {
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-        toast({ title: "Erreur", description: "Utilisateur non authentifié.", variant: "destructive" });
-        return;
-    }
-    
-    setSaveStatus("saving");
-
-    try {
-        const nutritionalNeeds = calculateNutritionalNeeds({
-            age: data.age,
-            gender: data.biologicalSex,
-            weight: data.weight,
-            height: data.height,
-            activityLevel: data.activityLevel,
-            goal: data.mainGoal
-        });
-
-        const userProfileData: Partial<User> = {
-            ...data,
-            calorieGoal: nutritionalNeeds.calories,
-            macroRatio: nutritionalNeeds.macros,
-        };
-        
-        await updateUserProfile(currentUser.uid, userProfileData);
-        
-        setTimeout(() => setSaveStatus("saved"), 500);
-        setTimeout(() => setSaveStatus("idle"), 2000);
-    } catch (error) {
-        setSaveStatus("idle");
-        toast({ title: "Erreur de sauvegarde", description: "Vos modifications n'ont pas pu être enregistrées.", variant: "destructive" });
-    }
-  }, [toast]);
-
+  // Auto-save subscription
   useEffect(() => {
-    if (!loading) {
-        isMounted.current = true;
-    }
-  }, [loading]);
-
-  useEffect(() => {
-    const subscription = form.watch((value, { name, type }) => {
-      if (isMounted.current && form.formState.isDirty && form.formState.isValid) {
+    const subscription = form.watch((value) => {
+      if (isMounted.current && form.formState.isDirty) {
         handleAutoSave(value as ProfileFormValues);
       }
     });
     return () => subscription.unsubscribe();
-  }, [form, handleAutoSave, isMounted]);
+  }, [form, handleAutoSave]);
 
+  // Set mounted flag after initial load to prevent auto-save on first render
+  useEffect(() => {
+    if (!loading) {
+        setTimeout(() => {
+            isMounted.current = true;
+        }, 500); // Small delay to ensure form is fully initialized
+    }
+  }, [loading]);
 
   const handleImageClick = () => {
     fileInputRef.current?.click();
@@ -182,6 +185,7 @@ export default function ProfilePage() {
       try {
         const photoURL = await uploadProfileImage(currentUser.uid, file);
         form.setValue("photoURL", photoURL, { shouldDirty: true, shouldValidate: true });
+        handleAutoSave(form.getValues()); // Manually trigger save after photo upload
       } catch (error) {
         toast({ title: "Erreur de téléversement", description: "L'image n'a pas pu être sauvegardée.", variant: "destructive" });
         setSaveStatus("idle");
@@ -387,7 +391,7 @@ export default function ProfilePage() {
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionnez votre objectif principal" />
-                      </Trigger>
+                      </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="lose_weight">Perdre du poids</SelectItem>
@@ -406,3 +410,5 @@ export default function ProfilePage() {
     </MainLayout>
   )
 }
+
+    
