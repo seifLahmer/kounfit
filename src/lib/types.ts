@@ -1,6 +1,7 @@
 
 
 
+
 export type User = {
   uid: string;
   email: string;
@@ -12,7 +13,7 @@ export type User = {
   height: number; // in cm
   deliveryAddress?: string;
   region?: string;
-  activityLevel: "sedentary" | "lightly_active" | "moderately_active" | "very_active";
+  activityLevel: "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "extremely_active";
   mainGoal: "lose_weight" | "maintain" | "gain_muscle";
   calorieGoal: number;
   macroRatio: {

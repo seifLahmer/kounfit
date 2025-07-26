@@ -6,7 +6,6 @@ import { Bell, ChevronLeft, ChevronRight, PlusCircle, Sun, Sunrise, Sunset, Hear
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
-import { MainLayout } from "@/components/main-layout"
 import { addDays, format, startOfWeek } from "date-fns"
 import { fr } from "date-fns/locale"
 import { cn } from "@/lib/utils"
@@ -80,14 +79,16 @@ const NutrientCircle = ({ name, value, goal, colorClass }: { name: string, value
                         style={{ strokeDasharray: circumference, strokeDashoffset, transition: 'stroke-dashoffset 0.3s' }}
                     />
                 </svg>
-                <div className="absolute inset-0 flex items-center justify-center text-xs font-bold">{value}g</div>
+                <div className="absolute inset-0 flex items-center justify-center text-xs font-bold">{Math.round(value)}g</div>
             </div>
             <p className="text-xs text-muted-foreground uppercase">{name}</p>
         </div>
     );
 };
 
-const MealCard = ({ icon, title, calories, meal, onAdd }: { icon: React.ReactNode, title: string, calories: number, meal: any, onAdd: () => void }) => {
+const MealCard = ({ icon, title, meal, onAdd, calorieGoal, macroGoals }: { icon: React.ReactNode, title: string, meal: any, onAdd: () => void, calorieGoal: number, macroGoals: {protein: number, carbs: number, fat: number} }) => {
+  const consumedCalories = meal?.calories || 0;
+  
   return (
     <Card className="bg-card shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -95,7 +96,7 @@ const MealCard = ({ icon, title, calories, meal, onAdd }: { icon: React.ReactNod
           {icon}
           <div>
             <CardTitle className="text-base font-bold text-foreground">{title}</CardTitle>
-            <CardDescription>{calories} Kcal</CardDescription>
+            <CardDescription>{consumedCalories} / {calorieGoal} Kcal</CardDescription>
           </div>
         </div>
         <Button size="icon" variant="ghost" className="rounded-full w-12 h-12" onClick={onAdd}>
@@ -123,9 +124,9 @@ const MealCard = ({ icon, title, calories, meal, onAdd }: { icon: React.ReactNod
         </CardContent>
       )}
        <CardFooter className="flex justify-around">
-            <NutrientCircle name="Prot" value={meal?.protein || 0} goal={50} colorClass="text-red-500" />
-            <NutrientCircle name="Carbs" value={meal?.carbs || 0} goal={80} colorClass="text-green-500" />
-            <NutrientCircle name="Fat" value={meal?.fat || 0} goal={20} colorClass="text-yellow-500" />
+            <NutrientCircle name="Prot" value={meal?.protein || 0} goal={macroGoals.protein} colorClass="text-red-500" />
+            <NutrientCircle name="Carbs" value={meal?.carbs || 0} goal={macroGoals.carbs} colorClass="text-green-500" />
+            <NutrientCircle name="Fat" value={meal?.fat || 0} goal={macroGoals.fat} colorClass="text-yellow-500" />
         </CardFooter>
     </Card>
   )
@@ -201,13 +202,42 @@ export default function HomePage() {
   const calorieGoal = user?.calorieGoal || 2000;
   const macroGoals = user?.macroRatio || { protein: 150, carbs: 250, fat: 70 };
 
-  // Calculate calories per meal based on percentages
-  const mealCalorieGoals = {
-      breakfast: Math.round(calorieGoal * 0.25), // 25%
-      lunch: Math.round(calorieGoal * 0.35),     // 35%
-      snack: Math.round(calorieGoal * 0.10),      // 10%
-      dinner: Math.round(calorieGoal * 0.30),    // 30%
+  // Calculate calories and macros per meal based on percentages
+  const mealGoals = {
+      breakfast: {
+          calories: Math.round(calorieGoal * 0.25),
+          macros: {
+              protein: macroGoals.protein * 0.25,
+              carbs: macroGoals.carbs * 0.25,
+              fat: macroGoals.fat * 0.25,
+          }
+      },
+      lunch: {
+          calories: Math.round(calorieGoal * 0.35),
+          macros: {
+              protein: macroGoals.protein * 0.35,
+              carbs: macroGoals.carbs * 0.35,
+              fat: macroGoals.fat * 0.35,
+          }
+      },
+      snack: {
+          calories: Math.round(calorieGoal * 0.15),
+          macros: {
+              protein: macroGoals.protein * 0.15,
+              carbs: macroGoals.carbs * 0.15,
+              fat: macroGoals.fat * 0.15,
+          }
+      },
+      dinner: {
+          calories: Math.round(calorieGoal * 0.25),
+           macros: {
+              protein: macroGoals.protein * 0.25,
+              carbs: macroGoals.carbs * 0.25,
+              fat: macroGoals.fat * 0.25,
+          }
+      },
   };
+
 
   if (loading) {
       return (
@@ -299,10 +329,10 @@ export default function HomePage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-             <MealCard icon={<Sunrise className="text-yellow-500" />} title="Petit-déjeuner" calories={mealCalorieGoals.breakfast} meal={breakfast} onAdd={() => handleAddMeal('breakfast')} />
-            <MealCard icon={<Sun className="text-orange-500" />} title="Déjeuner" calories={mealCalorieGoals.lunch} meal={lunch} onAdd={() => handleAddMeal('lunch')} />
-            <MealCard icon={<Apple className="text-green-500" />} title="Collation" calories={mealCalorieGoals.snack} meal={snack} onAdd={() => handleAddMeal('snack')} />
-            <MealCard icon={<Sunset className="text-purple-500" />} title="Dîner" calories={mealCalorieGoals.dinner} meal={dinner} onAdd={() => handleAddMeal('dinner')} />
+             <MealCard icon={<Sunrise className="text-yellow-500" />} title="Petit-déjeuner" calorieGoal={mealGoals.breakfast.calories} macroGoals={mealGoals.breakfast.macros} meal={breakfast} onAdd={() => handleAddMeal('breakfast')} />
+            <MealCard icon={<Sun className="text-orange-500" />} title="Déjeuner" calorieGoal={mealGoals.lunch.calories} macroGoals={mealGoals.lunch.macros} meal={lunch} onAdd={() => handleAddMeal('lunch')} />
+            <MealCard icon={<Apple className="text-green-500" />} title="Collation" calorieGoal={mealGoals.snack.calories} macroGoals={mealGoals.snack.macros} meal={snack} onAdd={() => handleAddMeal('snack')} />
+            <MealCard icon={<Sunset className="text-purple-500" />} title="Dîner" calorieGoal={mealGoals.dinner.calories} macroGoals={mealGoals.dinner.macros} meal={dinner} onAdd={() => handleAddMeal('dinner')} />
           </CardContent>
         </Card>
       </div>

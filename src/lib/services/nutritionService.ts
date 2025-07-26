@@ -1,6 +1,6 @@
 
 type Gender = "male" | "female";
-type ActivityLevel = "sedentary" | "lightly_active" | "moderately_active" | "very_active";
+type ActivityLevel = "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "extremely_active";
 type Goal = "lose_weight" | "maintain" | "gain_muscle";
 
 interface NutritionalNeedsInput {
@@ -26,19 +26,20 @@ const activityMultipliers: Record<ActivityLevel, number> = {
     lightly_active: 1.375,
     moderately_active: 1.55,
     very_active: 1.725,
+    extremely_active: 1.9,
 };
 
 const goalAdjustments: Record<Goal, number> = {
-    lose_weight: -500, // Calorie deficit for fat loss
+    lose_weight: -400, // Calorie deficit for fat loss
     maintain: 0,
-    gain_muscle: 500,  // Calorie surplus for muscle gain
+    gain_muscle: 400,  // Calorie surplus for muscle gain
 };
 
-// Recommended macros ratios based on goal
+// Recommended macros ratios based on goal, inspired by user request
 const macroRatios: Record<Goal, { protein: number; carbs: number; fat: number }> = {
-    lose_weight: { protein: 0.4, carbs: 0.4, fat: 0.2 }, // Higher protein for satiety
-    maintain: { protein: 0.3, carbs: 0.5, fat: 0.2 },
-    gain_muscle: { protein: 0.3, carbs: 0.5, fat: 0.2 }, // Higher carbs for energy
+    lose_weight: { protein: 0.30, carbs: 0.40, fat: 0.30 }, // Higher protein for satiety
+    maintain: { protein: 0.25, carbs: 0.45, fat: 0.30 },
+    gain_muscle: { protein: 0.30, carbs: 0.45, fat: 0.25 }, // Higher protein & carbs for energy/repair
 };
 
 

@@ -7,7 +7,7 @@ import { z } from "zod"
 import { Camera, Loader2, CheckCircle } from "lucide-react"
 import Image from "next/image"
 import * as React from "react"
-import { useCallback, useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
@@ -46,7 +46,7 @@ const profileFormSchema = z.object({
   height: z.coerce.number().min(100, "La taille doit être un nombre positif."),
   deliveryAddress: z.string().optional(),
   region: z.string().optional(),
-  activityLevel: z.enum(["sedentary", "lightly_active", "moderately_active", "very_active"], {
+  activityLevel: z.enum(["sedentary", "lightly_active", "moderately_active", "very_active", "extremely_active"], {
     required_error: "Veuillez sélectionner un niveau d'activité.",
   }),
   mainGoal: z.enum(["lose_weight", "maintain", "gain_muscle"], {
@@ -84,9 +84,57 @@ export default function ProfilePage() {
     mode: "onBlur",
   });
   
-  const handleAutoSave = useCallback(async (data: ProfileFormValues) => {
+  // Load user data on mount
+  useEffect(() => {
+    isMounted.current = true;
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            try {
+                const userProfile = await getUserProfile(user.uid);
+                if (userProfile && isMounted.current) {
+                    form.reset(userProfile as ProfileFormValues);
+                    if (userProfile.photoURL) {
+                      setProfileImagePreview(userProfile.photoURL);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch user profile", error);
+                toast({
+                    title: "Erreur",
+                    description: "Impossible de charger votre profil.",
+                    variant: "destructive"
+                });
+            } finally {
+               if(isMounted.current) setLoading(false);
+            }
+        } else {
+             router.replace('/welcome');
+        }
+    });
+    return () => {
+        unsubscribe();
+        isMounted.current = false;
+    }
+  }, [form, router, toast]);
+
+  // Auto-save on form change
+  useEffect(() => {
+    const subscription = form.watch((data, { name }) => {
+       if (loading || !form.formState.isDirty) return;
+
+      const debouncedSave = setTimeout(() => {
+        handleAutoSave(data as ProfileFormValues);
+      }, 1000); // Debounce time
+
+      return () => clearTimeout(debouncedSave);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, loading, form.formState.isDirty]);
+
+
+  const handleAutoSave = async (data: ProfileFormValues) => {
     const currentUser = auth.currentUser;
-    if (!currentUser || !form.formState.isDirty || !form.formState.isValid) {
+    if (!currentUser || !form.formState.isValid) {
       return;
     }
     
@@ -117,59 +165,8 @@ export default function ProfilePage() {
         setSaveStatus("idle");
         toast({ title: "Erreur de sauvegarde", description: "Vos modifications n'ont pas pu être enregistrées.", variant: "destructive" });
     }
-  }, [toast, form]);
+  };
 
-  // Data loading effect
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-        if (user) {
-            try {
-                const userProfile = await getUserProfile(user.uid);
-                if (userProfile) {
-                    form.reset(userProfile as ProfileFormValues);
-                    if (userProfile.photoURL) {
-                      setProfileImagePreview(userProfile.photoURL);
-                    }
-                }
-            } catch (error) {
-                console.error("Failed to fetch user profile", error);
-                toast({
-                    title: "Erreur",
-                    description: "Impossible de charger votre profil.",
-                    variant: "destructive"
-                });
-            } finally {
-                setLoading(false);
-            }
-        } else {
-             router.replace('/welcome');
-        }
-    });
-    return () => unsubscribe();
-  }, [form, router, toast]);
-
-
-  // Auto-save subscription
-  useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (isMounted.current) {
-        if (name === 'photoURL' && typeof value.photoURL === 'string') {
-          setProfileImagePreview(value.photoURL);
-        }
-        handleAutoSave(value as ProfileFormValues);
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form, handleAutoSave]);
-
-  // Set mounted flag after initial load to prevent auto-save on first render
-  useEffect(() => {
-    if (!loading) {
-        setTimeout(() => {
-            isMounted.current = true;
-        }, 500); // Small delay to ensure form is fully initialized
-    }
-  }, [loading]);
 
   const handleImageClick = () => {
     fileInputRef.current?.click();
@@ -378,6 +375,7 @@ export default function ProfilePage() {
                       <SelectItem value="lightly_active">Légèrement actif</SelectItem>
                       <SelectItem value="moderately_active">Modérément actif</SelectItem>
                       <SelectItem value="very_active">Très actif</SelectItem>
+                      <SelectItem value="extremely_active">Extrêmement actif</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

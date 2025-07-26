@@ -29,10 +29,10 @@ const step2Schema = z.object({
   }),
   weight: z.coerce.number().min(30, "Le poids doit être un nombre positif."),
   height: z.coerce.number().min(100, "La taille doit être un nombre positif."),
-   activityLevel: z.string({
+   activityLevel: z.enum(["sedentary", "lightly_active", "moderately_active", "very_active", "extremely_active"],{
     required_error: "Veuillez sélectionner un niveau d'activité.",
   }),
-  mainGoal: z.string({
+  mainGoal: z.enum(["lose_weight", "maintain", "gain_muscle"], {
     required_error: "Veuillez sélectionner un objectif principal.",
   }),
 });
@@ -87,8 +87,8 @@ export default function SignupStep2Page() {
           gender: data.biologicalSex,
           weight: data.weight,
           height: data.height,
-          activityLevel: data.activityLevel as any,
-          goal: data.mainGoal as any
+          activityLevel: data.activityLevel,
+          goal: data.mainGoal
       });
 
       // 2. Prepare user data for Firestore update
@@ -97,8 +97,8 @@ export default function SignupStep2Page() {
           biologicalSex: data.biologicalSex,
           weight: data.weight,
           height: data.height,
-          activityLevel: data.activityLevel as any,
-          mainGoal: data.mainGoal as any,
+          activityLevel: data.activityLevel,
+          mainGoal: data.mainGoal,
           calorieGoal: nutritionalNeeds.calories,
           macroRatio: nutritionalNeeds.macros,
       };
@@ -237,6 +237,7 @@ export default function SignupStep2Page() {
                         <SelectItem value="lightly_active">Légèrement actif (exercice léger 1-3j/semaine)</SelectItem>
                         <SelectItem value="moderately_active">Modérément actif (exercice modéré 3-5j/semaine)</SelectItem>
                         <SelectItem value="very_active">Très actif (exercice intense 6-7j/semaine)</SelectItem>
+                        <SelectItem value="extremely_active">Extrêmement actif (exercice très intense)</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
