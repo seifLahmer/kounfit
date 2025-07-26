@@ -33,15 +33,13 @@ export async function updateUserProfile(uid: string, data: Partial<Omit<User, 'u
       ...cleanData,
       uid,
       updatedAt: serverTimestamp(),
-      // Only set createdAt on initial creation
+      // Only set createdAt on initial creation, and ensure role is set.
       ...(docSnap.exists() ? {} : { createdAt: serverTimestamp(), role: data.role || 'client' }),
     };
 
     // Use setDoc with merge: true to create or update the document
     await setDoc(userRef, dataToSet, { merge: true });
-    console.log("User profile updated successfully for UID:", uid);
   } catch (error) {
-    console.error("Error updating user profile:", error);
     // Re-throw the original error for better debugging in the calling function
     throw error;
   }
@@ -69,11 +67,9 @@ export async function getUserProfile(uid: string): Promise<User | null> {
       }
       return data;
     } else {
-      console.log("No such user profile found for UID:", uid);
       return null;
     }
   } catch (error) {
-    console.error("Error fetching user profile:", error);
     throw new Error("Could not fetch user profile.");
   }
 }
