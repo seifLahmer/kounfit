@@ -151,8 +151,11 @@ export default function ProfilePage() {
 
   // Auto-save subscription
   useEffect(() => {
-    const subscription = form.watch((value) => {
+    const subscription = form.watch((value, { name }) => {
       if (isMounted.current) {
+        if (name === 'photoURL' && typeof value.photoURL === 'string') {
+          setProfileImagePreview(value.photoURL);
+        }
         handleAutoSave(value as ProfileFormValues);
       }
     });
@@ -411,3 +414,5 @@ export default function ProfilePage() {
     </MainLayout>
   )
 }
+
+    
