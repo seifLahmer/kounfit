@@ -68,6 +68,13 @@ export default function LoginPage() {
   });
 
   const redirectUser = async (uid: string) => {
+    // Check if user has completed step 2
+    const userProfile = await getUserProfile(uid);
+    if (userProfile && !userProfile.mainGoal) {
+       router.push('/signup/step2');
+       return;
+    }
+    
     const role = await getUserRole(uid);
     if (role === 'admin') {
       router.push('/admin');
@@ -88,20 +95,27 @@ export default function LoginPage() {
       // Check if user already exists in Firestore
       const userProfile = await getUserProfile(user.uid);
       if (!userProfile) {
-        // New user, create a profile
+        // New user, create a partial profile and send to step 2
         await updateUserProfile(user.uid, {
           fullName: user.displayName || "New User",
           email: user.email!,
           photoURL: user.photoURL,
           role: "client"
         });
+         toast({
+            title: "Bienvenue!",
+            description: "Finalisez votre profil pour commencer.",
+         });
+         router.push('/signup/step2');
+
+      } else {
+        // Existing user, redirect normally
+        toast({
+            title: "Connexion réussie!",
+            description: "Bienvenue!",
+        });
+        await redirectUser(user.uid);
       }
-      
-      toast({
-        title: "Connexion réussie!",
-        description: "Bienvenue!",
-      });
-      await redirectUser(user.uid);
 
     } catch (error: any) {
       toast({
@@ -118,16 +132,12 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormValues) => {
     setLoading(true);
     try {
-      // 1. Sign in user with Firebase Auth
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
       const user = userCredential.user;
-
-      // 2. Get user role from Firestore and redirect
       await redirectUser(user.uid);
 
     } catch (error: any) {
       let description = "An error occurred during login.";
-      // Handle specific Firebase authentication errors
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         description = "Email ou mot de passe invalide. Veuillez réessayer.";
       }
