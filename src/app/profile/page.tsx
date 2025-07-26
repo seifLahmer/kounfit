@@ -86,7 +86,7 @@ export default function ProfilePage() {
   
   const handleAutoSave = useCallback(async (data: ProfileFormValues) => {
     const currentUser = auth.currentUser;
-    if (!currentUser || !form.formState.isValid) {
+    if (!currentUser || !form.formState.isDirty || !form.formState.isValid) {
       return;
     }
     
@@ -109,6 +109,7 @@ export default function ProfilePage() {
         };
         
         await updateUserProfile(currentUser.uid, userProfileData);
+        form.reset(data, { keepValues: true, keepDirty: false });
         
         setTimeout(() => setSaveStatus("saved"), 500);
         setTimeout(() => setSaveStatus("idle"), 2000);
@@ -116,7 +117,7 @@ export default function ProfilePage() {
         setSaveStatus("idle");
         toast({ title: "Erreur de sauvegarde", description: "Vos modifications n'ont pas pu être enregistrées.", variant: "destructive" });
     }
-  }, [toast, form.formState.isValid]);
+  }, [toast, form]);
 
   // Data loading effect
   useEffect(() => {
@@ -151,7 +152,7 @@ export default function ProfilePage() {
   // Auto-save subscription
   useEffect(() => {
     const subscription = form.watch((value) => {
-      if (isMounted.current && form.formState.isDirty) {
+      if (isMounted.current) {
         handleAutoSave(value as ProfileFormValues);
       }
     });
@@ -185,7 +186,7 @@ export default function ProfilePage() {
       try {
         const photoURL = await uploadProfileImage(currentUser.uid, file);
         form.setValue("photoURL", photoURL, { shouldDirty: true, shouldValidate: true });
-        handleAutoSave(form.getValues()); // Manually trigger save after photo upload
+        // The watch subscription will trigger the auto-save
       } catch (error) {
         toast({ title: "Erreur de téléversement", description: "L'image n'a pas pu être sauvegardée.", variant: "destructive" });
         setSaveStatus("idle");
@@ -410,5 +411,3 @@ export default function ProfilePage() {
     </MainLayout>
   )
 }
-
-    
