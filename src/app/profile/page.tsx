@@ -7,6 +7,8 @@ import { z } from "zod"
 import { Camera, Loader2, CheckCircle } from "lucide-react"
 import Image from "next/image"
 import * as React from "react"
+import { useCallback } from "react"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -33,8 +35,6 @@ import { auth } from "@/lib/firebase"
 import { uploadProfileImage } from "@/lib/services/storageService"
 import { calculateNutritionalNeeds } from "@/lib/services/nutritionService"
 import type { User } from "@/lib/types"
-import { useRouter } from "next/navigation"
-import { useCallback } from "react"
 
 const profileFormSchema = z.object({
   fullName: z.string().min(2, "Le nom doit contenir au moins 2 caractères."),
@@ -62,7 +62,6 @@ export default function ProfilePage() {
   const { toast } = useToast()
   const router = useRouter()
   const [loading, setLoading] = React.useState(true)
-  const [isSaving, setIsSaving] = React.useState(false)
   const [saveStatus, setSaveStatus] = React.useState<"idle" | "saving" | "saved">("idle");
   const [profileImagePreview, setProfileImagePreview] = React.useState<string | null>(null)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
@@ -146,14 +145,13 @@ export default function ProfilePage() {
 
   React.useEffect(() => {
       if (form.formState.isDirty && form.formState.isValid) {
-          setSaveStatus("saving");
-          const subscription = form.watch((value) => {
-              const debounceTimeout = setTimeout(() => handleAutoSave(value as ProfileFormValues), 1000);
-              return () => clearTimeout(debounceTimeout);
-          });
-          return () => subscription.unsubscribe();
+          const debounceTimeout = setTimeout(() => {
+             handleAutoSave(form.getValues() as ProfileFormValues)
+          }, 1500);
+          return () => clearTimeout(debounceTimeout);
       }
-  }, [form.formState.isDirty, form.formState.isValid, form, handleAutoSave]);
+  }, [watchedValues, form.formState.isDirty, form.formState.isValid, form, handleAutoSave]);
+
 
   const handleImageClick = () => {
     fileInputRef.current?.click();
@@ -173,7 +171,7 @@ export default function ProfilePage() {
       try {
         const photoURL = await uploadProfileImage(currentUser.uid, file);
         form.setValue("photoURL", photoURL, { shouldDirty: true });
-        await handleAutoSave({ ...form.getValues(), photoURL });
+        // The useEffect will trigger the auto-save
       } catch (error) {
         toast({ title: "Erreur de téléversement", description: "L'image n'a pas pu être sauvegardée.", variant: "destructive" });
         setSaveStatus("idle");
