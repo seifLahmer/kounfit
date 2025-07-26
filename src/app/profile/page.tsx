@@ -193,11 +193,11 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-        <MainLayout>
-            <div className="flex justify-center items-center h-full">
-                <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-        </MainLayout>
+      <MainLayout>
+        <div className="flex justify-center items-center h-full">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </MainLayout>
     );
   }
 
@@ -407,3 +407,5 @@ export default function ProfilePage() {
     </MainLayout>
   )
 }
+
+    
