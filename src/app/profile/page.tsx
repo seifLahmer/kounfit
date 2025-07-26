@@ -65,7 +65,7 @@ export default function ProfilePage() {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const isMounted = useRef(false)
+  const isMounted = useRef(false);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -82,7 +82,7 @@ export default function ProfilePage() {
         photoURL: null,
     },
     mode: "onBlur",
-  })
+  });
   
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -92,7 +92,7 @@ export default function ProfilePage() {
                 if (userProfile) {
                     form.reset(userProfile as ProfileFormValues);
                     if (userProfile.photoURL) {
-                      setProfileImagePreview(userProfile.photoURL)
+                      setProfileImagePreview(userProfile.photoURL);
                     }
                 }
             } catch (error) {
@@ -112,14 +112,15 @@ export default function ProfilePage() {
     return () => unsubscribe();
   }, [form, router, toast]);
 
+
   const handleAutoSave = useCallback(async (data: ProfileFormValues) => {
-    setSaveStatus("saving");
     const currentUser = auth.currentUser;
     if (!currentUser) {
-        setSaveStatus("idle");
         toast({ title: "Erreur", description: "Utilisateur non authentifié.", variant: "destructive" });
         return;
-    };
+    }
+    
+    setSaveStatus("saving");
 
     try {
         const nutritionalNeeds = calculateNutritionalNeeds({
@@ -147,22 +148,21 @@ export default function ProfilePage() {
     }
   }, [toast]);
 
-  const watchedValues = form.watch();
+  useEffect(() => {
+    if (!loading) {
+        isMounted.current = true;
+    }
+  }, [loading]);
 
   useEffect(() => {
-    if (isMounted.current) {
-        if (form.formState.isDirty && form.formState.isValid) {
-            const debounceTimeout = setTimeout(() => {
-                handleAutoSave(form.getValues());
-            }, 1500);
-            return () => clearTimeout(debounceTimeout);
-        }
-    } else {
-       if (!loading) {
-         isMounted.current = true;
-       }
-    }
-  }, [watchedValues, form.formState.isDirty, form.formState.isValid, loading, handleAutoSave, form]);
+    const subscription = form.watch((value, { name, type }) => {
+      if (isMounted.current && form.formState.isDirty && form.formState.isValid) {
+        handleAutoSave(value as ProfileFormValues);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form, handleAutoSave, isMounted]);
+
 
   const handleImageClick = () => {
     fileInputRef.current?.click();
