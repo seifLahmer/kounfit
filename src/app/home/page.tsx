@@ -89,7 +89,7 @@ const NutrientCircle = ({ name, value, goal, colorClass }: { name: string, value
 
 const MealCard = ({ icon, title, calories, meal, onAdd }: { icon: React.ReactNode, title: string, calories: number, meal: any, onAdd: () => void }) => {
   return (
-    <Card className="bg-card">
+    <Card className="bg-card shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div className="flex items-center gap-2">
           {icon}
@@ -237,7 +237,7 @@ export default function HomePage() {
           </Button>
         </header>
 
-        <Card>
+        <Card className="shadow-md">
           <CardHeader>
             <CardTitle className="text-lg font-bold text-foreground text-center">
               Votre Plan Hebdomadaire
@@ -276,7 +276,7 @@ export default function HomePage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-md">
           <CardHeader>
             <CardTitle className="text-lg font-bold text-foreground text-center">
               Statistiques du Jour
@@ -292,7 +292,7 @@ export default function HomePage() {
           </CardContent>
         </Card>
 
-         <Card>
+         <Card className="shadow-md">
           <CardHeader>
             <CardTitle className="text-lg font-bold text-foreground text-center">
               Repas du Jour
@@ -308,5 +308,3 @@ export default function HomePage() {
       </div>
   )
 }
-
-    
