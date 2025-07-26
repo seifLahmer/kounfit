@@ -86,14 +86,53 @@ const NutrientCircle = ({ name, value, goal, colorClass }: { name: string, value
     );
 };
 
+const MealIconProgress = ({ icon, calories, calorieGoal }: { icon: React.ReactNode, calories: number, calorieGoal: number }) => {
+  const radius = 22;
+  const strokeWidth = 4;
+  const circumference = 2 * Math.PI * radius;
+  const percentage = calorieGoal > 0 ? (calories / calorieGoal) * 100 : 0;
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+  return (
+    <div className="relative w-12 h-12 flex items-center justify-center">
+       <svg className="absolute w-full h-full" viewBox="0 0 52 52">
+         <circle
+          className="stroke-current text-gray-200"
+          strokeWidth={strokeWidth}
+          fill="none"
+          cx="26"
+          cy="26"
+          r={radius}
+        />
+        <circle
+          className="stroke-current text-primary"
+          strokeWidth={strokeWidth}
+          fill="none"
+          strokeLinecap="round"
+          cx="26"
+          cy="26"
+          r={radius}
+          transform="rotate(-90 26 26)"
+          style={{
+            strokeDasharray: circumference,
+            strokeDashoffset,
+            transition: "stroke-dashoffset 0.3s"
+          }}
+        />
+      </svg>
+      <div className="z-10">{icon}</div>
+    </div>
+  )
+}
+
 const MealCard = ({ icon, title, meal, onAdd, calorieGoal, macroGoals }: { icon: React.ReactNode, title: string, meal: any, onAdd: () => void, calorieGoal: number, macroGoals: {protein: number, carbs: number, fat: number} }) => {
   const consumedCalories = meal?.calories || 0;
   
   return (
     <Card className="bg-card shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <div className="flex items-center gap-2">
-          {icon}
+        <div className="flex items-center gap-3">
+          <MealIconProgress icon={icon} calories={consumedCalories} calorieGoal={calorieGoal} />
           <div>
             <CardTitle className="text-base font-bold text-foreground">{title}</CardTitle>
             <CardDescription>{consumedCalories} / {calorieGoal} Kcal</CardDescription>
