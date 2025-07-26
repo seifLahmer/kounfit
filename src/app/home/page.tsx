@@ -79,7 +79,7 @@ const NutrientCircle = ({ name, value, goal, colorClass }: { name: string, value
                         style={{ strokeDasharray: circumference, strokeDashoffset, transition: 'stroke-dashoffset 0.3s' }}
                     />
                 </svg>
-                <div className="absolute inset-0 flex items-center justify-center text-xs font-bold">{Math.round(value)}g</div>
+                <div className="absolute inset-0 flex items-center justify-center text-xs font-bold">{Math.round(goal)}g</div>
             </div>
             <p className="text-xs text-muted-foreground uppercase">{name}</p>
         </div>
