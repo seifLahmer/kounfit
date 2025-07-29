@@ -1,8 +1,4 @@
 
-
-
-
-
 export type User = {
   uid: string;
   email: string;
@@ -41,13 +37,13 @@ export type Component = {
 };
 
 export interface Meal {
-  id?: string;
+  id: string;
   name: string;
   description: string;
   category: "breakfast" | "lunch" | "dinner" | "snack";
   imageUrl: string;
   ingredients: {
-    componentId: string;
+    name: string;
     grams: number;
   }[];
   calories: number;
@@ -58,8 +54,9 @@ export interface Meal {
     fibers?: number;
   };
   price: number;
-  createdBy: string; // admin UID
+  createdBy: string; // caterer UID
   availability: boolean;
+  createdAt: any;
 }
 
 export type Caterer = {

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,14 +15,41 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChefHat, Bot, Sparkles, Loader2, Trash2, Plus } from "lucide-react";
+import { ChefHat, Bot, Sparkles, Loader2, Trash2, Plus, CheckCircle } from "lucide-react";
 import { analyzeMeal, MealAnalysis } from "@/ai/flows/meal-analysis-flow";
-
+import { addMeal, getMealsByCaterer } from "@/lib/services/mealService";
+import type { Meal } from "@/lib/types";
+import { auth } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
+import Image from "next/image";
 
 export default function CatererPage() {
   const [mealDescription, setMealDescription] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<MealAnalysis | null>(null);
+  const [catererMeals, setCatererMeals] = useState<Meal[]>([]);
+  const [loadingMeals, setLoadingMeals] = useState(true);
+  const { toast } = useToast();
+
+  const fetchMeals = async () => {
+    const user = auth.currentUser;
+    if (user) {
+        try {
+            setLoadingMeals(true);
+            const meals = await getMealsByCaterer(user.uid);
+            setCatererMeals(meals);
+        } catch (error) {
+            toast({ title: "Erreur", description: "Impossible de charger vos repas.", variant: "destructive" });
+        } finally {
+            setLoadingMeals(false);
+        }
+    }
+  };
+
+  useEffect(() => {
+    fetchMeals();
+  }, []);
 
   const handleGenerateMeal = async () => {
       if (!mealDescription) return;
@@ -33,19 +60,20 @@ export default function CatererPage() {
         setAnalysisResult(result);
       } catch (error) {
         console.error("Failed to analyze meal:", error);
+        toast({ title: "Erreur d'analyse", description: "L'IA n'a pas pu analyser le repas. Veuillez réessayer.", variant: "destructive" });
       } finally {
         setIsGenerating(false);
       }
   };
   
-  const handleIngredientChange = (index: number, field: 'name' | 'grams', value: string) => {
+  const handleIngredientChange = (index: number, field: 'name' | 'grams', value: string | number) => {
     if (!analysisResult) return;
     
     const newIngredients = [...analysisResult.ingredients];
     if(field === 'grams') {
-        newIngredients[index] = { ...newIngredients[index], [field]: parseInt(value, 10) || 0 };
+        newIngredients[index] = { ...newIngredients[index], [field]: typeof value === 'number' ? value : parseInt(value, 10) || 0 };
     } else {
-        newIngredients[index] = { ...newIngredients[index], [field]: value };
+        newIngredients[index] = { ...newIngredients[index], [field]: value as string };
     }
 
     setAnalysisResult({ ...analysisResult, ingredients: newIngredients });
@@ -61,6 +89,46 @@ export default function CatererPage() {
     if (!analysisResult) return;
     const newIngredients = analysisResult.ingredients.filter((_, i) => i !== index);
     setAnalysisResult({ ...analysisResult, ingredients: newIngredients });
+  };
+
+  const handleSaveMeal = async () => {
+      if (!analysisResult || !auth.currentUser) return;
+      setIsSaving(true);
+      
+      const mealData: Omit<Meal, 'id' | 'createdAt'> = {
+          name: analysisResult.mealName,
+          description: analysisResult.description,
+          // You might want to add a category selector in the UI
+          category: "lunch",
+          imageUrl: `https://placehold.co/600x400.png`, // Placeholder, maybe generate one with AI later
+          ingredients: analysisResult.ingredients,
+          calories: analysisResult.totalMacros.calories,
+          macros: {
+              protein: analysisResult.totalMacros.protein,
+              carbs: analysisResult.totalMacros.carbs,
+              fat: analysisResult.totalMacros.fat,
+              fibers: analysisResult.totalMacros.fibers,
+          },
+          price: 0, // Placeholder, you should add a price field in the UI
+          createdBy: auth.currentUser.uid,
+          availability: true, // Default to available
+      };
+      
+      try {
+          await addMeal(mealData);
+          toast({
+              title: "Repas Sauvegardé!",
+              description: `${mealData.name} a été ajouté à votre liste.`,
+              action: <CheckCircle className="text-green-500" />,
+          });
+          setAnalysisResult(null);
+          setMealDescription("");
+          fetchMeals(); // Refresh the list of meals
+      } catch (error) {
+          toast({ title: "Erreur de sauvegarde", description: "Le repas n'a pas pu être sauvegardé.", variant: "destructive" });
+      } finally {
+          setIsSaving(false);
+      }
   };
 
 
@@ -124,11 +192,18 @@ export default function CatererPage() {
                 <CardContent className="space-y-6">
                     <div className="space-y-2">
                         <Label>Nom du plat</Label>
-                        <Input defaultValue={analysisResult.mealName} />
+                        <Input 
+                            value={analysisResult.mealName}
+                            onChange={(e) => setAnalysisResult({...analysisResult, mealName: e.target.value})}
+                         />
                     </div>
                     <div className="space-y-2">
                         <Label>Description</Label>
-                        <Textarea defaultValue={analysisResult.description} rows={3}/>
+                        <Textarea 
+                            value={analysisResult.description}
+                            onChange={(e) => setAnalysisResult({...analysisResult, description: e.target.value})}
+                            rows={3}
+                        />
                     </div>
 
                     <div>
@@ -191,7 +266,10 @@ export default function CatererPage() {
                         </div>
                     </div>
                     
-                    <Button className="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white">Sauvegarder le repas</Button>
+                    <Button onClick={handleSaveMeal} disabled={isSaving} className="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white">
+                        {isSaving ? <Loader2 className="mr-2 animate-spin" /> : null}
+                        Sauvegarder le repas
+                    </Button>
                 </CardContent>
               </Card>
             )}
@@ -202,9 +280,48 @@ export default function CatererPage() {
                 <CardTitle>Vos repas créés</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">
-                  Aucun repas n'a encore été créé.
-                </p>
+                 <div className="border rounded-md">
+                    <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead>Image</TableHead>
+                            <TableHead>Nom</TableHead>
+                            <TableHead>Calories</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {loadingMeals ? (
+                             <TableRow>
+                                <TableCell colSpan={4} className="text-center h-24">
+                                    <Loader2 className="mx-auto animate-spin text-primary" />
+                                </TableCell>
+                            </TableRow>
+                        ) : catererMeals.length > 0 ? (
+                            catererMeals.map((meal) => (
+                                <TableRow key={meal.id}>
+                                    <TableCell>
+                                        <Image src={meal.imageUrl} alt={meal.name} width={64} height={64} className="rounded-md" data-ai-hint="caterer meal" />
+                                    </TableCell>
+                                    <TableCell className="font-medium">{meal.name}</TableCell>
+                                    <TableCell>{meal.calories} kcal</TableCell>
+                                    <TableCell className="text-right">
+                                        <Button variant="ghost" size="icon">
+                                            <Trash2 className="w-4 h-4 text-destructive"/>
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
+                                    Aucun repas n'a encore été créé.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                        </TableBody>
+                    </Table>
+                </div>
               </CardContent>
             </Card>
           </div>
