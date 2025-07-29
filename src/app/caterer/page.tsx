@@ -166,7 +166,6 @@ export default function CatererPage() {
               description: analysisResult.description,
               category: category,
               imageUrl: imageUrl, 
-              imageRef: imageRefPath,
               ingredients: analysisResult.ingredients,
               calories: analysisResult.totalMacros.calories,
               macros: {
@@ -179,6 +178,10 @@ export default function CatererPage() {
               createdBy: auth.currentUser.uid,
               availability: true,
           };
+
+          if (imageRefPath) {
+              (mealData as Meal).imageRef = imageRefPath;
+          }
 
           await addMeal(mealData);
           toast({
