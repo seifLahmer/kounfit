@@ -99,13 +99,15 @@ export default function SignupStep1Page() {
         }
       
       router.push("/signup/step2");
-      setGoogleLoading(false);
     } catch (error: any) {
-        toast({
-          title: "Erreur d'inscription Google",
-          description: `Une erreur est survenue: ${error.message} (code: ${error.code})`,
-          variant: "destructive",
-        });
+        if (error.code !== 'auth/popup-closed-by-user') {
+            toast({
+              title: "Erreur d'inscription Google",
+              description: `Une erreur est survenue: ${error.message} (code: ${error.code})`,
+              variant: "destructive",
+            });
+        }
+    } finally {
         setGoogleLoading(false);
     }
   };

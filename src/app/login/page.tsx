@@ -102,14 +102,16 @@ export default function LoginPage() {
         }
 
       await redirectUser(user.uid);
-      setGoogleLoading(false);
     } catch (error: any) {
-      toast({
-        title: "Erreur de connexion Google",
-        description: `Une erreur est survenue: ${error.message} (code: ${error.code})`,
-        variant: "destructive",
-      });
-      setGoogleLoading(false);
+      if (error.code !== 'auth/popup-closed-by-user') {
+          toast({
+            title: "Erreur de connexion Google",
+            description: `Une erreur est survenue: ${error.message} (code: ${error.code})`,
+            variant: "destructive",
+          });
+      }
+    } finally {
+        setGoogleLoading(false);
     }
   };
 
