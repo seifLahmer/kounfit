@@ -246,33 +246,33 @@ export default function HomePage() {
       breakfast: {
           calories: Math.round(calorieGoal * 0.25),
           macros: {
-              protein: macroGoals.protein * 0.25,
-              carbs: macroGoals.carbs * 0.25,
-              fat: macroGoals.fat * 0.25,
+              protein: Math.round(macroGoals.protein * 0.25),
+              carbs: Math.round(macroGoals.carbs * 0.25),
+              fat: Math.round(macroGoals.fat * 0.25),
           }
       },
       lunch: {
           calories: Math.round(calorieGoal * 0.35),
           macros: {
-              protein: macroGoals.protein * 0.35,
-              carbs: macroGoals.carbs * 0.35,
-              fat: macroGoals.fat * 0.35,
+              protein: Math.round(macroGoals.protein * 0.35),
+              carbs: Math.round(macroGoals.carbs * 0.35),
+              fat: Math.round(macroGoals.fat * 0.35),
           }
       },
       snack: {
           calories: Math.round(calorieGoal * 0.15),
           macros: {
-              protein: macroGoals.protein * 0.15,
-              carbs: macroGoals.carbs * 0.15,
-              fat: macroGoals.fat * 0.15,
+              protein: Math.round(macroGoals.protein * 0.15),
+              carbs: Math.round(macroGoals.carbs * 0.15),
+              fat: Math.round(macroGoals.fat * 0.15),
           }
       },
       dinner: {
           calories: Math.round(calorieGoal * 0.25),
            macros: {
-              protein: macroGoals.protein * 0.25,
-              carbs: macroGoals.carbs * 0.25,
-              fat: macroGoals.fat * 0.25,
+              protein: Math.round(macroGoals.protein * 0.25),
+              carbs: Math.round(macroGoals.carbs * 0.25),
+              fat: Math.round(macroGoals.fat * 0.25),
           }
       },
   };
@@ -281,7 +281,7 @@ export default function HomePage() {
   if (loading) {
       return (
           <div className="flex justify-center items-center h-full">
-              <Loader2 className="h-8 w-8 animate-spin" />
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
       )
   }
