@@ -101,6 +101,10 @@ export default function SignupStep1Page() {
       router.push("/signup/step2");
 
     } catch (error: any) {
+       // Don't show an error toast if the user simply closes the popup.
+      if (error.code === 'auth/popup-closed-by-user') {
+        return;
+      }
        console.error("Google Sign-Up Error:", error);
        toast({
          title: "Erreur d'inscription Google",
