@@ -7,10 +7,13 @@ import { MainLayout } from "@/components/main-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { ShoppingCart, Loader2, Frown } from "lucide-react"
+import { ShoppingCart, Loader2, Frown, CheckCircle } from "lucide-react"
 import { auth } from "@/lib/firebase"
 import { useRouter } from "next/navigation"
-import type { Meal } from "@/lib/types"
+import type { Meal, User } from "@/lib/types"
+import { useToast } from "@/hooks/use-toast"
+import { placeOrder } from "@/lib/services/orderService"
+import { getUserProfile } from "@/lib/services/userService"
 
 type DailyPlan = {
     breakfast: Meal | null;
@@ -25,6 +28,8 @@ export default function ShoppingCartPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -37,7 +42,6 @@ export default function ShoppingCartPage() {
     });
 
     const handleStorageChange = () => loadCartFromStorage();
-    // Listen for storage changes to keep cart in sync
     window.addEventListener('storage', handleStorageChange);
 
     return () => {
@@ -53,7 +57,6 @@ export default function ShoppingCartPage() {
             const { plan }: { plan: DailyPlan } = JSON.parse(savedData);
             const mealsFromPlan = Object.values(plan).filter((meal): meal is Meal => meal !== null);
             
-            // Deduplication and quantity counting
             const items: { [id: string]: CartItem } = {};
             mealsFromPlan.forEach(meal => {
                 if (items[meal.id]) {
@@ -72,6 +75,54 @@ export default function ShoppingCartPage() {
         setCartItems([]);
     }
   }
+
+  const handlePlaceOrder = async () => {
+      const user = auth.currentUser;
+      if (!user || cartItems.length === 0) return;
+
+      setIsPlacingOrder(true);
+      try {
+          const userProfile = await getUserProfile(user.uid);
+          if (!userProfile) {
+              throw new Error("Profil utilisateur non trouvé.");
+          }
+
+          await placeOrder({
+              clientId: user.uid,
+              clientName: userProfile.fullName,
+              clientRegion: userProfile.region || 'Non spécifiée',
+              deliveryAddress: userProfile.deliveryAddress || 'Non spécifiée',
+              items: cartItems.map(item => ({
+                  mealId: item.id,
+                  mealName: item.name,
+                  quantity: item.quantity,
+                  unitPrice: item.price,
+                  catererId: item.createdBy,
+              })),
+              totalPrice: total,
+          });
+
+          toast({
+              title: "Commande passée avec succès!",
+              description: "Votre commande a été envoyée au traiteur.",
+              action: <CheckCircle className="text-green-500" />,
+          });
+          
+          // Clear the cart
+          localStorage.removeItem("dailyPlanData");
+          setCartItems([]);
+          
+      } catch (error) {
+          toast({
+              title: "Erreur",
+              description: "Impossible de passer la commande. Veuillez réessayer.",
+              variant: "destructive",
+          });
+          console.error(error);
+      } finally {
+          setIsPlacingOrder(false);
+      }
+  };
 
 
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -143,8 +194,13 @@ export default function ShoppingCartPage() {
                     <span>Total</span>
                     <span>{total.toFixed(2)} DT</span>
                   </div>
-                  <Button className="w-full bg-destructive hover:bg-destructive/90 text-white font-bold text-lg h-12">
-                    Passer la commande
+                  <Button 
+                    className="w-full bg-destructive hover:bg-destructive/90 text-white font-bold text-lg h-12"
+                    onClick={handlePlaceOrder}
+                    disabled={isPlacingOrder}
+                  >
+                    {isPlacingOrder && <Loader2 className="mr-2 h-6 w-6 animate-spin" />}
+                    {isPlacingOrder ? "Envoi en cours..." : "Passer la commande"}
                   </Button>
                 </CardContent>
               </Card>

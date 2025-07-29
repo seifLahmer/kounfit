@@ -15,11 +15,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChefHat, Bot, Sparkles, Loader2, Trash2, Plus, CheckCircle, ImagePlus, DollarSign } from "lucide-react";
+import { ChefHat, Bot, Sparkles, Loader2, Trash2, Plus, CheckCircle, ImagePlus, DollarSign, ShoppingBasket } from "lucide-react";
 import { analyzeMeal, MealAnalysis } from "@/ai/flows/meal-analysis-flow";
 import { addMeal, getMealsByCaterer, deleteMeal } from "@/lib/services/mealService";
+import { getOrdersByCaterer } from "@/lib/services/orderService";
 import { uploadMealImage } from "@/lib/services/storageService";
-import type { Meal } from "@/lib/types";
+import type { Meal, Order } from "@/lib/types";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -41,6 +42,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Badge } from '@/components/ui/badge';
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 export default function CatererPage() {
   const [mealDescription, setMealDescription] = useState("");
@@ -48,7 +52,9 @@ export default function CatererPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<MealAnalysis | null>(null);
   const [catererMeals, setCatererMeals] = useState<Meal[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loadingMeals, setLoadingMeals] = useState(true);
+  const [loadingOrders, setLoadingOrders] = useState(true);
   const [price, setPrice] = useState<number>(0);
   const [category, setCategory] = useState<Meal['category']>('lunch');
   const [mealImageFile, setMealImageFile] = useState<File | null>(null);
@@ -58,17 +64,21 @@ export default function CatererPage() {
 
   const { toast } = useToast();
 
-  const fetchMeals = async () => {
+  const fetchCatererData = async () => {
     const user = auth.currentUser;
     if (user) {
         try {
             setLoadingMeals(true);
+            setLoadingOrders(true);
             const meals = await getMealsByCaterer(user.uid);
             setCatererMeals(meals);
+            const receivedOrders = await getOrdersByCaterer(user.uid);
+            setOrders(receivedOrders);
         } catch (error) {
-            toast({ title: "Erreur", description: "Impossible de charger vos repas.", variant: "destructive" });
+            toast({ title: "Erreur", description: "Impossible de charger vos données.", variant: "destructive" });
         } finally {
             setLoadingMeals(false);
+            setLoadingOrders(false);
         }
     }
   };
@@ -76,7 +86,7 @@ export default function CatererPage() {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
         if(user) {
-            fetchMeals();
+            fetchCatererData();
         }
     });
     return () => unsubscribe();
@@ -180,7 +190,7 @@ export default function CatererPage() {
           };
 
           if (imageRefPath) {
-              (mealData as Meal).imageRef = imageRefPath;
+              (mealData as any).imageRef = imageRefPath;
           }
 
           await addMeal(mealData);
@@ -190,21 +200,25 @@ export default function CatererPage() {
               action: <CheckCircle className="text-green-500" />,
           });
           
-          // Reset form state after successful save
           setAnalysisResult(null);
           setMealDescription("");
           setPrice(0);
+          setCategory('lunch');
           setMealImageFile(null);
           setMealImagePreview(null);
           if (fileInputRef.current) fileInputRef.current.value = "";
           
-          fetchMeals();
+          fetchCatererData();
 
       } catch (error) {
           console.error("Error saving meal:", error);
           let errorMessage = "Le repas n'a pas pu être sauvegardé.";
-          if (error instanceof Error && error.message.includes('storage')) {
-              errorMessage = "Erreur de téléversement de l'image. Vérifiez votre connexion ou les règles de sécurité Firebase.";
+          if (error instanceof Error) {
+            if (error.message.includes('storage')) {
+                errorMessage = "Erreur de téléversement de l'image. Vérifiez votre connexion ou les règles de sécurité Firebase.";
+            } else if (error.message.includes('undefined')) {
+                errorMessage = "Une erreur de données s'est produite. Assurez-vous que tous les champs sont remplis.";
+            }
           }
           toast({ title: "Erreur de sauvegarde", description: errorMessage, variant: "destructive" });
       } finally {
@@ -222,7 +236,7 @@ export default function CatererPage() {
         description: `${mealToDelete.name} a été retiré de votre liste.`,
         variant: "default",
       });
-      fetchMeals();
+      fetchCatererData();
     } catch (error) {
       toast({
         title: "Erreur",
@@ -231,6 +245,16 @@ export default function CatererPage() {
       });
     } finally {
       setMealToDelete(null);
+    }
+  };
+
+  const getStatusBadge = (status: Order['status']) => {
+    switch (status) {
+      case 'pending': return <Badge variant="secondary">En attente</Badge>;
+      case 'in_preparation': return <Badge className="bg-yellow-500 text-white">En préparation</Badge>;
+      case 'delivered': return <Badge className="bg-green-500 text-white">Livrée</Badge>;
+      case 'cancelled': return <Badge variant="destructive">Annulée</Badge>;
+      default: return <Badge>{status}</Badge>;
     }
   };
 
@@ -413,6 +437,57 @@ export default function CatererPage() {
                 </CardContent>
               </Card>
             )}
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <ShoppingBasket />
+                    Commandes Reçues
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                 <div className="border rounded-md">
+                    <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead>Client</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Total</TableHead>
+                            <TableHead>Statut</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {loadingOrders ? (
+                             <TableRow>
+                                <TableCell colSpan={5} className="text-center h-24">
+                                    <Loader2 className="mx-auto animate-spin text-primary" />
+                                </TableCell>
+                            </TableRow>
+                        ) : orders.length > 0 ? (
+                            orders.map((order) => (
+                                <TableRow key={order.id}>
+                                    <TableCell className="font-medium">{order.clientName}</TableCell>
+                                    <TableCell>{format(order.orderDate, 'd MMM yyyy', { locale: fr })}</TableCell>
+                                    <TableCell>{order.totalPrice.toFixed(2)} DT</TableCell>
+                                    <TableCell>{getStatusBadge(order.status)}</TableCell>
+                                    <TableCell className="text-right">
+                                        <Button variant="outline" size="sm">Détails</Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                                    Aucune commande reçue pour le moment.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                        </TableBody>
+                    </Table>
+                </div>
+              </CardContent>
+            </Card>
 
 
             <Card>

@@ -1,4 +1,5 @@
 
+
 export type User = {
   uid: string;
   email: string;
@@ -68,7 +69,7 @@ export type Caterer = {
 };
 
 export type Order = {
-  id?: string;
+  id: string;
   clientId: string;
   clientName: string;
   clientRegion: string;
@@ -77,11 +78,12 @@ export type Order = {
     mealName: string;
     quantity: number;
     unitPrice: number;
+    catererId: string;
   }[];
   totalPrice: number;
   status: "pending" | "in_preparation" | "delivered" | "cancelled";
-  orderDate: Date;
-  deliveryDate: Date;
+  orderDate: any;
+  deliveryDate: any;
   deliveryAddress: string;
 };
 
