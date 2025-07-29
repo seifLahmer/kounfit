@@ -97,7 +97,8 @@ export default function SignupStep1Page() {
         switch (error.code) {
           case 'auth/popup-closed-by-user':
           case 'auth/cancelled-popup-request':
-             return;
+            setGoogleLoading(false);
+            return;
           case 'auth/popup-blocked':
             title = "Popup bloquée";
             description = "Votre navigateur a bloqué la fenêtre de connexion. Veuillez autoriser les popups pour ce site et réessayer.";

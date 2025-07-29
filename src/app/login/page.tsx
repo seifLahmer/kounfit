@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, getRedirectResult } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { getUserRole } from "@/lib/services/roleService";
@@ -125,6 +125,7 @@ export default function LoginPage() {
             // This is not a technical error, the user just cancelled.
             // We can choose to show nothing or a subtle message.
             // For now, we'll do nothing to avoid annoying the user.
+            setGoogleLoading(false);
             return;
           case 'auth/popup-blocked':
             title = "Popup bloquée";
