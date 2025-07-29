@@ -74,7 +74,12 @@ export default function CatererPage() {
   };
 
   useEffect(() => {
-    fetchMeals();
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+        if(user) {
+            fetchMeals();
+        }
+    });
+    return () => unsubscribe();
   }, []);
 
   const handleGenerateMeal = async () => {
@@ -83,6 +88,7 @@ export default function CatererPage() {
       setAnalysisResult(null);
       setMealImageFile(null);
       setMealImagePreview(null);
+      setPrice(0);
       try {
         const result = await analyzeMeal({ mealName: mealDescription });
         setAnalysisResult(result);
@@ -143,53 +149,56 @@ export default function CatererPage() {
       };
       setIsSaving(true);
       
-      let imageUrl = `https://placehold.co/600x400.png`;
-      let imageRefPath: string | undefined = undefined;
-
-      if (mealImageFile) {
-        try {
-           const { downloadURL, imagePath } = await uploadMealImage(auth.currentUser.uid, mealImageFile);
-           imageUrl = downloadURL;
-           imageRefPath = imagePath;
-        } catch (error) {
-           toast({ title: "Erreur de téléversement", description: "L'image du repas n'a pas pu être sauvegardée.", variant: "destructive" });
-           setIsSaving(false);
-           return;
-        }
-      }
-      
-      const mealData: Omit<Meal, 'id' | 'createdAt'> = {
-          name: analysisResult.mealName,
-          description: analysisResult.description,
-          category: category,
-          imageUrl: imageUrl, 
-          imageRef: imageRefPath,
-          ingredients: analysisResult.ingredients,
-          calories: analysisResult.totalMacros.calories,
-          macros: {
-              protein: analysisResult.totalMacros.protein,
-              carbs: analysisResult.totalMacros.carbs,
-              fat: analysisResult.totalMacros.fat,
-              fibers: analysisResult.totalMacros.fibers,
-          },
-          price: price, 
-          createdBy: auth.currentUser.uid,
-          availability: true, // Default to available
-      };
-      
       try {
+          let imageUrl = `https://placehold.co/600x400.png`;
+          let imageRefPath: string | undefined = undefined;
+    
+          if (mealImageFile) {
+            try {
+               const { downloadURL, imagePath } = await uploadMealImage(auth.currentUser.uid, mealImageFile);
+               imageUrl = downloadURL;
+               imageRefPath = imagePath;
+            } catch (error) {
+               toast({ title: "Erreur de téléversement", description: "L'image du repas n'a pas pu être sauvegardée.", variant: "destructive" });
+               setIsSaving(false);
+               return;
+            }
+          }
+          
+          const mealData: Omit<Meal, 'id' | 'createdAt'> = {
+              name: analysisResult.mealName,
+              description: analysisResult.description,
+              category: category,
+              imageUrl: imageUrl, 
+              imageRef: imageRefPath,
+              ingredients: analysisResult.ingredients,
+              calories: analysisResult.totalMacros.calories,
+              macros: {
+                  protein: analysisResult.totalMacros.protein,
+                  carbs: analysisResult.totalMacros.carbs,
+                  fat: analysisResult.totalMacros.fat,
+                  fibers: analysisResult.totalMacros.fibers,
+              },
+              price: price, 
+              createdBy: auth.currentUser.uid,
+              availability: true, // Default to available
+          };
+
           await addMeal(mealData);
           toast({
               title: "Repas Sauvegardé!",
               description: `${mealData.name} a été ajouté à votre liste.`,
               action: <CheckCircle className="text-green-500" />,
           });
+          // Reset form state
           setAnalysisResult(null);
           setMealDescription("");
           setPrice(0);
           setMealImageFile(null);
           setMealImagePreview(null);
+          if (fileInputRef.current) fileInputRef.current.value = "";
           fetchMeals(); // Refresh the list of meals
+
       } catch (error) {
           toast({ title: "Erreur de sauvegarde", description: "Le repas n'a pas pu être sauvegardé.", variant: "destructive" });
       } finally {
@@ -427,7 +436,7 @@ export default function CatererPage() {
                             catererMeals.map((meal) => (
                                 <TableRow key={meal.id}>
                                     <TableCell>
-                                        <Image src={meal.imageUrl} alt={meal.name} width={64} height={64} className="rounded-md" data-ai-hint="caterer meal" />
+                                        <Image src={meal.imageUrl} alt={meal.name} width={64} height={64} className="rounded-md object-cover" data-ai-hint="caterer meal" />
                                     </TableCell>
                                     <TableCell className="font-medium">{meal.name}</TableCell>
                                     <TableCell>{meal.price.toFixed(2)} DT</TableCell>
