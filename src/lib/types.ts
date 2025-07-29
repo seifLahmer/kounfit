@@ -2,6 +2,7 @@
 
 
 
+
 export type User = {
   uid: string;
   email: string;
@@ -51,9 +52,10 @@ export interface Meal {
   }[];
   calories: number;
   macros: {
-    protein: string;
-    carbs: string;
-    fat: string;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fibers?: number;
   };
   price: number;
   createdBy: string; // admin UID

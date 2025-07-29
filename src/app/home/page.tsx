@@ -14,7 +14,7 @@ import { auth } from "@/lib/firebase"
 import { getUserProfile } from "@/lib/services/userService"
 import type { User } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
-import { useRouter } from "next/navigation"
+import Link from 'next/link';
 
 const CalorieCircle = ({ value, goal, size = "large" }: { value: number, goal: number, size?: "small" | "large" }) => {
   const radius = size === 'large' ? 56 : 28;
@@ -144,16 +144,18 @@ const MealCard = ({ icon, title, meal, onAdd, calorieGoal, macroGoals }: { icon:
       </CardHeader>
       {meal ? (
         <CardContent>
-            <div className="flex items-center gap-4">
-                <Image src={meal.image} alt={meal.name} width={80} height={80} className="rounded-lg" data-ai-hint="healthy food"/>
-                <div className="flex-1">
-                    <h4 className="font-semibold">{meal.name}</h4>
-                    <p className="text-sm text-muted-foreground">{meal.calories} Kcal</p>
+            <Link href={`/home/meal/${meal.id}`} className="block">
+                <div className="flex items-center gap-4">
+                    <Image src={meal.image} alt={meal.name} width={80} height={80} className="rounded-lg" data-ai-hint="healthy food"/>
+                    <div className="flex-1">
+                        <h4 className="font-semibold">{meal.name}</h4>
+                        <p className="text-sm text-muted-foreground">{meal.calories} Kcal</p>
+                    </div>
+                    <Button variant="ghost" size="icon">
+                        <Heart className="w-5 h-5"/>
+                    </Button>
                 </div>
-                <Button variant="ghost" size="icon">
-                    <Heart className="w-5 h-5"/>
-                </Button>
-            </div>
+            </Link>
         </CardContent>
       ) : (
          <CardContent>
@@ -195,7 +197,6 @@ export default function HomePage() {
             setLoading(false)
         }
       } else {
-        // This case is handled by the ClientLayout now
         setUser(null)
         setLoading(false)
       }
@@ -203,7 +204,7 @@ export default function HomePage() {
     return () => unsubscribe()
   }, [toast])
 
-  const startOfWeekDate = startOfWeek(currentDate, { weekStartsOn: 1 }) // Monday
+  const startOfWeekDate = startOfWeek(currentDate, { weekStartsOn: 1 }) 
 
   const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(startOfWeekDate, i))
 
@@ -216,17 +217,14 @@ export default function HomePage() {
   }
   
   const handleAddMeal = (mealType: string) => {
-    // Logic to open meal selection modal/page
     console.log(`Adding meal for ${mealType}`);
   };
   
-  // Hardcoded meals for now
   const breakfast = null;
-  const lunch = { name: "Escalope Grillée", calories: 600, protein: 30, carbs: 20, fat: 10, image: "https://placehold.co/100x100.png" };
+  const lunch = { id: "1", name: "Escalope Grillée", calories: 600, protein: 30, carbs: 20, fat: 10, image: "https://placehold.co/100x100.png" };
   const snack = null;
   const dinner = null;
 
-  // Calculate consumed calories and macros from the meals
   const consumedCalories = [breakfast, lunch, snack, dinner]
     .filter(Boolean)
     .reduce((acc, meal) => acc + (meal?.calories || 0), 0);
@@ -237,11 +235,9 @@ export default function HomePage() {
     fat: [breakfast, lunch, snack, dinner].filter(Boolean).reduce((acc, meal) => acc + (meal?.fat || 0), 0),
   }
 
-  // Get user goals, with fallback values
   const calorieGoal = user?.calorieGoal || 2000;
   const macroGoals = user?.macroRatio || { protein: 150, carbs: 250, fat: 70 };
 
-  // Calculate calories and macros per meal based on percentages
   const mealGoals = {
       breakfast: {
           calories: Math.round(calorieGoal * 0.25),
@@ -291,7 +287,7 @@ export default function HomePage() {
         <header className="flex items-center justify-between">
             <div className="flex items-center gap-4">
                  <Avatar className="h-14 w-14">
-                    <AvatarImage src={user?.photoURL || "https://placehold.co/100x100.png"} alt="User avatar" data-ai-hint="user avatar" />
+                    <AvatarImage src={user?.photoURL || undefined} alt="User avatar" data-ai-hint="user avatar" />
                     <AvatarFallback>{user?.fullName?.[0]}</AvatarFallback>
                 </Avatar>
                 <div>
