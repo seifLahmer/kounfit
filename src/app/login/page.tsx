@@ -156,7 +156,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
            <Link href="/welcome" className="flex justify-center items-center gap-2 mb-4">
-            <Leaf className="w-8 h-8 text-primary" />
+            <Leaf className="w-8 h-8 text-destructive" />
             <span className="text-2xl font-bold">NutriTrack</span>
           </Link>
           <CardTitle className="text-2xl">Content de vous revoir!</CardTitle>
@@ -185,7 +185,7 @@ export default function LoginPage() {
                   <FormItem>
                     <div className="flex items-center justify-between">
                       <Label>Mot de passe</Label>
-                      <Link href="#" className="text-sm text-primary hover:underline">
+                      <Link href="#" className="text-sm text-muted-foreground hover:underline">
                         Mot de passe oublié?
                       </Link>
                     </div>
@@ -196,7 +196,7 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={loading || googleLoading}>
+              <Button type="submit" className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={loading || googleLoading}>
                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {loading ? "Connexion..." : "Se connecter"}
               </Button>
@@ -224,7 +224,7 @@ export default function LoginPage() {
 
           <div className="mt-4 text-center text-sm">
             Vous n'avez pas de compte?{" "}
-            <Link href="/signup" className="text-primary hover:underline">
+            <Link href="/signup" className="text-destructive hover:underline">
               S'inscrire
             </Link>
           </div>

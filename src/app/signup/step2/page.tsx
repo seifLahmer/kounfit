@@ -129,7 +129,7 @@ export default function SignupStep2Page() {
   if (!isAuthCheckComplete) {
      return (
       <div className="flex items-center justify-center min-h-screen bg-background">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <Loader2 className="h-12 w-12 animate-spin text-destructive" />
       </div>
     );
   }
@@ -139,7 +139,7 @@ export default function SignupStep2Page() {
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
           <Link href="/welcome" className="flex justify-center items-center gap-2 mb-4">
-            <Leaf className="w-8 h-8 text-primary" />
+            <Leaf className="w-8 h-8 text-destructive" />
             <span className="text-2xl font-bold">NutriTrack</span>
           </Link>
           <CardTitle className="text-2xl">Finalisez votre profil (Étape 2/2)</CardTitle>
@@ -268,7 +268,7 @@ export default function SignupStep2Page() {
                 )}
               />
 
-              <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={loading}>
+              <Button type="submit" className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={loading}>
                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {loading ? "Sauvegarde..." : "Terminer et commencer"}
               </Button>

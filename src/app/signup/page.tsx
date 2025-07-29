@@ -145,7 +145,7 @@ export default function SignupStep1Page() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Link href="/welcome" className="flex justify-center items-center gap-2 mb-4">
-            <Leaf className="w-8 h-8 text-primary" />
+            <Leaf className="w-8 h-8 text-destructive" />
             <span className="text-2xl font-bold">NutriTrack</span>
           </Link>
           <CardTitle className="text-2xl">Créer votre compte (Étape 1/2)</CardTitle>
@@ -194,7 +194,7 @@ export default function SignupStep1Page() {
                   )}
                 />
 
-              <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={loading || googleLoading}>
+              <Button type="submit" className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={loading || googleLoading}>
                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {loading ? "Création du compte..." : "Continuer vers l'étape 2"}
               </Button>
@@ -222,7 +222,7 @@ export default function SignupStep1Page() {
 
           <div className="mt-4 text-center text-sm">
             Vous avez déjà un compte?{" "}
-            <Link href="/login" className="text-primary hover:underline">
+            <Link href="/login" className="text-destructive hover:underline">
               Se connecter
             </Link>
           </div>
