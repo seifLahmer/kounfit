@@ -13,10 +13,17 @@ import { getAvailableMealsByCategory } from "@/lib/services/mealService";
 import type { Meal } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
+type DailyPlan = {
+    breakfast: Meal | null;
+    lunch: Meal | null;
+    snack: Meal | null;
+    dinner: Meal | null;
+};
+
 export default function AddMealPage() {
   const router = useRouter();
   const params = useParams();
-  const mealType = Array.isArray(params.mealType) ? params.mealType[0] : params.mealType;
+  const mealType = (Array.isArray(params.mealType) ? params.mealType[0] : params.mealType) as keyof DailyPlan;
 
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,13 +52,25 @@ export default function AddMealPage() {
   }, [mealType, toast]);
   
   const handleAddMeal = (meal: Meal) => {
-    const mealData = {
-        category: mealType,
-        data: meal
-    };
-    // Using query parameter to pass the selected meal back to the home page
-    const query = encodeURIComponent(JSON.stringify(mealData));
-    router.push(`/home?newMeal=${query}`);
+    try {
+      const savedPlan = localStorage.getItem("dailyPlan");
+      const currentPlan: DailyPlan = savedPlan 
+        ? JSON.parse(savedPlan) 
+        : { breakfast: null, lunch: null, snack: null, dinner: null };
+      
+      currentPlan[mealType] = meal;
+      
+      localStorage.setItem("dailyPlan", JSON.stringify(currentPlan));
+      
+      router.push('/home');
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'ajouter le repas au plan.",
+        variant: "destructive",
+      });
+      console.error("Failed to update localStorage", error);
+    }
   };
 
   const filteredMeals = meals.filter((meal) =>

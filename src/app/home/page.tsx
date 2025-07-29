@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Bell, ChevronLeft, ChevronRight, PlusCircle, Sun, Sunrise, Sunset, Heart, Loader2, Apple } from "lucide-react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -15,7 +15,7 @@ import { getUserProfile } from "@/lib/services/userService"
 import type { User, Meal } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import Link from 'next/link';
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 
 const CalorieCircle = ({ value, goal, size = "large" }: { value: number, goal: number, size?: "small" | "large" }) => {
   const radius = size === 'large' ? 56 : 28;
@@ -126,6 +126,13 @@ const MealIconProgress = ({ icon, calories, calorieGoal }: { icon: React.ReactNo
   )
 }
 
+type DailyPlan = {
+    breakfast: Meal | null;
+    lunch: Meal | null;
+    snack: Meal | null;
+    dinner: Meal | null;
+};
+
 const MealCard = ({ icon, title, meal, onAdd, calorieGoal, macroGoals }: { icon: React.ReactNode, title: string, meal: Meal | null, onAdd: () => void, calorieGoal: number, macroGoals: {protein: number, carbs: number, fat: number} }) => {
   const consumedCalories = meal?.calories || 0;
   const consumedMacros = meal?.macros || { protein: 0, carbs: 0, fat: 0 };
@@ -183,39 +190,38 @@ export default function HomePage() {
   const today = new Date()
   const [loading, setLoading] = useState(true)
   const router = useRouter()
-  const searchParams = useSearchParams()
+  
+  const getInitialDailyPlan = (): DailyPlan => {
+    if (typeof window === "undefined") {
+      return { breakfast: null, lunch: null, snack: null, dinner: null };
+    }
+    try {
+      const savedPlan = localStorage.getItem("dailyPlan");
+      if (savedPlan) {
+        return JSON.parse(savedPlan);
+      }
+    } catch (error) {
+      console.error("Failed to parse daily plan from localStorage", error);
+      localStorage.removeItem("dailyPlan");
+    }
+    return { breakfast: null, lunch: null, snack: null, dinner: null };
+  };
 
-  const [dailyPlan, setDailyPlan] = useState<{
-    breakfast: Meal | null;
-    lunch: Meal | null;
-    snack: Meal | null;
-    dinner: Meal | null;
-  }>({
-    breakfast: null,
-    lunch: null,
-    snack: null,
-    dinner: null,
-  });
+  const [dailyPlan, setDailyPlan] = useState<DailyPlan>(getInitialDailyPlan());
 
+  const setAndStoreDailyPlan = useCallback((plan: DailyPlan) => {
+    setDailyPlan(plan);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("dailyPlan", JSON.stringify(plan));
+    }
+  }, []);
 
   useEffect(() => {
-    const newMealData = searchParams.get('newMeal');
-    if (newMealData) {
-        try {
-            const newMeal = JSON.parse(newMealData);
-            if (newMeal.category && newMeal.data) {
-                setDailyPlan(prevPlan => ({
-                    ...prevPlan,
-                    [newMeal.category]: newMeal.data,
-                }));
-                 // Remove the query parameter from the URL
-                router.replace('/home', undefined);
-            }
-        } catch (error) {
-            console.error("Failed to parse meal data from URL", error);
-        }
-    }
-  }, [searchParams, router]);
+    // This effect runs once on mount to sync the state with localStorage,
+    // especially after returning to the page.
+    const savedPlan = getInitialDailyPlan();
+    setDailyPlan(savedPlan);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
@@ -224,7 +230,6 @@ export default function HomePage() {
             const userProfile = await getUserProfile(firebaseUser.uid)
             setUser(userProfile)
             if (!userProfile?.photoURL) {
-              // Handle case where photoURL might be missing after signup
               const freshProfile = await getUserProfile(firebaseUser.uid);
               if (freshProfile?.photoURL) {
                 setUser(freshProfile);
