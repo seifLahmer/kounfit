@@ -42,6 +42,7 @@ export interface Meal {
   description: string;
   category: "breakfast" | "lunch" | "dinner" | "snack";
   imageUrl: string;
+  imageRef?: string; // Path to the image in Firebase Storage for deletion
   ingredients: {
     name: string;
     grams: number;
@@ -90,3 +91,5 @@ export interface MealPlan {
   lunch: Meal;
   dinner: Meal;
 }
+
+    

@@ -7,9 +7,12 @@ import {
   query,
   where,
   Timestamp,
+  deleteDoc,
+  doc,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
 import type { Meal } from "@/lib/types";
+import { ref, deleteObject } from "firebase/storage";
 
 const MEALS_COLLECTION = "meals";
 
@@ -30,6 +33,38 @@ export async function addMeal(mealData: Omit<Meal, 'id' | 'createdAt'>): Promise
     throw new Error("Could not save the meal.");
   }
 }
+
+/**
+ * Deletes a meal from Firestore and its associated image from Storage.
+ * @param mealId The ID of the meal document to delete.
+ * @param imageRefPath Optional path to the image in Firebase Storage.
+ */
+export async function deleteMeal(mealId: string, imageRefPath?: string): Promise<void> {
+  try {
+    // Delete the image from Firebase Storage if a reference path exists
+    if (imageRefPath) {
+      const imageRef = ref(storage, imageRefPath);
+      await deleteObject(imageRef);
+    }
+    
+    // Delete the meal document from Firestore
+    const mealDocRef = doc(db, MEALS_COLLECTION, mealId);
+    await deleteDoc(mealDocRef);
+    
+  } catch (error) {
+    console.error("Error deleting meal: ", error);
+    // If the image doesn't exist, it might throw an error we can ignore.
+    // We check if the error is about the object not being found.
+    if ((error as any).code === 'storage/object-not-found') {
+        console.warn("Image not found in storage, but continuing to delete firestore doc.");
+         const mealDocRef = doc(db, MEALS_COLLECTION, mealId);
+         await deleteDoc(mealDocRef);
+    } else {
+        throw new Error("Could not delete the meal.");
+    }
+  }
+}
+
 
 /**
  * Retrieves all meals created by a specific caterer from Firestore.
@@ -98,3 +133,5 @@ export async function getAvailableMealsByCategory(category: Meal['category']): P
         throw new Error("Could not fetch available meals.");
     }
 }
+
+    

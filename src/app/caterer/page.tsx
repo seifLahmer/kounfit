@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/table";
 import { ChefHat, Bot, Sparkles, Loader2, Trash2, Plus, CheckCircle, ImagePlus, DollarSign } from "lucide-react";
 import { analyzeMeal, MealAnalysis } from "@/ai/flows/meal-analysis-flow";
-import { addMeal, getMealsByCaterer } from "@/lib/services/mealService";
+import { addMeal, getMealsByCaterer, deleteMeal } from "@/lib/services/mealService";
+import { uploadMealImage } from "@/lib/services/storageService";
 import type { Meal } from "@/lib/types";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +30,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export default function CatererPage() {
   const [mealDescription, setMealDescription] = useState("");
@@ -39,6 +51,11 @@ export default function CatererPage() {
   const [loadingMeals, setLoadingMeals] = useState(true);
   const [price, setPrice] = useState<number>(0);
   const [category, setCategory] = useState<Meal['category']>('lunch');
+  const [mealImageFile, setMealImageFile] = useState<File | null>(null);
+  const [mealImagePreview, setMealImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [mealToDelete, setMealToDelete] = useState<Meal | null>(null);
+
   const { toast } = useToast();
 
   const fetchMeals = async () => {
@@ -64,6 +81,8 @@ export default function CatererPage() {
       if (!mealDescription) return;
       setIsGenerating(true);
       setAnalysisResult(null);
+      setMealImageFile(null);
+      setMealImagePreview(null);
       try {
         const result = await analyzeMeal({ mealName: mealDescription });
         setAnalysisResult(result);
@@ -100,6 +119,23 @@ export default function CatererPage() {
     setAnalysisResult({ ...analysisResult, ingredients: newIngredients });
   };
 
+  const handleImageUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setMealImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setMealImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+
   const handleSaveMeal = async () => {
       if (!analysisResult || !auth.currentUser || !price) {
           toast({ title: "Information manquante", description: "Veuillez définir un prix pour le repas.", variant: "destructive"});
@@ -107,11 +143,27 @@ export default function CatererPage() {
       };
       setIsSaving(true);
       
+      let imageUrl = `https://placehold.co/600x400.png`;
+      let imageRefPath: string | undefined = undefined;
+
+      if (mealImageFile) {
+        try {
+           const { downloadURL, imagePath } = await uploadMealImage(auth.currentUser.uid, mealImageFile);
+           imageUrl = downloadURL;
+           imageRefPath = imagePath;
+        } catch (error) {
+           toast({ title: "Erreur de téléversement", description: "L'image du repas n'a pas pu être sauvegardée.", variant: "destructive" });
+           setIsSaving(false);
+           return;
+        }
+      }
+      
       const mealData: Omit<Meal, 'id' | 'createdAt'> = {
           name: analysisResult.mealName,
           description: analysisResult.description,
           category: category,
-          imageUrl: `https://placehold.co/600x400.png`, // Placeholder
+          imageUrl: imageUrl, 
+          imageRef: imageRefPath,
           ingredients: analysisResult.ingredients,
           calories: analysisResult.totalMacros.calories,
           macros: {
@@ -135,6 +187,8 @@ export default function CatererPage() {
           setAnalysisResult(null);
           setMealDescription("");
           setPrice(0);
+          setMealImageFile(null);
+          setMealImagePreview(null);
           fetchMeals(); // Refresh the list of meals
       } catch (error) {
           toast({ title: "Erreur de sauvegarde", description: "Le repas n'a pas pu être sauvegardé.", variant: "destructive" });
@@ -142,12 +196,35 @@ export default function CatererPage() {
           setIsSaving(false);
       }
   };
+  
+  const handleDeleteMeal = async () => {
+    if (!mealToDelete || !auth.currentUser) return;
+
+    try {
+      await deleteMeal(mealToDelete.id, mealToDelete.imageRef);
+      toast({
+        title: "Repas supprimé",
+        description: `${mealToDelete.name} a été retiré de votre liste.`,
+        variant: "default",
+      });
+      fetchMeals(); // Refresh list
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer le repas.",
+        variant: "destructive",
+      });
+    } finally {
+      setMealToDelete(null); // Close dialog
+    }
+  };
 
 
   return (
+    <>
     <div className="p-4 space-y-6">
       <header>
-        <h1 className="text-3xl font-bold text-red-600 flex items-center gap-2">
+        <h1 className="text-3xl font-bold text-destructive flex items-center gap-2">
           <ChefHat className="w-8 h-8" />
           Tableau de Bord Traiteur
         </h1>
@@ -181,7 +258,7 @@ export default function CatererPage() {
                     disabled={isGenerating}
                   />
                 </div>
-                <Button onClick={handleGenerateMeal} disabled={isGenerating || !mealDescription} className="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white">
+                <Button onClick={handleGenerateMeal} disabled={isGenerating || !mealDescription} className="w-full md:w-auto bg-destructive hover:bg-destructive/90 text-white">
                   {isGenerating ? <Loader2 className="mr-2 animate-spin" /> : <Sparkles className="mr-2" />}
                   {isGenerating ? "Analyse en cours..." : "Générer le Repas avec l'IA"}
                 </Button>
@@ -243,10 +320,14 @@ export default function CatererPage() {
                          </div>
                         <div className="space-y-2">
                             <Label>Image du plat</Label>
-                             <Button variant="outline" className="w-full">
+                             <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
+                             <Button variant="outline" className="w-full" onClick={handleImageUploadClick}>
                                 <ImagePlus className="mr-2" />
                                 Télécharger une image
                             </Button>
+                            {mealImagePreview && (
+                                <Image src={mealImagePreview} alt="Aperçu du plat" width={100} height={100} className="rounded-md object-cover mt-2" />
+                            )}
                         </div>
                     </div>
 
@@ -310,7 +391,7 @@ export default function CatererPage() {
                         </div>
                     </div>
                     
-                    <Button onClick={handleSaveMeal} disabled={isSaving} className="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white">
+                    <Button onClick={handleSaveMeal} disabled={isSaving} className="w-full md:w-auto bg-destructive hover:bg-destructive/90 text-white">
                         {isSaving ? <Loader2 className="mr-2 animate-spin" /> : null}
                         Sauvegarder le repas
                     </Button>
@@ -352,9 +433,11 @@ export default function CatererPage() {
                                     <TableCell>{meal.price.toFixed(2)} DT</TableCell>
                                     <TableCell>{meal.calories} kcal</TableCell>
                                     <TableCell className="text-right">
-                                        <Button variant="ghost" size="icon">
-                                            <Trash2 className="w-4 h-4 text-destructive"/>
-                                        </Button>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" onClick={() => setMealToDelete(meal)}>
+                                                <Trash2 className="w-4 h-4 text-destructive"/>
+                                            </Button>
+                                        </AlertDialogTrigger>
                                     </TableCell>
                                 </TableRow>
                             ))
@@ -372,5 +455,24 @@ export default function CatererPage() {
             </Card>
           </div>
     </div>
+    <AlertDialog open={!!mealToDelete} onOpenChange={(open) => !open && setMealToDelete(null)}>
+        <AlertDialogContent>
+        <AlertDialogHeader>
+            <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer ce repas ?</AlertDialogTitle>
+            <AlertDialogDescription>
+            Cette action est irréversible. Le repas "{mealToDelete?.name}" sera définitivement supprimé.
+            </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteMeal} className="bg-destructive hover:bg-destructive/90">
+                Supprimer
+            </AlertDialogAction>
+        </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
+
+    

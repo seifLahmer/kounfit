@@ -14,25 +14,42 @@ export async function uploadProfileImage(uid: string, file: File): Promise<strin
   if (!uid || !file) {
     throw new Error("User ID and file must be provided.");
   }
-
-  // Create a storage reference with a unique path for each user's profile image.
-  // Using a consistent file name like 'profile.jpg' can simplify things,
-  // but using the original file name is also fine.
   const storageRef = ref(storage, `profile-images/${uid}/${file.name}`);
 
   try {
-    // 'file' comes from the file input field
     const snapshot = await uploadBytes(storageRef, file);
-    
-    // Get the public URL
     const downloadURL = await getDownloadURL(snapshot.ref);
-    
     return downloadURL;
-
   } catch (error) {
     console.error("Firebase Storage Error:", error);
-    // Re-throw the error to be handled by the component
-    // This allows us to show a specific message to the user
     throw error;
   }
 }
+
+/**
+ * Uploads a meal image to Firebase Storage.
+ * The path will be `meal-images/{catererUid}/{file.name}`.
+ * @param catererUid The caterer's unique ID.
+ * @param file The image file to upload.
+ * @returns An object containing the public URL and the storage path of the uploaded image.
+ */
+export async function uploadMealImage(catererUid: string, file: File): Promise<{ downloadURL: string, imagePath: string }> {
+  if (!catererUid || !file) {
+    throw new Error("Caterer ID and file must be provided.");
+  }
+  
+  // Create a unique file name to avoid conflicts
+  const imagePath = `meal-images/${catererUid}/${Date.now()}-${file.name}`;
+  const storageRef = ref(storage, imagePath);
+
+  try {
+    const snapshot = await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return { downloadURL, imagePath };
+  } catch (error) {
+    console.error("Firebase Meal Image Storage Error:", error);
+    throw error;
+  }
+}
+
+    
