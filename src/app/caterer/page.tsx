@@ -143,10 +143,12 @@ export default function CatererPage() {
 
 
   const handleSaveMeal = async () => {
-      if (!analysisResult || !auth.currentUser || !price) {
-          toast({ title: "Information manquante", description: "Veuillez définir un prix pour le repas.", variant: "destructive"});
+      if (!analysisResult || !auth.currentUser) return;
+      if (!price || price <= 0) {
+          toast({ title: "Information manquante", description: "Veuillez définir un prix valide pour le repas.", variant: "destructive"});
           return;
       };
+      
       setIsSaving(true);
       
       try {
@@ -154,15 +156,9 @@ export default function CatererPage() {
           let imageRefPath: string | undefined = undefined;
     
           if (mealImageFile) {
-            try {
-               const { downloadURL, imagePath } = await uploadMealImage(auth.currentUser.uid, mealImageFile);
-               imageUrl = downloadURL;
-               imageRefPath = imagePath;
-            } catch (error) {
-               toast({ title: "Erreur de téléversement", description: "L'image du repas n'a pas pu être sauvegardée.", variant: "destructive" });
-               setIsSaving(false);
-               return;
-            }
+            const { downloadURL, imagePath } = await uploadMealImage(auth.currentUser.uid, mealImageFile);
+            imageUrl = downloadURL;
+            imageRefPath = imagePath;
           }
           
           const mealData: Omit<Meal, 'id' | 'createdAt'> = {
@@ -181,7 +177,7 @@ export default function CatererPage() {
               },
               price: price, 
               createdBy: auth.currentUser.uid,
-              availability: true, // Default to available
+              availability: true,
           };
 
           await addMeal(mealData);
@@ -190,17 +186,24 @@ export default function CatererPage() {
               description: `${mealData.name} a été ajouté à votre liste.`,
               action: <CheckCircle className="text-green-500" />,
           });
-          // Reset form state
+          
+          // Reset form state after successful save
           setAnalysisResult(null);
           setMealDescription("");
           setPrice(0);
           setMealImageFile(null);
           setMealImagePreview(null);
           if (fileInputRef.current) fileInputRef.current.value = "";
-          fetchMeals(); // Refresh the list of meals
+          
+          fetchMeals();
 
       } catch (error) {
-          toast({ title: "Erreur de sauvegarde", description: "Le repas n'a pas pu être sauvegardé.", variant: "destructive" });
+          console.error("Error saving meal:", error);
+          let errorMessage = "Le repas n'a pas pu être sauvegardé.";
+          if (error instanceof Error && error.message.includes('storage')) {
+              errorMessage = "Erreur de téléversement de l'image. Vérifiez votre connexion ou les règles de sécurité Firebase.";
+          }
+          toast({ title: "Erreur de sauvegarde", description: errorMessage, variant: "destructive" });
       } finally {
           setIsSaving(false);
       }
@@ -216,7 +219,7 @@ export default function CatererPage() {
         description: `${mealToDelete.name} a été retiré de votre liste.`,
         variant: "default",
       });
-      fetchMeals(); // Refresh list
+      fetchMeals();
     } catch (error) {
       toast({
         title: "Erreur",
@@ -224,7 +227,7 @@ export default function CatererPage() {
         variant: "destructive",
       });
     } finally {
-      setMealToDelete(null); // Close dialog
+      setMealToDelete(null);
     }
   };
 
