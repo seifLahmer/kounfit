@@ -118,11 +118,14 @@ export default function LoginPage() {
       }
 
     } catch (error: any) {
-      toast({
-        title: "Erreur de connexion Google",
-        description: "Impossible de se connecter avec Google. Veuillez réessayer.",
-        variant: "destructive",
-      });
+      // Don't show an error toast if the user simply closes the popup.
+      if (error.code !== 'auth/popup-closed-by-user') {
+        toast({
+          title: "Erreur de connexion Google",
+          description: "Impossible de se connecter avec Google. Veuillez réessayer.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setGoogleLoading(false);
     }

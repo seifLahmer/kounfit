@@ -90,11 +90,14 @@ export default function SignupStep1Page() {
       router.push('/signup/step2');
 
     } catch (error: any) {
-      toast({
-        title: "Erreur d'inscription Google",
-        description: "Impossible de s'inscrire avec Google. Veuillez réessayer.",
-        variant: "destructive",
-      });
+      // Don't show an error toast if the user simply closes the popup.
+      if (error.code !== 'auth/popup-closed-by-user') {
+        toast({
+          title: "Erreur d'inscription Google",
+          description: "Impossible de s'inscrire avec Google. Veuillez réessayer.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setGoogleLoading(false);
     }
