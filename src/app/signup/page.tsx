@@ -102,19 +102,11 @@ export default function SignupStep1Page() {
 
     } catch (error: any) {
        console.error("Google Sign-Up Error:", error);
-      if (error.code !== 'auth/popup-closed-by-user') {
-          let description = "Une erreur inconnue est survenue.";
-          if(error.code === 'auth/unauthorized-domain') {
-              description = "Ce domaine n'est pas autorisé pour l'authentification. Veuillez contacter l'administrateur.";
-          } else if (error.code === 'auth/popup-blocked') {
-              description = "Le popup a été bloqué par le navigateur. Veuillez autoriser les popups pour ce site.";
-          }
-          toast({
-            title: "Erreur d'inscription Google",
-            description: description,
-            variant: "destructive",
-          });
-      }
+       toast({
+         title: "Erreur d'inscription Google",
+         description: `Une erreur est survenue: ${error.message}`,
+         variant: "destructive",
+       });
     } finally {
       setGoogleLoading(false);
     }
