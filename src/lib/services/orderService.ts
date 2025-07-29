@@ -8,7 +8,8 @@ import {
   where,
   Timestamp,
   doc,
-  writeBatch
+  writeBatch,
+  updateDoc
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { Order, User, Meal } from "@/lib/types";
@@ -94,4 +95,20 @@ export async function getOrdersByCaterer(catererUid: string): Promise<Order[]> {
         console.error("Error fetching orders by caterer: ", error);
         throw new Error("Could not fetch orders.");
     }
+}
+
+
+/**
+ * Updates the status of a specific order.
+ * @param orderId The ID of the order to update.
+ * @param status The new status for the order.
+ */
+export async function updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
+  try {
+    const orderRef = doc(db, ORDERS_COLLECTION, orderId);
+    await updateDoc(orderRef, { status });
+  } catch (error) {
+    console.error("Error updating order status: ", error);
+    throw new Error("Could not update the order status.");
+  }
 }

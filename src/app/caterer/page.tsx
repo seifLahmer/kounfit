@@ -15,10 +15,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChefHat, Bot, Sparkles, Loader2, Trash2, Plus, CheckCircle, ImagePlus, DollarSign, ShoppingBasket } from "lucide-react";
+import { ChefHat, Bot, Sparkles, Loader2, Trash2, Plus, CheckCircle, ImagePlus, DollarSign, ShoppingBasket, ClipboardList } from "lucide-react";
 import { analyzeMeal, MealAnalysis } from "@/ai/flows/meal-analysis-flow";
 import { addMeal, getMealsByCaterer, deleteMeal } from "@/lib/services/mealService";
-import { getOrdersByCaterer } from "@/lib/services/orderService";
+import { getOrdersByCaterer, updateOrderStatus } from "@/lib/services/orderService";
 import { uploadMealImage } from "@/lib/services/storageService";
 import type { Meal, Order } from "@/lib/types";
 import { auth } from "@/lib/firebase";
@@ -31,6 +31,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,6 +53,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+
+type ConsolidatedIngredients = { [name: string]: { grams: number } };
 
 export default function CatererPage() {
   const [mealDescription, setMealDescription] = useState("");
@@ -70,9 +80,11 @@ export default function CatererPage() {
         try {
             setLoadingMeals(true);
             setLoadingOrders(true);
-            const meals = await getMealsByCaterer(user.uid);
+            const [meals, receivedOrders] = await Promise.all([
+              getMealsByCaterer(user.uid),
+              getOrdersByCaterer(user.uid)
+            ]);
             setCatererMeals(meals);
-            const receivedOrders = await getOrdersByCaterer(user.uid);
             setOrders(receivedOrders);
         } catch (error) {
             toast({ title: "Erreur", description: "Impossible de charger vos données.", variant: "destructive" });
@@ -190,9 +202,8 @@ export default function CatererPage() {
           };
 
           if (imageRefPath) {
-              (mealData as any).imageRef = imageRefPath;
+            (mealData as any).imageRef = imageRefPath;
           }
-
           await addMeal(mealData);
           toast({
               title: "Repas Sauvegardé!",
@@ -246,6 +257,36 @@ export default function CatererPage() {
     } finally {
       setMealToDelete(null);
     }
+  };
+  
+  const handleStatusChange = async (orderId: string, newStatus: Order['status']) => {
+    try {
+        await updateOrderStatus(orderId, newStatus);
+        setOrders(prevOrders => prevOrders.map(o => o.id === orderId ? {...o, status: newStatus} : o));
+        toast({ title: "Statut mis à jour", description: `La commande a été marquée comme "${newStatus}".` });
+    } catch(error) {
+        toast({ title: "Erreur", description: "Impossible de mettre à jour le statut.", variant: "destructive" });
+    }
+  };
+
+  const getConsolidatedIngredients = (order: Order): ConsolidatedIngredients => {
+    const ingredientMap: ConsolidatedIngredients = {};
+
+    order.items.forEach(item => {
+        const meal = catererMeals.find(m => m.id === item.mealId);
+        if (meal) {
+            meal.ingredients.forEach(ing => {
+                const totalGrams = ing.grams * item.quantity;
+                if(ingredientMap[ing.name]) {
+                    ingredientMap[ing.name].grams += totalGrams;
+                } else {
+                    ingredientMap[ing.name] = { grams: totalGrams };
+                }
+            });
+        }
+    });
+
+    return ingredientMap;
   };
 
   const getStatusBadge = (status: Order['status']) => {
@@ -470,9 +511,63 @@ export default function CatererPage() {
                                     <TableCell className="font-medium">{order.clientName}</TableCell>
                                     <TableCell>{format(order.orderDate, 'd MMM yyyy', { locale: fr })}</TableCell>
                                     <TableCell>{order.totalPrice.toFixed(2)} DT</TableCell>
-                                    <TableCell>{getStatusBadge(order.status)}</TableCell>
+                                    <TableCell>
+                                        <Select
+                                          value={order.status}
+                                          onValueChange={(value: Order['status']) => handleStatusChange(order.id, value)}
+                                        >
+                                          <SelectTrigger className="w-[180px] h-8">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="pending">En attente</SelectItem>
+                                            <SelectItem value="in_preparation">En préparation</SelectItem>
+                                            <SelectItem value="delivered">Livrée</SelectItem>
+                                            <SelectItem value="cancelled">Annulée</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                    </TableCell>
                                     <TableCell className="text-right">
-                                        <Button variant="outline" size="sm">Détails</Button>
+                                        <Dialog>
+                                            <DialogTrigger asChild>
+                                                <Button variant="outline" size="sm">Détails</Button>
+                                            </DialogTrigger>
+                                            <DialogContent className="max-w-lg">
+                                                <DialogHeader>
+                                                    <DialogTitle>Détails de la commande de {order.clientName}</DialogTitle>
+                                                    <DialogDescription>
+                                                        Liste consolidée des ingrédients requis pour préparer cette commande.
+                                                    </DialogDescription>
+                                                </DialogHeader>
+                                                <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+                                                    <div>
+                                                        <h3 className="font-semibold mb-2">Repas commandés</h3>
+                                                        <ul className="list-disc pl-5 text-sm">
+                                                            {order.items.map(item => <li key={item.mealId}>{item.quantity} x {item.mealName}</li>)}
+                                                        </ul>
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-semibold mb-2 flex items-center gap-2"><ClipboardList/> Liste de courses</h3>
+                                                        <Table>
+                                                            <TableHeader>
+                                                                <TableRow>
+                                                                    <TableHead>Ingrédient</TableHead>
+                                                                    <TableHead className="text-right">Quantité requise</TableHead>
+                                                                </TableRow>
+                                                            </TableHeader>
+                                                            <TableBody>
+                                                                {Object.entries(getConsolidatedIngredients(order)).map(([name, { grams }]) => (
+                                                                    <TableRow key={name}>
+                                                                        <TableCell>{name}</TableCell>
+                                                                        <TableCell className="text-right font-medium">{grams} g</TableCell>
+                                                                    </TableRow>
+                                                                ))}
+                                                            </TableBody>
+                                                        </Table>
+                                                    </div>
+                                                </div>
+                                            </DialogContent>
+                                        </Dialog>
                                     </TableCell>
                                 </TableRow>
                             ))
