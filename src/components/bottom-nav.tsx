@@ -89,18 +89,18 @@ export function BottomNav() {
       <AlertDialog open={isLogoutAlertOpen} onOpenChange={setIsLogoutAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Êtes-vous sûr de vouloir vous déconnecter?</AlertDialogTitle>
+            <AlertDialogTitle>Are you sure you want to log out?</AlertDialogTitle>
             <AlertDialogDescription>
-              Vous serez redirigé vers l'écran de bienvenue.
+              You will be returned to the welcome screen.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col-reverse sm:flex-row sm:gap-2">
-            <AlertDialogCancel asChild>
-                <Button variant="outline" className="w-full">Annuler</Button>
-            </AlertDialogCancel>
-            <AlertDialogAction asChild>
-                <Button className="w-full" onClick={handleLogoutConfirm} variant="destructive">Se déconnecter</Button>
+          <AlertDialogFooter className="flex-col gap-2">
+             <AlertDialogAction asChild>
+                <Button className="w-full" onClick={handleLogoutConfirm} variant="destructive">Log Out</Button>
             </AlertDialogAction>
+            <AlertDialogCancel asChild>
+                <Button variant="outline" className="w-full">Cancel</Button>
+            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
