@@ -91,13 +91,32 @@ export default function SignupStep1Page() {
         router.push("/signup/step2");
 
     } catch (error: any) {
-        if (error.code !== 'auth/popup-closed-by-user') {
-            toast({
-                title: "Erreur d'inscription Google",
-                description: "Impossible de s'inscrire avec Google. Veuillez réessayer.",
-                variant: "destructive",
-            });
+        let title = "Erreur d'inscription Google";
+        let description = "Une erreur inconnue est survenue. Veuillez réessayer.";
+
+        switch (error.code) {
+          case 'auth/popup-closed-by-user':
+          case 'auth/cancelled-popup-request':
+             return;
+          case 'auth/popup-blocked':
+            title = "Popup bloquée";
+            description = "Votre navigateur a bloqué la fenêtre de connexion. Veuillez autoriser les popups pour ce site et réessayer.";
+            break;
+          case 'auth/unauthorized-domain':
+            title = "Domaine non autorisé";
+            description = "Ce site n'est pas autorisé pour l'inscription Google. Le propriétaire de l'application doit ajouter ce domaine dans la console Firebase.";
+            break;
+           case 'auth/operation-not-allowed':
+            title = "Connexion Google désactivée";
+            description = "L'inscription avec Google n'est pas activée pour cette application. Veuillez contacter le support.";
+            break;
         }
+
+        toast({
+          title,
+          description,
+          variant: "destructive",
+        });
     } finally {
         setGoogleLoading(false);
     }

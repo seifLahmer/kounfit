@@ -116,14 +116,36 @@ export default function LoginPage() {
         }
 
     } catch (error: any) {
-        // We only want to show a toast for actual errors, not for user cancellations.
-        if (error.code !== 'auth/popup-closed-by-user') {
-            toast({
-                title: "Erreur de connexion Google",
-                description: "Impossible de se connecter avec Google. Veuillez réessayer.",
-                variant: "destructive",
-            });
+        let title = "Erreur de connexion Google";
+        let description = "Une erreur inconnue est survenue. Veuillez réessayer.";
+
+        switch (error.code) {
+          case 'auth/popup-closed-by-user':
+          case 'auth/cancelled-popup-request':
+            // This is not a technical error, the user just cancelled.
+            // We can choose to show nothing or a subtle message.
+            // For now, we'll do nothing to avoid annoying the user.
+            return;
+          case 'auth/popup-blocked':
+            title = "Popup bloquée";
+            description = "Votre navigateur a bloqué la fenêtre de connexion. Veuillez autoriser les popups pour ce site et réessayer.";
+            break;
+          case 'auth/unauthorized-domain':
+            title = "Domaine non autorisé";
+            description = "Ce site n'est pas autorisé pour la connexion Google. Le propriétaire de l'application doit ajouter ce domaine dans la console Firebase.";
+            break;
+           case 'auth/operation-not-allowed':
+            title = "Connexion Google désactivée";
+            description = "La connexion avec Google n'est pas activée pour cette application. Veuillez contacter le support.";
+            break;
         }
+
+        toast({
+          title,
+          description,
+          variant: "destructive",
+        });
+
     } finally {
         setGoogleLoading(false);
     }
