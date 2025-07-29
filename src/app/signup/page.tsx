@@ -234,5 +234,3 @@ export default function SignupStep1Page() {
     </div>
   );
 }
-
-    
