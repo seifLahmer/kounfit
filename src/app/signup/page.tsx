@@ -101,16 +101,14 @@ export default function SignupStep1Page() {
       router.push("/signup/step2");
 
     } catch (error: any) {
-       // Don't show an error toast if the user simply closes the popup.
-      if (error.code === 'auth/popup-closed-by-user') {
-        return;
+      if (error.code !== 'auth/popup-closed-by-user') {
+        console.error("Google Sign-Up Error:", error);
+        toast({
+          title: "Erreur d'inscription Google",
+          description: `Une erreur est survenue: ${error.message}`,
+          variant: "destructive",
+        });
       }
-       console.error("Google Sign-Up Error:", error);
-       toast({
-         title: "Erreur d'inscription Google",
-         description: `Une erreur est survenue: ${error.message}`,
-         variant: "destructive",
-       });
     } finally {
       setGoogleLoading(false);
     }
