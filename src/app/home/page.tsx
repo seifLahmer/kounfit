@@ -15,6 +15,7 @@ import { getUserProfile } from "@/lib/services/userService"
 import type { User } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import Link from 'next/link';
+import { useRouter } from "next/navigation"
 
 const CalorieCircle = ({ value, goal, size = "large" }: { value: number, goal: number, size?: "small" | "large" }) => {
   const radius = size === 'large' ? 56 : 28;
@@ -180,6 +181,7 @@ export default function HomePage() {
   const { toast } = useToast()
   const today = new Date()
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
@@ -187,6 +189,9 @@ export default function HomePage() {
         try {
             const userProfile = await getUserProfile(firebaseUser.uid)
             setUser(userProfile)
+            if (userProfile && userProfile.photoURL) {
+                // No need to set preview here as AvatarImage handles src directly
+            }
         } catch(e) {
             toast({
                 title: "Error fetching user",
@@ -217,7 +222,7 @@ export default function HomePage() {
   }
   
   const handleAddMeal = (mealType: string) => {
-    console.log(`Adding meal for ${mealType}`);
+    router.push(`/home/add-meal/${mealType}`);
   };
   
   const breakfast = null;
