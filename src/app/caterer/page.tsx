@@ -15,13 +15,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChefHat, Bot, Sparkles, Loader2, Trash2, Plus, CheckCircle } from "lucide-react";
+import { ChefHat, Bot, Sparkles, Loader2, Trash2, Plus, CheckCircle, ImagePlus, DollarSign } from "lucide-react";
 import { analyzeMeal, MealAnalysis } from "@/ai/flows/meal-analysis-flow";
 import { addMeal, getMealsByCaterer } from "@/lib/services/mealService";
 import type { Meal } from "@/lib/types";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export default function CatererPage() {
   const [mealDescription, setMealDescription] = useState("");
@@ -30,6 +37,8 @@ export default function CatererPage() {
   const [analysisResult, setAnalysisResult] = useState<MealAnalysis | null>(null);
   const [catererMeals, setCatererMeals] = useState<Meal[]>([]);
   const [loadingMeals, setLoadingMeals] = useState(true);
+  const [price, setPrice] = useState<number>(0);
+  const [category, setCategory] = useState<Meal['category']>('lunch');
   const { toast } = useToast();
 
   const fetchMeals = async () => {
@@ -92,15 +101,17 @@ export default function CatererPage() {
   };
 
   const handleSaveMeal = async () => {
-      if (!analysisResult || !auth.currentUser) return;
+      if (!analysisResult || !auth.currentUser || !price) {
+          toast({ title: "Information manquante", description: "Veuillez définir un prix pour le repas.", variant: "destructive"});
+          return;
+      };
       setIsSaving(true);
       
       const mealData: Omit<Meal, 'id' | 'createdAt'> = {
           name: analysisResult.mealName,
           description: analysisResult.description,
-          // You might want to add a category selector in the UI
-          category: "lunch",
-          imageUrl: `https://placehold.co/600x400.png`, // Placeholder, maybe generate one with AI later
+          category: category,
+          imageUrl: `https://placehold.co/600x400.png`, // Placeholder
           ingredients: analysisResult.ingredients,
           calories: analysisResult.totalMacros.calories,
           macros: {
@@ -109,7 +120,7 @@ export default function CatererPage() {
               fat: analysisResult.totalMacros.fat,
               fibers: analysisResult.totalMacros.fibers,
           },
-          price: 0, // Placeholder, you should add a price field in the UI
+          price: price, 
           createdBy: auth.currentUser.uid,
           availability: true, // Default to available
       };
@@ -123,6 +134,7 @@ export default function CatererPage() {
           });
           setAnalysisResult(null);
           setMealDescription("");
+          setPrice(0);
           fetchMeals(); // Refresh the list of meals
       } catch (error) {
           toast({ title: "Erreur de sauvegarde", description: "Le repas n'a pas pu être sauvegardé.", variant: "destructive" });
@@ -190,12 +202,28 @@ export default function CatererPage() {
                   <CardDescription>Vérifiez et modifiez les informations ci-dessous avant de sauvegarder le repas.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    <div className="space-y-2">
-                        <Label>Nom du plat</Label>
-                        <Input 
-                            value={analysisResult.mealName}
-                            onChange={(e) => setAnalysisResult({...analysisResult, mealName: e.target.value})}
-                         />
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>Nom du plat</Label>
+                            <Input 
+                                value={analysisResult.mealName}
+                                onChange={(e) => setAnalysisResult({...analysisResult, mealName: e.target.value})}
+                             />
+                        </div>
+                         <div className="space-y-2">
+                            <Label>Catégorie</Label>
+                             <Select onValueChange={(value: Meal['category']) => setCategory(value)} defaultValue={category}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Choisir une catégorie" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="breakfast">Petit-déjeuner</SelectItem>
+                                    <SelectItem value="lunch">Déjeuner</SelectItem>
+                                    <SelectItem value="dinner">Dîner</SelectItem>
+                                    <SelectItem value="snack">Collation</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                     <div className="space-y-2">
                         <Label>Description</Label>
@@ -204,6 +232,22 @@ export default function CatererPage() {
                             onChange={(e) => setAnalysisResult({...analysisResult, description: e.target.value})}
                             rows={3}
                         />
+                    </div>
+                     <div className="grid md:grid-cols-2 gap-4">
+                         <div className="space-y-2">
+                            <Label>Prix (DT)</Label>
+                             <div className="relative">
+                                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                <Input type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} className="pl-10"/>
+                             </div>
+                         </div>
+                        <div className="space-y-2">
+                            <Label>Image du plat</Label>
+                             <Button variant="outline" className="w-full">
+                                <ImagePlus className="mr-2" />
+                                Télécharger une image
+                            </Button>
+                        </div>
                     </div>
 
                     <div>
@@ -286,6 +330,7 @@ export default function CatererPage() {
                         <TableRow>
                             <TableHead>Image</TableHead>
                             <TableHead>Nom</TableHead>
+                            <TableHead>Prix</TableHead>
                             <TableHead>Calories</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -293,7 +338,7 @@ export default function CatererPage() {
                         <TableBody>
                         {loadingMeals ? (
                              <TableRow>
-                                <TableCell colSpan={4} className="text-center h-24">
+                                <TableCell colSpan={5} className="text-center h-24">
                                     <Loader2 className="mx-auto animate-spin text-primary" />
                                 </TableCell>
                             </TableRow>
@@ -304,6 +349,7 @@ export default function CatererPage() {
                                         <Image src={meal.imageUrl} alt={meal.name} width={64} height={64} className="rounded-md" data-ai-hint="caterer meal" />
                                     </TableCell>
                                     <TableCell className="font-medium">{meal.name}</TableCell>
+                                    <TableCell>{meal.price.toFixed(2)} DT</TableCell>
                                     <TableCell>{meal.calories} kcal</TableCell>
                                     <TableCell className="text-right">
                                         <Button variant="ghost" size="icon">
@@ -314,7 +360,7 @@ export default function CatererPage() {
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
+                                <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
                                     Aucun repas n'a encore été créé.
                                 </TableCell>
                             </TableRow>

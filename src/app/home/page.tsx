@@ -12,10 +12,10 @@ import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { auth } from "@/lib/firebase"
 import { getUserProfile } from "@/lib/services/userService"
-import type { User } from "@/lib/types"
+import type { User, Meal } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import Link from 'next/link';
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 const CalorieCircle = ({ value, goal, size = "large" }: { value: number, goal: number, size?: "small" | "large" }) => {
   const radius = size === 'large' ? 56 : 28;
@@ -126,8 +126,9 @@ const MealIconProgress = ({ icon, calories, calorieGoal }: { icon: React.ReactNo
   )
 }
 
-const MealCard = ({ icon, title, meal, onAdd, calorieGoal, macroGoals }: { icon: React.ReactNode, title: string, meal: any, onAdd: () => void, calorieGoal: number, macroGoals: {protein: number, carbs: number, fat: number} }) => {
+const MealCard = ({ icon, title, meal, onAdd, calorieGoal, macroGoals }: { icon: React.ReactNode, title: string, meal: Meal | null, onAdd: () => void, calorieGoal: number, macroGoals: {protein: number, carbs: number, fat: number} }) => {
   const consumedCalories = meal?.calories || 0;
+  const consumedMacros = meal?.macros || { protein: 0, carbs: 0, fat: 0 };
   
   return (
     <Card className="bg-card shadow-sm">
@@ -147,7 +148,7 @@ const MealCard = ({ icon, title, meal, onAdd, calorieGoal, macroGoals }: { icon:
         <CardContent>
             <Link href={`/home/meal/${meal.id}`} className="block">
                 <div className="flex items-center gap-4">
-                    <Image src={meal.image} alt={meal.name} width={80} height={80} className="rounded-lg" data-ai-hint="healthy food"/>
+                    <Image src={meal.imageUrl} alt={meal.name} width={80} height={80} className="rounded-lg" data-ai-hint="healthy food"/>
                     <div className="flex-1">
                         <h4 className="font-semibold">{meal.name}</h4>
                         <p className="text-sm text-muted-foreground">{meal.calories} Kcal</p>
@@ -166,9 +167,9 @@ const MealCard = ({ icon, title, meal, onAdd, calorieGoal, macroGoals }: { icon:
         </CardContent>
       )}
        <CardFooter className="flex justify-around">
-            <NutrientCircle name="Prot" value={meal?.protein || 0} goal={macroGoals.protein} colorClass="text-red-500" />
-            <NutrientCircle name="Carbs" value={meal?.carbs || 0} goal={macroGoals.carbs} colorClass="text-green-500" />
-            <NutrientCircle name="Fat" value={meal?.fat || 0} goal={macroGoals.fat} colorClass="text-yellow-500" />
+            <NutrientCircle name="Prot" value={consumedMacros.protein} goal={macroGoals.protein} colorClass="text-red-500" />
+            <NutrientCircle name="Carbs" value={consumedMacros.carbs} goal={macroGoals.carbs} colorClass="text-green-500" />
+            <NutrientCircle name="Fat" value={consumedMacros.fat} goal={macroGoals.fat} colorClass="text-yellow-500" />
         </CardFooter>
     </Card>
   )
@@ -182,6 +183,39 @@ export default function HomePage() {
   const today = new Date()
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  const [dailyPlan, setDailyPlan] = useState<{
+    breakfast: Meal | null;
+    lunch: Meal | null;
+    snack: Meal | null;
+    dinner: Meal | null;
+  }>({
+    breakfast: null,
+    lunch: null,
+    snack: null,
+    dinner: null,
+  });
+
+
+  useEffect(() => {
+    const newMealData = searchParams.get('newMeal');
+    if (newMealData) {
+        try {
+            const newMeal = JSON.parse(newMealData);
+            if (newMeal.category && newMeal.data) {
+                setDailyPlan(prevPlan => ({
+                    ...prevPlan,
+                    [newMeal.category]: newMeal.data,
+                }));
+                 // Remove the query parameter from the URL
+                router.replace('/home', undefined);
+            }
+        } catch (error) {
+            console.error("Failed to parse meal data from URL", error);
+        }
+    }
+  }, [searchParams, router]);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
@@ -189,8 +223,12 @@ export default function HomePage() {
         try {
             const userProfile = await getUserProfile(firebaseUser.uid)
             setUser(userProfile)
-            if (userProfile && userProfile.photoURL) {
-                // No need to set preview here as AvatarImage handles src directly
+            if (!userProfile?.photoURL) {
+              // Handle case where photoURL might be missing after signup
+              const freshProfile = await getUserProfile(firebaseUser.uid);
+              if (freshProfile?.photoURL) {
+                setUser(freshProfile);
+              }
             }
         } catch(e) {
             toast({
@@ -204,10 +242,11 @@ export default function HomePage() {
       } else {
         setUser(null)
         setLoading(false)
+        router.replace('/welcome');
       }
     })
     return () => unsubscribe()
-  }, [toast])
+  }, [toast, router])
 
   const startOfWeekDate = startOfWeek(currentDate, { weekStartsOn: 1 }) 
 
@@ -225,19 +264,14 @@ export default function HomePage() {
     router.push(`/home/add-meal/${mealType}`);
   };
   
-  const breakfast = null;
-  const lunch = { id: "1", name: "Escalope Grillée", calories: 600, protein: 30, carbs: 20, fat: 10, image: "https://placehold.co/100x100.png" };
-  const snack = null;
-  const dinner = null;
-
-  const consumedCalories = [breakfast, lunch, snack, dinner]
+  const consumedCalories = Object.values(dailyPlan)
     .filter(Boolean)
     .reduce((acc, meal) => acc + (meal?.calories || 0), 0);
   
   const consumedMacros = {
-    protein: [breakfast, lunch, snack, dinner].filter(Boolean).reduce((acc, meal) => acc + (meal?.protein || 0), 0),
-    carbs: [breakfast, lunch, snack, dinner].filter(Boolean).reduce((acc, meal) => acc + (meal?.carbs || 0), 0),
-    fat: [breakfast, lunch, snack, dinner].filter(Boolean).reduce((acc, meal) => acc + (meal?.fat || 0), 0),
+    protein: Object.values(dailyPlan).filter(Boolean).reduce((acc, meal) => acc + (meal?.macros.protein || 0), 0),
+    carbs: Object.values(dailyPlan).filter(Boolean).reduce((acc, meal) => acc + (meal?.macros.carbs || 0), 0),
+    fat: Object.values(dailyPlan).filter(Boolean).reduce((acc, meal) => acc + (meal?.macros.fat || 0), 0),
   }
 
   const calorieGoal = user?.calorieGoal || 2000;
@@ -292,7 +326,7 @@ export default function HomePage() {
         <header className="flex items-center justify-between">
             <div className="flex items-center gap-4">
                  <Avatar className="h-14 w-14">
-                    <AvatarImage src={user?.photoURL || undefined} alt="User avatar" data-ai-hint="user avatar" />
+                    <AvatarImage src={user?.photoURL || ''} alt="User avatar" data-ai-hint="user avatar" />
                     <AvatarFallback>{user?.fullName?.[0]}</AvatarFallback>
                 </Avatar>
                 <div>
@@ -369,10 +403,10 @@ export default function HomePage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-             <MealCard icon={<Sunrise className="text-yellow-500" />} title="Petit-déjeuner" calorieGoal={mealGoals.breakfast.calories} macroGoals={mealGoals.breakfast.macros} meal={breakfast} onAdd={() => handleAddMeal('breakfast')} />
-            <MealCard icon={<Sun className="text-orange-500" />} title="Déjeuner" calorieGoal={mealGoals.lunch.calories} macroGoals={mealGoals.lunch.macros} meal={lunch} onAdd={() => handleAddMeal('lunch')} />
-            <MealCard icon={<Apple className="text-green-500" />} title="Collation" calorieGoal={mealGoals.snack.calories} macroGoals={mealGoals.snack.macros} meal={snack} onAdd={() => handleAddMeal('snack')} />
-            <MealCard icon={<Sunset className="text-purple-500" />} title="Dîner" calorieGoal={mealGoals.dinner.calories} macroGoals={mealGoals.dinner.macros} meal={dinner} onAdd={() => handleAddMeal('dinner')} />
+             <MealCard icon={<Sunrise className="text-yellow-500" />} title="Petit-déjeuner" calorieGoal={mealGoals.breakfast.calories} macroGoals={mealGoals.breakfast.macros} meal={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} />
+            <MealCard icon={<Sun className="text-orange-500" />} title="Déjeuner" calorieGoal={mealGoals.lunch.calories} macroGoals={mealGoals.lunch.macros} meal={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} />
+            <MealCard icon={<Apple className="text-green-500" />} title="Collation" calorieGoal={mealGoals.snack.calories} macroGoals={mealGoals.snack.macros} meal={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} />
+            <MealCard icon={<Sunset className="text-purple-500" />} title="Dîner" calorieGoal={mealGoals.dinner.calories} macroGoals={mealGoals.dinner.macros} meal={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} />
           </CardContent>
         </Card>
       </div>

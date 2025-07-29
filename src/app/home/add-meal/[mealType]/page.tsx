@@ -45,12 +45,13 @@ export default function AddMealPage() {
   }, [mealType, toast]);
   
   const handleAddMeal = (meal: Meal) => {
-    // TODO: Implement logic to add the meal to the user's daily plan
-    toast({
-        title: "Repas Ajouté!",
-        description: `${meal.name} a été ajouté à votre ${mealType}.`,
-    });
-    router.push('/home');
+    const mealData = {
+        category: mealType,
+        data: meal
+    };
+    // Using query parameter to pass the selected meal back to the home page
+    const query = encodeURIComponent(JSON.stringify(mealData));
+    router.push(`/home?newMeal=${query}`);
   };
 
   const filteredMeals = meals.filter((meal) =>
@@ -121,4 +122,3 @@ export default function AddMealPage() {
     </div>
   );
 }
-
