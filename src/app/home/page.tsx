@@ -2,11 +2,11 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Bell, ChevronLeft, ChevronRight, PlusCircle, Sun, Sunrise, Sunset, Heart, Loader2, Apple } from "lucide-react"
+import { Bell, PlusCircle, Sun, Sunrise, Sunset, Heart, Loader2, Apple } from "lucide-react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
-import { addDays, format, startOfWeek } from "date-fns"
+import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -133,6 +133,8 @@ type DailyPlan = {
     dinner: Meal | null;
 };
 
+const emptyPlan: DailyPlan = { breakfast: null, lunch: null, snack: null, dinner: null };
+
 const MealCard = ({ icon, title, meal, onAdd, calorieGoal, macroGoals }: { icon: React.ReactNode, title: string, meal: Meal | null, onAdd: () => void, calorieGoal: number, macroGoals: {protein: number, carbs: number, fat: number} }) => {
   const consumedCalories = meal?.calories || 0;
   const consumedMacros = meal?.macros || { protein: 0, carbs: 0, fat: 0 };
@@ -184,44 +186,45 @@ const MealCard = ({ icon, title, meal, onAdd, calorieGoal, macroGoals }: { icon:
 
 
 export default function HomePage() {
-  const [currentDate, setCurrentDate] = useState(new Date())
   const [user, setUser] = useState<User | null>(null)
   const { toast } = useToast()
   const today = new Date()
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   
-  const getInitialDailyPlan = (): DailyPlan => {
+  const getInitialDailyPlan = useCallback((): DailyPlan => {
     if (typeof window === "undefined") {
-      return { breakfast: null, lunch: null, snack: null, dinner: null };
+      return emptyPlan;
     }
     try {
-      const savedPlan = localStorage.getItem("dailyPlan");
-      if (savedPlan) {
-        return JSON.parse(savedPlan);
+      const savedData = localStorage.getItem("dailyPlanData");
+      if (savedData) {
+        const { date, plan } = JSON.parse(savedData);
+        const todayStr = new Date().toISOString().split('T')[0];
+        // If the saved date is not today, reset the plan
+        if (date !== todayStr) {
+          localStorage.setItem("dailyPlanData", JSON.stringify({ date: todayStr, plan: emptyPlan }));
+          return emptyPlan;
+        }
+        return plan;
       }
     } catch (error) {
       console.error("Failed to parse daily plan from localStorage", error);
-      localStorage.removeItem("dailyPlan");
+      localStorage.removeItem("dailyPlanData");
     }
-    return { breakfast: null, lunch: null, snack: null, dinner: null };
-  };
-
-  const [dailyPlan, setDailyPlan] = useState<DailyPlan>(getInitialDailyPlan());
-
-  const setAndStoreDailyPlan = useCallback((plan: DailyPlan) => {
-    setDailyPlan(plan);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("dailyPlan", JSON.stringify(plan));
-    }
+    // If nothing is saved, create a new entry for today
+    const todayStr = new Date().toISOString().split('T')[0];
+    localStorage.setItem("dailyPlanData", JSON.stringify({ date: todayStr, plan: emptyPlan }));
+    return emptyPlan;
   }, []);
+  
+  const [dailyPlan, setDailyPlan] = useState<DailyPlan>(emptyPlan);
 
   useEffect(() => {
-    // This effect runs once on mount to sync the state with localStorage,
-    // especially after returning to the page.
-    const savedPlan = getInitialDailyPlan();
-    setDailyPlan(savedPlan);
-  }, []);
+    // This effect syncs state with localStorage on mount and when returning to the page.
+    setDailyPlan(getInitialDailyPlan());
+  }, [getInitialDailyPlan]);
+
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
@@ -253,17 +256,7 @@ export default function HomePage() {
     return () => unsubscribe()
   }, [toast, router])
 
-  const startOfWeekDate = startOfWeek(currentDate, { weekStartsOn: 1 }) 
 
-  const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(startOfWeekDate, i))
-
-  const handlePrevWeek = () => {
-    setCurrentDate(addDays(currentDate, -7))
-  }
-
-  const handleNextWeek = () => {
-    setCurrentDate(addDays(currentDate, 7))
-  }
   
   const handleAddMeal = (mealType: string) => {
     router.push(`/home/add-meal/${mealType}`);
@@ -345,45 +338,6 @@ export default function HomePage() {
             <Bell />
           </Button>
         </header>
-
-        <Card className="shadow-md">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold text-foreground text-center">
-              Votre Plan Hebdomadaire
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between mb-4">
-              <Button variant="ghost" size="icon" onClick={handlePrevWeek}>
-                <ChevronLeft />
-              </Button>
-              <div className="text-center font-semibold">
-                {format(startOfWeekDate, "d")} - {format(addDays(startOfWeekDate, 6), "d MMM, yyyy", { locale: fr })}
-              </div>
-              <Button variant="ghost" size="icon" onClick={handleNextWeek}>
-                <ChevronRight />
-              </Button>
-            </div>
-            <div className="grid grid-cols-7 gap-1 text-center">
-              {weekDays.map((day) => (
-                <div key={day.toISOString()} className="space-y-1">
-                  <p className="text-xs uppercase text-muted-foreground">
-                    {format(day, "eee", { locale: fr })}
-                  </p>
-                  <Button
-                    variant={"ghost"}
-                    size="icon"
-                    className={cn("w-10 h-10 rounded-full", {
-                      "bg-destructive text-destructive-foreground hover:bg-destructive/90": format(day, "yyyy-MM-dd") === format(today, "yyyy-MM-dd")
-                    })}
-                  >
-                    {format(day, "d")}
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
 
         <Card className="shadow-md">
           <CardHeader>

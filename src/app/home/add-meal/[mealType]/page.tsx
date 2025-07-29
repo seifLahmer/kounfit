@@ -53,14 +53,28 @@ export default function AddMealPage() {
   
   const handleAddMeal = (meal: Meal) => {
     try {
-      const savedPlan = localStorage.getItem("dailyPlan");
-      const currentPlan: DailyPlan = savedPlan 
-        ? JSON.parse(savedPlan) 
-        : { breakfast: null, lunch: null, snack: null, dinner: null };
+      const savedData = localStorage.getItem("dailyPlanData");
+      const todayStr = new Date().toISOString().split('T')[0];
+      
+      let currentPlan: DailyPlan;
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        // Check if the saved data is for today
+        if (parsedData.date === todayStr) {
+          currentPlan = parsedData.plan;
+        } else {
+          // It's a new day, so start with a fresh plan
+          currentPlan = { breakfast: null, lunch: null, snack: null, dinner: null };
+        }
+      } else {
+        // No data exists, start fresh
+        currentPlan = { breakfast: null, lunch: null, snack: null, dinner: null };
+      }
       
       currentPlan[mealType] = meal;
       
-      localStorage.setItem("dailyPlan", JSON.stringify(currentPlan));
+      // Save the updated plan with today's date
+      localStorage.setItem("dailyPlanData", JSON.stringify({ date: todayStr, plan: currentPlan }));
       
       router.push('/home');
     } catch (error) {
