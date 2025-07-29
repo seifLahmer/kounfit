@@ -108,8 +108,7 @@ export default function ShoppingCartPage() {
               action: <CheckCircle className="text-green-500" />,
           });
           
-          // Clear the cart
-          localStorage.removeItem("dailyPlanData");
+          // Clear the cart view, but do not clear localStorage
           setCartItems([]);
           
       } catch (error) {
