@@ -13,10 +13,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { useState } from "react";
-import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithRedirect, GoogleAuthProvider } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { updateUserProfile } from "@/lib/services/userService";
+import { AuthRedirectHandler } from "@/components/auth-redirect-handler";
 
 const signupSchema = z.object({
   fullName: z.string().min(2, "Le nom complet doit comporter au moins 2 caractères."),
@@ -71,36 +72,7 @@ export default function SignupStep1Page() {
   const handleGoogleSignUp = async () => {
     setGoogleLoading(true);
     const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      // Create a partial profile. The rest will be filled in step 2.
-      await updateUserProfile(user.uid, {
-        fullName: user.displayName || "New User",
-        email: user.email!,
-        photoURL: user.photoURL,
-        role: "client"
-      });
-      
-      toast({
-        title: "Compte créé!",
-        description: "Finalisez votre profil.",
-      });
-      router.push('/signup/step2');
-
-    } catch (error: any) {
-      // Don't show an error toast if the user simply closes the popup.
-      if (error.code !== 'auth/popup-closed-by-user') {
-        toast({
-          title: "Erreur d'inscription Google",
-          description: "Impossible de s'inscrire avec Google. Veuillez réessayer.",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      setGoogleLoading(false);
-    }
+    await signInWithRedirect(auth, provider);
   }
 
 
@@ -145,6 +117,7 @@ export default function SignupStep1Page() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
+       <AuthRedirectHandler setGoogleLoading={setGoogleLoading} />
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <Link href="/welcome" className="flex justify-center items-center gap-2 mb-4">

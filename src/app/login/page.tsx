@@ -13,11 +13,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { useState } from "react";
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithRedirect, GoogleAuthProvider } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { getUserRole } from "@/lib/services/roleService";
 import { updateUserProfile, getUserProfile } from "@/lib/services/userService";
+import { AuthRedirectHandler } from "@/components/auth-redirect-handler";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -88,47 +89,8 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-
-      // Check if user already exists in Firestore
-      const userProfile = await getUserProfile(user.uid);
-      if (!userProfile) {
-        // New user, create a partial profile and send to step 2
-        await updateUserProfile(user.uid, {
-          fullName: user.displayName || "New User",
-          email: user.email!,
-          photoURL: user.photoURL,
-          role: "client"
-        });
-         toast({
-            title: "Bienvenue!",
-            description: "Finalisez votre profil pour commencer.",
-         });
-         router.push('/signup/step2');
-
-      } else {
-        // Existing user, redirect normally
-        toast({
-            title: "Connexion réussie!",
-            description: "Bienvenue!",
-        });
-        await redirectUser(user.uid);
-      }
-
-    } catch (error: any) {
-      // Don't show an error toast if the user simply closes the popup.
-      if (error.code !== 'auth/popup-closed-by-user') {
-        toast({
-          title: "Erreur de connexion Google",
-          description: "Impossible de se connecter avec Google. Veuillez réessayer.",
-          variant: "destructive",
-        });
-      }
-    } finally {
-      setGoogleLoading(false);
-    }
+    // Use signInWithRedirect instead of signInWithPopup
+    await signInWithRedirect(auth, provider);
   }
 
 
@@ -156,6 +118,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
+      <AuthRedirectHandler setGoogleLoading={setGoogleLoading} />
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
            <Link href="/welcome" className="flex justify-center items-center gap-2 mb-4">
