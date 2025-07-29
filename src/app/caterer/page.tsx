@@ -433,11 +433,27 @@ export default function CatererPage() {
                                     <TableCell>{meal.price.toFixed(2)} DT</TableCell>
                                     <TableCell>{meal.calories} kcal</TableCell>
                                     <TableCell className="text-right">
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="ghost" size="icon" onClick={() => setMealToDelete(meal)}>
-                                                <Trash2 className="w-4 h-4 text-destructive"/>
-                                            </Button>
-                                        </AlertDialogTrigger>
+                                        <AlertDialog onOpenChange={(open) => { if (!open) setMealToDelete(null); }}>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" onClick={() => setMealToDelete(meal)}>
+                                                    <Trash2 className="w-4 h-4 text-destructive"/>
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer ce repas ?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                    Cette action est irréversible. Le repas "{meal.name}" sera définitivement supprimé.
+                                                    </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={handleDeleteMeal} className="bg-destructive hover:bg-destructive/90">
+                                                        Supprimer
+                                                    </AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
                                     </TableCell>
                                 </TableRow>
                             ))
@@ -455,24 +471,6 @@ export default function CatererPage() {
             </Card>
           </div>
     </div>
-    <AlertDialog open={!!mealToDelete} onOpenChange={(open) => !open && setMealToDelete(null)}>
-        <AlertDialogContent>
-        <AlertDialogHeader>
-            <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer ce repas ?</AlertDialogTitle>
-            <AlertDialogDescription>
-            Cette action est irréversible. Le repas "{mealToDelete?.name}" sera définitivement supprimé.
-            </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteMeal} className="bg-destructive hover:bg-destructive/90">
-                Supprimer
-            </AlertDialogAction>
-        </AlertDialogFooter>
-        </AlertDialogContent>
-    </AlertDialog>
     </>
   );
 }
-
-    
