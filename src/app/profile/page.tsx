@@ -92,7 +92,12 @@ export default function ProfilePage() {
             try {
                 const userProfile = await getUserProfile(user.uid);
                 if (userProfile && isMounted.current) {
-                    form.reset(userProfile as ProfileFormValues);
+                    const formValues = {
+                        ...userProfile,
+                        deliveryAddress: userProfile.deliveryAddress || "",
+                        region: userProfile.region || ""
+                    };
+                    form.reset(formValues as ProfileFormValues);
                     if (userProfile.photoURL) {
                       setProfileImagePreview(userProfile.photoURL);
                     }
@@ -337,7 +342,7 @@ export default function ProfilePage() {
                 <FormItem>
                   <FormLabel>Adresse de livraison</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Rue de Russie, Ariana" />
+                    <Input {...field} placeholder="Rue de Russie, Ariana" value={field.value ?? ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -351,7 +356,7 @@ export default function ProfilePage() {
                 <FormItem>
                   <FormLabel>Région/Ville</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Tunis" />
+                    <Input {...field} placeholder="Tunis" value={field.value ?? ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -412,3 +417,5 @@ export default function ProfilePage() {
     </MainLayout>
   )
 }
+
+    
