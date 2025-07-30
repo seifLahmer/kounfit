@@ -12,59 +12,54 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { BookCopy, PlusCircle, Heart, Loader2 } from "lucide-react"
+import { BookCopy, PlusCircle, Heart, Loader2, Frown } from "lucide-react"
 import { auth } from "@/lib/firebase"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Main } from "next/document"
+import { getUserProfile } from "@/lib/services/userService"
+import { getFavoriteMeals } from "@/lib/services/mealService"
+import type { Meal, User } from "@/lib/types"
+import Image from "next/image"
+import Link from "next/link"
 
-const savedPlans = [
-  {
-    title: "High-Protein Kickstart",
-    description: "A plan focused on muscle gain and satiety, perfect for active individuals.",
-    tags: ["High Protein", "Low Carb"],
-    days: 7,
-  },
-  {
-    title: "Mediterranean Delight",
-    description: "Enjoy the flavors of the Mediterranean with this heart-healthy and delicious plan.",
-    tags: ["Balanced", "Heart-Healthy"],
-    days: 5,
-  },
-  {
-    title: "Vegan Power Week",
-    description: "A fully plant-based meal plan packed with nutrients and energy.",
-    tags: ["Vegan", "High Fiber"],
-    days: 7,
-  },
-  {
-    title: "Quick & Easy Lunches",
-    description: "A collection of simple and fast lunch ideas for a busy week.",
-    tags: ["Quick Meals", "Lunch"],
-    days: 5,
-  },
-]
 
 export default function MealPlansPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+  const [favoriteMeals, setFavoriteMeals] = useState<Meal[]>([])
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (!user) {
-        router.replace("/welcome")
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      if (firebaseUser) {
+        setLoading(true);
+        try {
+          const userProfile = await getUserProfile(firebaseUser.uid);
+          setUser(userProfile);
+          if (userProfile && userProfile.favoriteMealIds) {
+            const meals = await getFavoriteMeals(userProfile.favoriteMealIds);
+            setFavoriteMeals(meals);
+          }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
       } else {
-        setLoading(false)
+        router.replace("/welcome")
       }
     })
     return () => unsubscribe()
   }, [router])
 
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
+     <MainLayout>
+        <div className="flex justify-center items-center h-full">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+     </MainLayout>
     )
   }
   return (
@@ -81,34 +76,32 @@ export default function MealPlansPage() {
             </p>
           </div>
         </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {savedPlans.map((plan, index) => (
-            <Card key={index} className="flex flex-col">
-              <CardHeader>
-                <CardTitle>{plan.title}</CardTitle>
-                <CardDescription>{plan.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <div className="flex flex-wrap gap-2">
-                  {plan.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <div className="text-sm text-muted-foreground">{plan.days}-day plan</div>
-                <Button variant="outline">View Meal</Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-         <div className="pt-8 text-center text-muted-foreground">
-            <p>No favorite meals yet.</p>
-            <p className="text-sm">Click the heart icon on a meal to add it here.</p>
-          </div>
+        {favoriteMeals.length > 0 ? (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {favoriteMeals.map((meal) => (
+                <Card key={meal.id} className="flex flex-col">
+                    <Link href={`/home/meal/${meal.id}`} className="block">
+                        <CardHeader className="p-0">
+                            <Image src={meal.imageUrl} alt={meal.name} width={400} height={200} className="rounded-t-lg object-cover w-full h-48" />
+                        </CardHeader>
+                        <CardContent className="flex-grow p-4 space-y-1">
+                            <CardTitle className="text-lg">{meal.name}</CardTitle>
+                            <CardDescription>{meal.calories} kcal &middot; {meal.price.toFixed(2)} DT</CardDescription>
+                        </CardContent>
+                    </Link>
+                </Card>
+            ))}
+            </div>
+        ) : (
+             <div className="pt-8 text-center text-muted-foreground border-2 border-dashed rounded-lg p-12">
+                <Frown className="w-12 h-12 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold">No favorite meals yet.</h3>
+                <p className="text-sm">Click the heart icon on a meal to add it here.</p>
+            </div>
+        )}
       </div>
     </MainLayout>
   )
 }
+
+    

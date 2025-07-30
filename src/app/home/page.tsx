@@ -11,7 +11,7 @@ import { fr } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { auth } from "@/lib/firebase"
-import { getUserProfile } from "@/lib/services/userService"
+import { getUserProfile, toggleFavoriteMeal } from "@/lib/services/userService"
 import type { User, Meal } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import Link from 'next/link';
@@ -135,7 +135,7 @@ type DailyPlan = {
 
 const emptyPlan: DailyPlan = { breakfast: null, lunch: null, snack: null, dinner: null };
 
-const MealCard = ({ icon, title, meal, onAdd, calorieGoal, macroGoals }: { icon: React.ReactNode, title: string, meal: Meal | null, onAdd: () => void, calorieGoal: number, macroGoals: {protein: number, carbs: number, fat: number} }) => {
+const MealCard = ({ icon, title, meal, onAdd, onToggleFavorite, isFavorite, calorieGoal, macroGoals }: { icon: React.ReactNode, title: string, meal: Meal | null, onAdd: () => void, onToggleFavorite: (mealId: string) => void, isFavorite: boolean, calorieGoal: number, macroGoals: {protein: number, carbs: number, fat: number} }) => {
   const consumedCalories = meal?.calories || 0;
   const consumedMacros = meal?.macros || { protein: 0, carbs: 0, fat: 0 };
   
@@ -155,18 +155,18 @@ const MealCard = ({ icon, title, meal, onAdd, calorieGoal, macroGoals }: { icon:
       </CardHeader>
       {meal ? (
         <CardContent>
-            <Link href={`/home/meal/${meal.id}`} className="block">
-                <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4">
+                <Link href={`/home/meal/${meal.id}`} className="flex items-center gap-4 flex-1">
                     <Image src={meal.imageUrl} alt={meal.name} width={80} height={80} className="rounded-lg" data-ai-hint="healthy food"/>
                     <div className="flex-1">
                         <h4 className="font-semibold">{meal.name}</h4>
                         <p className="text-sm text-muted-foreground">{meal.calories} Kcal</p>
                     </div>
-                    <Button variant="ghost" size="icon">
-                        <Heart className="w-5 h-5"/>
-                    </Button>
-                </div>
-            </Link>
+                </Link>
+                <Button variant="ghost" size="icon" onClick={() => onToggleFavorite(meal.id)}>
+                    <Heart className={cn("w-5 h-5", isFavorite ? "text-red-500 fill-current" : "text-gray-400")} />
+                </Button>
+            </div>
         </CardContent>
       ) : (
          <CardContent>
@@ -260,6 +260,19 @@ export default function HomePage() {
   
   const handleAddMeal = (mealType: string) => {
     router.push(`/home/add-meal/${mealType}`);
+  };
+
+  const handleToggleFavorite = async (mealId: string) => {
+    if (!user) {
+        toast({ title: "Vous devez être connecté", variant: "destructive"});
+        return;
+    }
+    try {
+        const updatedFavorites = await toggleFavoriteMeal(user.uid, mealId);
+        setUser(prevUser => prevUser ? { ...prevUser, favoriteMealIds: updatedFavorites } : null);
+    } catch (error) {
+        toast({ title: "Erreur", description: "Impossible de mettre à jour les favoris.", variant: "destructive" });
+    }
   };
   
   const consumedCalories = Object.values(dailyPlan)
@@ -362,12 +375,14 @@ export default function HomePage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-             <MealCard icon={<Sunrise className="text-yellow-500" />} title="Petit-déjeuner" calorieGoal={mealGoals.breakfast.calories} macroGoals={mealGoals.breakfast.macros} meal={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} />
-            <MealCard icon={<Sun className="text-orange-500" />} title="Déjeuner" calorieGoal={mealGoals.lunch.calories} macroGoals={mealGoals.lunch.macros} meal={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} />
-            <MealCard icon={<Apple className="text-green-500" />} title="Collation" calorieGoal={mealGoals.snack.calories} macroGoals={mealGoals.snack.macros} meal={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} />
-            <MealCard icon={<Sunset className="text-purple-500" />} title="Dîner" calorieGoal={mealGoals.dinner.calories} macroGoals={mealGoals.dinner.macros} meal={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} />
+             <MealCard icon={<Sunrise className="text-yellow-500" />} title="Petit-déjeuner" calorieGoal={mealGoals.breakfast.calories} macroGoals={mealGoals.breakfast.macros} meal={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} onToggleFavorite={handleToggleFavorite} isFavorite={!!user?.favoriteMealIds?.includes(dailyPlan.breakfast?.id || '')} />
+            <MealCard icon={<Sun className="text-orange-500" />} title="Déjeuner" calorieGoal={mealGoals.lunch.calories} macroGoals={mealGoals.lunch.macros} meal={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} onToggleFavorite={handleToggleFavorite} isFavorite={!!user?.favoriteMealIds?.includes(dailyPlan.lunch?.id || '')}/>
+            <MealCard icon={<Apple className="text-green-500" />} title="Collation" calorieGoal={mealGoals.snack.calories} macroGoals={mealGoals.snack.macros} meal={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} onToggleFavorite={handleToggleFavorite} isFavorite={!!user?.favoriteMealIds?.includes(dailyPlan.snack?.id || '')}/>
+            <MealCard icon={<Sunset className="text-purple-500" />} title="Dîner" calorieGoal={mealGoals.dinner.calories} macroGoals={mealGoals.dinner.macros} meal={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} onToggleFavorite={handleToggleFavorite} isFavorite={!!user?.favoriteMealIds?.includes(dailyPlan.dinner?.id || '')}/>
           </CardContent>
         </Card>
       </div>
   )
 }
+
+    

@@ -1,5 +1,5 @@
 
-import { doc, setDoc, getDoc, serverTimestamp, Timestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp, Timestamp, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { User } from "@/lib/types";
 
@@ -68,6 +68,48 @@ export async function getUserProfile(uid: string): Promise<User | null> {
     console.error("Could not fetch user profile.", error);
     throw new Error("Could not fetch user profile.");
   }
+}
+
+/**
+ * Toggles a meal's favorite status for a user.
+ * Adds the mealId if it doesn't exist in favorites, removes it if it does.
+ * @param uid The user's unique ID.
+ * @param mealId The ID of the meal to toggle.
+ * @returns The updated array of favorite meal IDs.
+ */
+export async function toggleFavoriteMeal(uid: string, mealId: string): Promise<string[]> {
+    const userRef = doc(db, USERS_COLLECTION, uid);
+    
+    try {
+        const docSnap = await getDoc(userRef);
+        if (!docSnap.exists()) {
+            throw new Error("User profile not found.");
+        }
+
+        const userData = docSnap.data() as User;
+        const currentFavorites = userData.favoriteMealIds || [];
+        
+        let updatedFavorites: string[];
+
+        if (currentFavorites.includes(mealId)) {
+            // Remove from favorites
+            await updateDoc(userRef, {
+                favoriteMealIds: arrayRemove(mealId)
+            });
+            updatedFavorites = currentFavorites.filter(id => id !== mealId);
+        } else {
+            // Add to favorites
+            await updateDoc(userRef, {
+                favoriteMealIds: arrayUnion(mealId)
+            });
+            updatedFavorites = [...currentFavorites, mealId];
+        }
+        
+        return updatedFavorites;
+    } catch (error) {
+        console.error("Error toggling favorite meal: ", error);
+        throw new Error("Could not update favorites.");
+    }
 }
 
     

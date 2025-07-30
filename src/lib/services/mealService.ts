@@ -9,6 +9,7 @@ import {
   Timestamp,
   deleteDoc,
   doc,
+  documentId,
 } from "firebase/firestore";
 import { db, storage } from "@/lib/firebase";
 import type { Meal } from "@/lib/types";
@@ -133,3 +134,38 @@ export async function getAvailableMealsByCategory(category: Meal['category']): P
         throw new Error("Could not fetch available meals.");
     }
 }
+
+/**
+ * Retrieves a list of meals based on their IDs.
+ * @param mealIds An array of meal IDs.
+ * @returns A promise that resolves to an array of meals.
+ */
+export async function getFavoriteMeals(mealIds: string[]): Promise<Meal[]> {
+    if (!mealIds || mealIds.length === 0) {
+        return [];
+    }
+
+    try {
+        const mealsCollection = collection(db, MEALS_COLLECTION);
+        const q = query(mealsCollection, where(documentId(), 'in', mealIds));
+        const querySnapshot = await getDocs(q);
+
+        const meals: Meal[] = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const meal: Meal = {
+                id: doc.id,
+                ...data,
+                createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
+            } as Meal;
+            meals.push(meal);
+        });
+
+        return meals;
+    } catch (error) {
+        console.error("Error fetching favorite meals: ", error);
+        throw new Error("Could not fetch favorite meals.");
+    }
+}
+
+    
