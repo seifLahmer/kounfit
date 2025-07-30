@@ -1,5 +1,6 @@
 
 
+
 import {
   collection,
   addDoc,
@@ -11,7 +12,8 @@ import {
   doc,
   writeBatch,
   updateDoc,
-  getDoc
+  getDoc,
+  orderBy
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { Order, User, Meal } from "@/lib/types";
@@ -51,6 +53,37 @@ export async function placeOrder(orderData: PlaceOrderInput): Promise<string> {
     throw new Error("Could not place the order.");
   }
 }
+
+/**
+ * Retrieves all orders from the 'orders' collection, sorted by date.
+ * @returns A promise that resolves to an array of all orders.
+ */
+export async function getAllOrders(): Promise<Order[]> {
+    try {
+        const ordersCollection = collection(db, ORDERS_COLLECTION);
+        const q = query(ordersCollection, orderBy("orderDate", "desc"));
+        
+        const querySnapshot = await getDocs(q);
+        
+        const orders: Order[] = [];
+        querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            const order: Order = {
+                id: docSnap.id,
+                ...data,
+                orderDate: data.orderDate instanceof Timestamp ? data.orderDate.toDate() : new Date(),
+                deliveryDate: data.deliveryDate instanceof Timestamp ? data.deliveryDate.toDate() : new Date(),
+            } as Order;
+            orders.push(order);
+        });
+        
+        return orders;
+    } catch (error) {
+        console.error("Error fetching all orders: ", error);
+        throw new Error("Could not fetch orders.");
+    }
+}
+
 
 /**
  * Retrieves all orders containing at least one meal created by a specific caterer.

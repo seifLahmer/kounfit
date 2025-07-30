@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,9 +23,101 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShieldAlert } from "lucide-react";
+import { Loader2, ShieldAlert, Trash2 } from "lucide-react";
+import { addCaterer, getAllCaterers, deleteCaterer } from "@/lib/services/catererService";
+import { getAllOrders } from "@/lib/services/orderService";
+import type { Caterer, Order } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { Badge } from "@/components/ui/badge";
 
 export default function AdminPage() {
+  const { toast } = useToast();
+  const [caterers, setCaterers] = useState<Caterer[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loadingCaterers, setLoadingCaterers] = useState(true);
+  const [loadingOrders, setLoadingOrders] = useState(true);
+  const [isAdding, setIsAdding] = useState(false);
+  
+  const [catererUid, setCatererUid] = useState("");
+  const [catererName, setCatererName] = useState("");
+  const [catererEmail, setCatererEmail] = useState("");
+
+  const [regionFilter, setRegionFilter] = useState("all");
+
+  const fetchAdminData = async () => {
+    try {
+      setLoadingCaterers(true);
+      setLoadingOrders(true);
+      const [caterersData, ordersData] = await Promise.all([
+        getAllCaterers(),
+        getAllOrders(),
+      ]);
+      setCaterers(caterersData);
+      setOrders(ordersData);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les données.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingCaterers(false);
+      setLoadingOrders(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAdminData();
+  }, []);
+
+  const handleAddCaterer = async () => {
+    if (!catererUid || !catererName || !catererEmail) {
+      toast({ title: "Champs requis", description: "Veuillez remplir tous les champs.", variant: "destructive" });
+      return;
+    }
+    setIsAdding(true);
+    try {
+      await addCaterer({ uid: catererUid, name: catererName, email: catererEmail });
+      toast({ title: "Succès", description: "Le traiteur a été ajouté." });
+      setCatererUid("");
+      setCatererName("");
+      setCatererEmail("");
+      fetchAdminData(); // Refresh list
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible d'ajouter le traiteur.", variant: "destructive" });
+    } finally {
+      setIsAdding(false);
+    }
+  };
+  
+  const handleDeleteCaterer = async (uid: string) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce traiteur? Cette action est irréversible.")) return;
+
+    try {
+      await deleteCaterer(uid);
+      toast({ title: "Succès", description: "Le traiteur a été supprimé." });
+      fetchAdminData(); // Refresh list
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible de supprimer le traiteur.", variant: "destructive" });
+    }
+  };
+
+  const filteredOrders = orders.filter(order => 
+    regionFilter === 'all' || order.clientRegion.toLowerCase() === regionFilter
+  );
+
+  const getStatusBadge = (status: Order['status']) => {
+    switch (status) {
+      case 'pending': return <Badge variant="secondary">En attente</Badge>;
+      case 'in_preparation': return <Badge className="bg-yellow-500 text-white">En préparation</Badge>;
+      case 'delivered': return <Badge className="bg-green-500 text-white">Livrée</Badge>;
+      case 'cancelled': return <Badge variant="destructive">Annulée</Badge>;
+      default: return <Badge>{status}</Badge>;
+    }
+  };
+
   return (
     <div className="p-4 space-y-6">
       <header>
@@ -59,17 +152,18 @@ export default function AdminPage() {
                 </Alert>
                 <div className="space-y-2">
                   <Label htmlFor="caterer-uid">UID du Traiteur (Firebase Auth)</Label>
-                  <Input id="caterer-uid" placeholder="Copiez l'UID depuis la console Firebase" />
+                  <Input id="caterer-uid" placeholder="Copiez l'UID depuis la console Firebase" value={catererUid} onChange={e => setCatererUid(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="caterer-name">Nom Complet</Label>
-                  <Input id="caterer-name" placeholder="Ex: Jean Traiteur" />
+                  <Input id="caterer-name" placeholder="Ex: Jean Traiteur" value={catererName} onChange={e => setCatererName(e.target.value)} />
                 </div>
                  <div className="space-y-2">
                   <Label htmlFor="caterer-email">Email du Traiteur</Label>
-                  <Input id="caterer-email" placeholder="Ex: traiteur@exemple.com" />
+                  <Input id="caterer-email" placeholder="Ex: traiteur@exemple.com" value={catererEmail} onChange={e => setCatererEmail(e.target.value)} />
                 </div>
-                <Button className="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white">
+                <Button onClick={handleAddCaterer} disabled={isAdding} className="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white">
+                  {isAdding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Ajouter le Traiteur
                 </Button>
               </CardContent>
@@ -86,15 +180,37 @@ export default function AdminPage() {
                       <TableRow>
                         <TableHead>Nom</TableHead>
                         <TableHead>Email</TableHead>
+                        <TableHead>UID</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center text-muted-foreground h-24">
-                          Aucun traiteur n'a encore été ajouté.
-                        </TableCell>
-                      </TableRow>
+                      {loadingCaterers ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center h-24">
+                            <Loader2 className="mx-auto animate-spin text-primary" />
+                          </TableCell>
+                        </TableRow>
+                      ) : caterers.length > 0 ? (
+                        caterers.map(caterer => (
+                          <TableRow key={caterer.uid}>
+                            <TableCell className="font-medium">{caterer.name}</TableCell>
+                            <TableCell>{caterer.email}</TableCell>
+                            <TableCell className="text-muted-foreground text-xs">{caterer.uid}</TableCell>
+                            <TableCell className="text-right">
+                              <Button variant="ghost" size="icon" onClick={() => handleDeleteCaterer(caterer.uid)}>
+                                <Trash2 className="w-4 h-4 text-destructive" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-muted-foreground h-24">
+                            Aucun traiteur n'a encore été ajouté.
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </div>
@@ -113,7 +229,7 @@ export default function AdminPage() {
               </p>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Filtrer par région</label>
-                <Select>
+                <Select value={regionFilter} onValueChange={setRegionFilter}>
                   <SelectTrigger>
                     <SelectValue placeholder="Toutes les régions" />
                   </SelectTrigger>
@@ -138,11 +254,29 @@ export default function AdminPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground h-24">
-                        Aucune commande trouvée pour cette région
-                      </TableCell>
-                    </TableRow>
+                     {loadingOrders ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center h-24">
+                            <Loader2 className="mx-auto animate-spin text-primary" />
+                          </TableCell>
+                        </TableRow>
+                      ) : filteredOrders.length > 0 ? (
+                        filteredOrders.map(order => (
+                          <TableRow key={order.id}>
+                            <TableCell className="font-medium">{order.clientName}</TableCell>
+                            <TableCell>{order.clientRegion}</TableCell>
+                            <TableCell>{format(order.orderDate, 'd MMM yyyy', { locale: fr })}</TableCell>
+                            <TableCell>{order.totalPrice.toFixed(2)} DT</TableCell>
+                            <TableCell>{getStatusBadge(order.status)}</TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center text-muted-foreground h-24">
+                            Aucune commande trouvée pour cette région
+                          </TableCell>
+                        </TableRow>
+                      )}
                   </TableBody>
                 </Table>
               </div>
