@@ -94,7 +94,7 @@ export default function SignupStep1Page() {
         </CardHeader>
         <CardContent>
           <div className="text-center text-sm text-muted-foreground mb-4">
-              Pour vous inscrire avec Google, veuillez passer par la page de connexion.
+              Pour vous inscrire avec Google, veuillez passer par la <Link href="/login" className="underline text-destructive">page de connexion</Link>.
           </div>
           <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">

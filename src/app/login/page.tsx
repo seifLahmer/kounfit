@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, User as FirebaseUser } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { getUserRole } from "@/lib/services/roleService";
@@ -102,14 +102,29 @@ export default function LoginPage() {
       await redirectUser(firebaseUser.uid);
 
     } catch (error: any) {
-        if (error.code !== 'auth/popup-closed-by-user') {
-            console.error("Google Sign-In Error:", error);
-            toast({
-                title: "Erreur de connexion Google",
-                description: `Une erreur est survenue: ${error.message}`,
-                variant: "destructive",
-            });
-        }
+      if (error.code === 'auth/popup-closed-by-user') {
+        // User closed the popup, do nothing.
+        return;
+      }
+
+      if (error.code === 'auth/unauthorized-domain') {
+        // Extract the domain from the error message if possible
+        const domainMatch = error.message.match(/domain\s(.*?)\sis/);
+        const domain = domainMatch ? domainMatch[1] : 'votre domaine actuel';
+        toast({
+          title: "Domaine non autorisé",
+          description: `Veuillez ajouter ${domain} à la liste des domaines autorisés dans votre console Firebase -> Authentication -> Settings.`,
+          variant: "destructive",
+          duration: 9000
+        });
+      } else {
+        console.error("Google Sign-In Error:", error);
+        toast({
+            title: "Erreur de connexion Google",
+            description: `Une erreur est survenue: ${error.message}`,
+            variant: "destructive",
+        });
+      }
     } finally {
         setGoogleLoading(false);
     }
