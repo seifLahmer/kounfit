@@ -41,7 +41,20 @@ export default function LoginPage() {
   });
   
   const handleNewOrReturningUser = async (firebaseUser: FirebaseUser) => {
+    setLoading(true);
     try {
+      const role = await getUserRole(firebaseUser.uid);
+
+      if (role === 'admin') {
+        router.replace('/admin');
+        return;
+      }
+      if (role === 'caterer') {
+        router.replace('/caterer');
+        return;
+      }
+
+      // If we are here, the user is a client
       let userProfile = await getUserProfile(firebaseUser.uid);
 
       if (!userProfile) {
@@ -57,27 +70,20 @@ export default function LoginPage() {
       if (!userProfile || !userProfile.mainGoal) {
          router.replace('/signup/step2');
       } else {
-          const role = await getUserRole(firebaseUser.uid);
-          if (role === 'admin') {
-              router.replace('/admin');
-          } else if (role === 'caterer') {
-              router.replace('/caterer');
-          } else {
-              router.replace('/home');
-          }
+         router.replace('/home');
       }
     } catch (error) {
         console.error("Redirection error:", error);
         toast({ title: "Erreur", description: "Impossible de vous rediriger après la connexion.", variant: "destructive" });
+    } finally {
         setLoading(false);
     }
   };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        // Layouts will handle redirection
-      }
+      // The logic to redirect logged-in users is handled by the respective layouts (admin, caterer, home).
+      // This page should just show the login form if no one is logged in.
       setIsAuthChecked(true);
     });
     return () => unsubscribe();
@@ -89,6 +95,7 @@ export default function LoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
       await handleNewOrReturningUser(userCredential.user);
     } catch (error: any) {
+      setLoading(false);
       let description = "An error occurred during login.";
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         description = "Email ou mot de passe invalide. Veuillez réessayer.";
@@ -98,7 +105,6 @@ export default function LoginPage() {
         description: description,
         variant: "destructive",
       });
-      setLoading(false);
     }
   };
   
