@@ -17,7 +17,6 @@ import { signInWithEmailAndPassword, onAuthStateChanged, User as FirebaseUser, s
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { getUserRole } from "@/lib/services/roleService";
-import { getUserProfile, updateUserProfile } from "@/lib/services/userService";
 import { Separator } from "@/components/ui/separator";
 
 const loginSchema = z.object({
@@ -50,43 +49,19 @@ export default function LoginPage() {
     },
   });
   
-  const handleNewOrReturningUser = async (firebaseUser: FirebaseUser, isNewUser: boolean = false) => {
+  const handleLoginSuccess = async (firebaseUser: FirebaseUser) => {
     setLoading(true);
     try {
         const role = await getUserRole(firebaseUser.uid);
-
         if (role === 'admin') {
             router.replace('/admin');
-            return;
-        }
-        if (role === 'caterer') {
+        } else if (role === 'caterer') {
             router.replace('/caterer');
-            return;
-        }
-
-        // If we are here, the user is a client
-        let userProfile = await getUserProfile(firebaseUser.uid);
-
-        if (!userProfile) {
-            // This case handles Google Sign-in for a user that doesn't have a profile yet
-            await updateUserProfile(firebaseUser.uid, {
-                fullName: firebaseUser.displayName || 'New User',
-                email: firebaseUser.email!,
-                photoURL: firebaseUser.photoURL,
-                role: 'client'
-            });
-            userProfile = await getUserProfile(firebaseUser.uid);
-        }
-
-        // For both new and returning users, check if the profile is complete.
-        if (!userProfile?.mainGoal) {
-            router.replace('/signup/step2');
         } else {
             router.replace('/home');
         }
-
     } catch (error) {
-        console.error("Redirection error:", error);
+        console.error("Login redirection error:", error);
         toast({ title: "Erreur", description: "Impossible de vous rediriger après la connexion.", variant: "destructive" });
         setLoading(false);
     }
@@ -94,18 +69,18 @@ export default function LoginPage() {
   
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      // The logic to redirect logged-in users is handled by the respective layouts (admin, caterer, home).
+      // The logic to redirect logged-in users is handled by the respective layouts.
       // This page should just show the login form if no one is logged in.
       setIsAuthChecked(true);
     });
     return () => unsubscribe();
-  }, []);
+  }, [router]);
 
   const onSubmit = async (data: LoginFormValues) => {
     setLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-      await handleNewOrReturningUser(userCredential.user);
+      await handleLoginSuccess(userCredential.user);
     } catch (error: any) {
       setLoading(false);
       let description = "An error occurred during login.";
@@ -124,7 +99,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const userCredential = await signInWithPopup(auth, googleProvider);
-      await handleNewOrReturningUser(userCredential.user);
+      await handleLoginSuccess(userCredential.user);
     } catch (error: any) {
       console.error(error);
       if (error.code !== 'auth/popup-closed-by-user') {
@@ -225,5 +200,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    

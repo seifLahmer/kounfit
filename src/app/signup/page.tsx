@@ -17,7 +17,6 @@ import { createUserWithEmailAndPassword, signInWithPopup, User as FirebaseUser }
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { updateUserProfile, getUserProfile } from "@/lib/services/userService";
-import { getUserRole } from "@/lib/services/roleService";
 import { Separator } from "@/components/ui/separator";
 
 
@@ -53,44 +52,33 @@ export default function SignupStep1Page() {
     },
   });
 
-  const handleNewOrReturningUser = async (firebaseUser: FirebaseUser) => {
+  const handleNewUser = async (firebaseUser: FirebaseUser, fullName?: string | null) => {
     setLoading(true);
     try {
-        const role = await getUserRole(firebaseUser.uid);
+        const userProfile = await getUserProfile(firebaseUser.uid);
 
-        if (role === 'admin') {
-            router.replace('/admin');
-            return;
-        }
-        if (role === 'caterer') {
-            router.replace('/caterer');
+        // If user already has a full profile, send them to home
+        if (userProfile?.mainGoal) {
+            router.replace('/home');
             return;
         }
 
-        // If we are here, the user is a client
-        let userProfile = await getUserProfile(firebaseUser.uid);
-
+        // If user has a partial profile or no profile, create/update it
         if (!userProfile) {
-            // This case handles Google Sign-in for a user that doesn't have a profile yet
             await updateUserProfile(firebaseUser.uid, {
-                fullName: firebaseUser.displayName || 'New User',
+                fullName: fullName || firebaseUser.displayName || 'New User',
                 email: firebaseUser.email!,
                 photoURL: firebaseUser.photoURL,
                 role: 'client'
             });
-            userProfile = await getUserProfile(firebaseUser.uid);
         }
-
-        // For both new and returning users, check if the profile is complete.
-        if (!userProfile?.mainGoal) {
-            router.replace('/signup/step2');
-        } else {
-            router.replace('/home');
-        }
+        
+        // Everyone else goes to step 2 to complete their profile
+        router.replace('/signup/step2');
 
     } catch (error) {
-        console.error("Redirection error:", error);
-        toast({ title: "Erreur", description: "Impossible de vous rediriger après la connexion.", variant: "destructive" });
+        console.error("New user handling error:", error);
+        toast({ title: "Erreur", description: "Impossible de finaliser votre inscription.", variant: "destructive" });
         setLoading(false);
     }
   };
@@ -98,26 +86,8 @@ export default function SignupStep1Page() {
   const onSubmit = async (data: SignupFormValues) => {
     setLoading(true);
     try {
-      // 1. Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-      const user = userCredential.user;
-
-      // 2. Create a partial user profile in Firestore
-      const userProfileData = {
-          fullName: data.fullName,
-          email: data.email,
-          role: "client" as const,
-      };
-      await updateUserProfile(user.uid, userProfileData);
-
-      toast({
-        title: "Compte créé!",
-        description: "Il ne reste plus qu'à finaliser votre profil.",
-      });
-
-      // 3. Redirect to step 2
-      router.push("/signup/step2");
-
+      await handleNewUser(userCredential.user, data.fullName);
     } catch (error: any) {
        console.error("Signup Error:", error);
        let description = "Une erreur s'est produite lors de l'inscription.";
@@ -137,7 +107,7 @@ export default function SignupStep1Page() {
     setLoading(true);
     try {
       const userCredential = await signInWithPopup(auth, googleProvider);
-      await handleNewOrReturningUser(userCredential.user);
+      await handleNewUser(userCredential.user);
     } catch (error: any) {
       console.error(error);
        if (error.code !== 'auth/popup-closed-by-user') {
@@ -236,5 +206,3 @@ export default function SignupStep1Page() {
     </div>
   );
 }
-
-    
