@@ -103,14 +103,15 @@ export default function LoginPage() {
 
       await redirectUser(user.uid);
     } catch (error: any) {
-      if (error.code !== 'auth/popup-closed-by-user') {
-          toast({
-            title: "Erreur de connexion Google",
-            description: `Une erreur est survenue: ${error.message} (code: ${error.code})`,
-            variant: "destructive",
-          });
-      }
+      // Affiche TOUTES les erreurs, sans exception.
+      console.error("Google Sign-In Error:", error);
+      toast({
+        title: "Erreur de connexion Google",
+        description: `Une erreur est survenue: ${error.message} (code: ${error.code})`,
+        variant: "destructive",
+      });
     } finally {
+        // Garantit que le chargement s'arrête, quel que soit le résultat.
         setGoogleLoading(false);
     }
   };
