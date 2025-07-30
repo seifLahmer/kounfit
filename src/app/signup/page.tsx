@@ -93,19 +93,6 @@ export default function SignupStep1Page() {
           <CardDescription>Rejoignez-nous pour atteindre vos objectifs de forme.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center text-sm text-muted-foreground mb-4">
-              Pour vous inscrire avec Google, veuillez passer par la <Link href="/login" className="underline text-destructive">page de connexion</Link>.
-          </div>
-          <div className="relative my-4">
-              <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                  S'inscrire avec un email
-                  </span>
-              </div>
-          </div>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                <FormField
