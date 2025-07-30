@@ -1,10 +1,10 @@
 
 "use client"
 
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, MapPin, Loader2 } from 'lucide-react';
+import { ChevronLeft, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -22,29 +22,27 @@ const DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// Dynamically import the map component to ensure it's only rendered on the client side.
 const MapContainerWrapper = dynamic(() => import('@/components/ui/map-container-wrapper'), {
     ssr: false,
     loading: () => <div className="h-full w-full bg-muted flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin"/></div>
 });
 
-
 function SetLocationPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
-    const [position, setPosition] = useState<L.LatLng>(new L.LatLng(36.8065, 10.1815)); // Default to Tunis
+    const [finalPosition, setFinalPosition] = useState<L.LatLng>(new L.LatLng(36.8065, 10.1815));
 
     const handleConfirmLocation = async () => {
         setLoading(true);
         try {
             // Reverse geocode the coordinates to get an address
-            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.lat}&lon=${position.lng}`);
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${finalPosition.lat}&lon=${finalPosition.lng}`);
             if (!response.ok) {
                 throw new Error("Failed to fetch address from coordinates.");
             }
             const data = await response.json();
-            const address = data.display_name || `Lat: ${position.lat.toFixed(4)}, Lon: ${position.lng.toFixed(4)}`;
+            const address = data.display_name || `Lat: ${finalPosition.lat.toFixed(4)}, Lon: ${finalPosition.lng.toFixed(4)}`;
 
             localStorage.setItem('selectedDeliveryAddress', address);
             
@@ -80,7 +78,11 @@ function SetLocationPage() {
             </header>
 
             <div className="flex-grow z-10">
-                 <MapContainerWrapper center={position} zoom={13} setPosition={setPosition} />
+                 <MapContainerWrapper 
+                    center={new L.LatLng(36.8065, 10.1815)} 
+                    zoom={13} 
+                    onPositionChange={setFinalPosition} 
+                 />
             </div>
 
             <footer className="absolute bottom-0 left-0 right-0 z-20 p-4 bg-gradient-to-t from-black/20 to-transparent">
