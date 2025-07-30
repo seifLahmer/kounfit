@@ -60,14 +60,17 @@ export default function PrivacyPolicyPage() {
             Nous utilisons des mesures de sécurité techniques et organisationnelles pour protéger vos données contre l'accès non autorisé, la modification, la divulgation ou la destruction.
           </p>
 
-          <h3 className="text-xl font-semibold text-foreground pt-4">5. Vos droits</h3>
+          <h3 className="text-xl font-semibold text-foreground pt-4">5. Vos droits et suppression des données</h3>
           <p>
-            Vous pouvez à tout moment accéder et modifier les informations de votre profil directement dans l'application. Vous pouvez également supprimer votre compte, ce qui entraînera la suppression de vos données personnelles.
+            Vous pouvez à tout moment accéder et modifier les informations de votre profil directement dans l'application depuis la page "Profil". Vous avez également le droit de supprimer votre compte et toutes les données associées.
+          </p>
+           <p>
+            Pour supprimer définitivement votre compte, vous pouvez vous rendre sur votre page de profil dans l'application et utiliser l'option de suppression de compte. La suppression de votre compte est une action irréversible et entraînera la suppression de toutes vos données personnelles de nos systèmes. Alternativement, vous pouvez envoyer une demande de suppression de données à l'adresse e-mail ci-dessous.
           </p>
 
           <h3 className="text-xl font-semibold text-foreground pt-4">6. Contact</h3>
           <p>
-            Pour toute question concernant cette politique de confidentialité, veuillez nous contacter à l'adresse contact@nutritrack.app.
+            Pour toute question concernant cette politique de confidentialité ou pour une demande de suppression de données, veuillez nous contacter à l'adresse contact@nutritrack.app.
           </p>
         </div>
       </main>
