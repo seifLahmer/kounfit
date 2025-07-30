@@ -2,6 +2,7 @@
 
 
 
+
 export type User = {
   uid: string;
   email: string;
@@ -67,6 +68,8 @@ export type Caterer = {
   uid: string; // This will be the same as their auth UID
   name: string;
   email: string;
+  region: string;
+  turnover?: number;
 };
 
 export type Order = {

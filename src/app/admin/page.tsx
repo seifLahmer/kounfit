@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -23,7 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, ShieldAlert, Trash2 } from "lucide-react";
+import { Loader2, ShieldAlert, Trash2, TrendingUp } from "lucide-react";
 import { addCaterer, getAllCaterers, deleteCaterer } from "@/lib/services/catererService";
 import { getAllOrders } from "@/lib/services/orderService";
 import type { Caterer, Order } from "@/lib/types";
@@ -43,8 +43,20 @@ export default function AdminPage() {
   const [catererUid, setCatererUid] = useState("");
   const [catererName, setCatererName] = useState("");
   const [catererEmail, setCatererEmail] = useState("");
+  const [catererRegion, setCatererRegion] = useState("");
 
   const [regionFilter, setRegionFilter] = useState("all");
+
+  const calculateTurnover = (allOrders: Order[], catererId: string): number => {
+    return allOrders.reduce((total, order) => {
+      // Sum the prices of items belonging to this specific caterer in the order
+      const catererTurnoverInOrder = order.items
+        .filter(item => item.catererId === catererId)
+        .reduce((itemSum, item) => itemSum + (item.unitPrice * item.quantity), 0);
+      return total + catererTurnoverInOrder;
+    }, 0);
+  };
+  
 
   const fetchAdminData = async () => {
     try {
@@ -54,7 +66,13 @@ export default function AdminPage() {
         getAllCaterers(),
         getAllOrders(),
       ]);
-      setCaterers(caterersData);
+
+      const caterersWithTurnover = caterersData.map(caterer => ({
+        ...caterer,
+        turnover: calculateTurnover(ordersData, caterer.uid)
+      }));
+
+      setCaterers(caterersWithTurnover);
       setOrders(ordersData);
     } catch (error) {
       toast({
@@ -73,17 +91,18 @@ export default function AdminPage() {
   }, []);
 
   const handleAddCaterer = async () => {
-    if (!catererUid || !catererName || !catererEmail) {
+    if (!catererUid || !catererName || !catererEmail || !catererRegion) {
       toast({ title: "Champs requis", description: "Veuillez remplir tous les champs.", variant: "destructive" });
       return;
     }
     setIsAdding(true);
     try {
-      await addCaterer({ uid: catererUid, name: catererName, email: catererEmail });
+      await addCaterer({ uid: catererUid, name: catererName, email: catererEmail, region: catererRegion });
       toast({ title: "Succès", description: "Le traiteur a été ajouté." });
       setCatererUid("");
       setCatererName("");
       setCatererEmail("");
+      setCatererRegion("");
       fetchAdminData(); // Refresh list
     } catch (error) {
       toast({ title: "Erreur", description: "Impossible d'ajouter le traiteur.", variant: "destructive" });
@@ -108,6 +127,9 @@ export default function AdminPage() {
     regionFilter === 'all' || order.clientRegion.toLowerCase() === regionFilter
   );
 
+  const totalOrdersValue = orders.reduce((sum, order) => sum + order.totalPrice, 0);
+
+
   const getStatusBadge = (status: Order['status']) => {
     switch (status) {
       case 'pending': return <Badge variant="secondary">En attente</Badge>;
@@ -129,7 +151,7 @@ export default function AdminPage() {
       <Tabs defaultValue="traiteurs" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="traiteurs">Gestion des Traiteurs</TabsTrigger>
-          <TabsTrigger value="commandes">Gestion des Commandes</TabsTrigger>
+          <TabsTrigger value="commandes">Suivi des Commandes</TabsTrigger>
         </TabsList>
         <TabsContent value="traiteurs">
            <div className="space-y-6">
@@ -162,6 +184,10 @@ export default function AdminPage() {
                   <Label htmlFor="caterer-email">Email du Traiteur</Label>
                   <Input id="caterer-email" placeholder="Ex: traiteur@exemple.com" value={catererEmail} onChange={e => setCatererEmail(e.target.value)} />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="caterer-region">Région</Label>
+                  <Input id="caterer-region" placeholder="Ex: Tunis" value={catererRegion} onChange={e => setCatererRegion(e.target.value)} />
+                </div>
                 <Button onClick={handleAddCaterer} disabled={isAdding} className="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white">
                   {isAdding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Ajouter le Traiteur
@@ -181,13 +207,15 @@ export default function AdminPage() {
                         <TableHead>Nom</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>UID</TableHead>
+                        <TableHead>Région</TableHead>
+                        <TableHead>Chiffre d'affaires</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {loadingCaterers ? (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center h-24">
+                          <TableCell colSpan={6} className="text-center h-24">
                             <Loader2 className="mx-auto animate-spin text-primary" />
                           </TableCell>
                         </TableRow>
@@ -197,6 +225,8 @@ export default function AdminPage() {
                             <TableCell className="font-medium">{caterer.name}</TableCell>
                             <TableCell>{caterer.email}</TableCell>
                             <TableCell className="text-muted-foreground text-xs">{caterer.uid}</TableCell>
+                            <TableCell>{caterer.region}</TableCell>
+                            <TableCell className="font-semibold">{caterer.turnover?.toFixed(2) ?? '0.00'} DT</TableCell>
                             <TableCell className="text-right">
                               <Button variant="ghost" size="icon" onClick={() => handleDeleteCaterer(caterer.uid)}>
                                 <Trash2 className="w-4 h-4 text-destructive" />
@@ -206,7 +236,7 @@ export default function AdminPage() {
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center text-muted-foreground h-24">
+                          <TableCell colSpan={6} className="text-center text-muted-foreground h-24">
                             Aucun traiteur n'a encore été ajouté.
                           </TableCell>
                         </TableRow>
@@ -221,12 +251,23 @@ export default function AdminPage() {
         <TabsContent value="commandes">
           <Card>
             <CardHeader>
-              <CardTitle>Gestion des Commandes</CardTitle>
+              <CardTitle>Suivi des Commandes</CardTitle>
+              <CardDescription>
+                Visualisez, filtrez et suivez toutes les commandes des clients.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-muted-foreground">
-                Visualisez et filtrez toutes les commandes des clients.
-              </p>
+              <Card>
+                  <CardContent className="p-4 flex items-center gap-4">
+                      <div className="bg-red-100 p-3 rounded-full">
+                          <TrendingUp className="w-6 h-6 text-red-600" />
+                      </div>
+                      <div>
+                          <p className="text-sm text-muted-foreground">Chiffre d'affaires total</p>
+                          <p className="text-2xl font-bold">{totalOrdersValue.toFixed(2)} DT</p>
+                      </div>
+                  </CardContent>
+              </Card>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Filtrer par région</label>
                 <Select value={regionFilter} onValueChange={setRegionFilter}>

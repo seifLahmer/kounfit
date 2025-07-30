@@ -11,13 +11,15 @@ const CATERERS_COLLECTION = "traiteur";
  * @param uid The UID of the caterer (from Firebase Auth).
  * @param name The full name of the caterer.
  * @param email The email of the caterer.
+ * @param region The region of the caterer.
  */
-export async function addCaterer(catererData: Caterer): Promise<void> {
+export async function addCaterer(catererData: Omit<Caterer, 'turnover'>): Promise<void> {
   try {
     const catererRef = doc(db, CATERERS_COLLECTION, catererData.uid);
     await setDoc(catererRef, {
         name: catererData.name,
         email: catererData.email,
+        region: catererData.region,
     });
   } catch (error) {
     console.error("Error adding caterer: ", error);
@@ -41,6 +43,7 @@ export async function getAllCaterers(): Promise<Caterer[]> {
         uid: doc.id,
         name: data.name,
         email: data.email,
+        region: data.region,
       });
     });
 
