@@ -44,6 +44,7 @@ export default function LoginPage() {
     try {
         const userProfile = await getUserProfile(uid);
         
+        // If profile is incomplete (common for new sign-ups), go to step 2
         if (!userProfile || !userProfile.mainGoal) {
            router.replace('/signup/step2');
            return;
@@ -55,10 +56,12 @@ export default function LoginPage() {
         } else if (role === 'caterer') {
           router.replace('/caterer');
         } else {
-          router.replace('/home');
+          router.replace('/home'); // Default to client home page
         }
     } catch(error) {
         toast({ title: "Erreur de redirection", description: "Impossible de vérifier le profil utilisateur.", variant: "destructive"});
+        setLoading(false);
+        setGoogleLoading(false);
         router.replace('/welcome');
     }
   }
@@ -83,52 +86,51 @@ export default function LoginPage() {
     }
   };
   
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = () => {
     setGoogleLoading(true);
     const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const firebaseUser = result.user;
-      
-      const userProfile = await getUserProfile(firebaseUser.uid);
-      if (!userProfile) {
-        await updateUserProfile(firebaseUser.uid, {
-          fullName: firebaseUser.displayName || 'Utilisateur Google',
-          email: firebaseUser.email!,
-          photoURL: firebaseUser.photoURL,
-          role: 'client'
-        });
-      }
-      await redirectUser(firebaseUser.uid);
 
-    } catch (error: any) {
-      if (error.code === 'auth/popup-closed-by-user') {
-        // User closed the popup, do nothing.
-        return;
-      }
+    signInWithPopup(auth, provider)
+      .then(async (result) => {
+        // This code runs only on successful sign-in
+        const firebaseUser = result.user;
+        const userProfile = await getUserProfile(firebaseUser.uid);
 
-      if (error.code === 'auth/unauthorized-domain') {
-        // Extract the domain from the error message if possible
-        const domainMatch = error.message.match(/domain\s(.*?)\sis/);
-        const domain = domainMatch ? domainMatch[1] : 'votre domaine actuel';
-        toast({
-          title: "Domaine non autorisé",
-          description: `Veuillez ajouter ${domain} à la liste des domaines autorisés dans votre console Firebase -> Authentication -> Settings.`,
-          variant: "destructive",
-          duration: 9000
-        });
-      } else {
+        // If the user is new, create a partial profile
+        if (!userProfile) {
+          await updateUserProfile(firebaseUser.uid, {
+            fullName: firebaseUser.displayName || 'Utilisateur Google',
+            email: firebaseUser.email!,
+            photoURL: firebaseUser.photoURL,
+            role: 'client'
+          });
+        }
+        
+        // Redirect the user to the correct page
+        await redirectUser(firebaseUser.uid);
+      })
+      .catch((error) => {
+        // This code runs for any error
+        if (error.code === 'auth/popup-closed-by-user') {
+          // This is a normal user action, so we don't show an error
+          console.log("Popup closed by user.");
+          return;
+        }
+        
+        // For any other error, we show a descriptive toast
         console.error("Google Sign-In Error:", error);
         toast({
             title: "Erreur de connexion Google",
-            description: `Une erreur est survenue: ${error.message}`,
+            description: `Une erreur est survenue: ${error.message} (Code: ${error.code})`,
             variant: "destructive",
         });
-      }
-    } finally {
+      })
+      .finally(() => {
+        // This always runs, ensuring the button is re-enabled
         setGoogleLoading(false);
-    }
+      });
   };
+
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
