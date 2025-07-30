@@ -13,10 +13,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { useState } from "react";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { createUserWithEmailAndPassword, signInWithPopup, User as FirebaseUser } from "firebase/auth";
+import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { updateUserProfile } from "@/lib/services/userService";
+import { updateUserProfile, getUserProfile } from "@/lib/services/userService";
+import { getUserRole } from "@/lib/services/roleService";
+import { Separator } from "@/components/ui/separator";
+
 
 const signupSchema = z.object({
   fullName: z.string().min(2, "Le nom complet doit comporter au moins 2 caractères."),
@@ -25,6 +28,15 @@ const signupSchema = z.object({
 });
 
 type SignupFormValues = z.infer<typeof signupSchema>;
+
+const GoogleIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.3v2.84C4.02 20.44 7.7 23 12 23z" fill="#34A853"/>
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.3C1.46 8.85 1 10.42 1 12s.46 3.15 1.3 4.93l3.54-2.84z" fill="#FBBC05"/>
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 4.02 3.56 2.3 6.96l3.54 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+    </svg>
+);
 
 
 export default function SignupStep1Page() {
@@ -40,6 +52,45 @@ export default function SignupStep1Page() {
       password: "",
     },
   });
+
+  const handleNewOrReturningUser = async (firebaseUser: FirebaseUser) => {
+    setLoading(true);
+    try {
+      const role = await getUserRole(firebaseUser.uid);
+
+      if (role === 'admin') {
+        router.replace('/admin');
+        return;
+      }
+      if (role === 'caterer') {
+        router.replace('/caterer');
+        return;
+      }
+
+      // If we are here, the user is a client
+      let userProfile = await getUserProfile(firebaseUser.uid);
+
+      if (!userProfile) {
+         await updateUserProfile(firebaseUser.uid, {
+            fullName: firebaseUser.displayName || 'New User',
+            email: firebaseUser.email!,
+            photoURL: firebaseUser.photoURL,
+            role: 'client'
+         });
+         userProfile = await getUserProfile(firebaseUser.uid);
+      }
+
+      if (!userProfile || !userProfile.mainGoal) {
+         router.replace('/signup/step2');
+      } else {
+         router.replace('/home');
+      }
+    } catch (error) {
+        console.error("Redirection error:", error);
+        toast({ title: "Erreur", description: "Impossible de vous rediriger après la connexion.", variant: "destructive" });
+        setLoading(false);
+    }
+  };
   
   const onSubmit = async (data: SignupFormValues) => {
     setLoading(true);
@@ -76,6 +127,22 @@ export default function SignupStep1Page() {
          variant: "destructive",
        });
        setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    try {
+      const userCredential = await signInWithPopup(auth, googleProvider);
+      await handleNewOrReturningUser(userCredential.user);
+    } catch (error: any) {
+      console.error(error);
+      toast({
+        title: "Erreur de connexion Google",
+        description: "Une erreur s'est produite lors de la tentative de connexion avec Google.",
+        variant: "destructive",
+      });
+      setLoading(false);
     }
   };
 
@@ -140,6 +207,18 @@ export default function SignupStep1Page() {
               </Button>
             </form>
           </Form>
+
+          <div className="relative my-6">
+            <Separator />
+            <div className="absolute inset-0 flex items-center">
+                <span className="bg-card px-2 text-sm text-muted-foreground mx-auto">OU</span>
+            </div>
+          </div>
+          
+          <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading}>
+            <GoogleIcon />
+            <span className="ml-2">Continuer avec Google</span>
+          </Button>
           
           <div className="mt-4 text-center text-sm">
             Vous avez déjà un compte?{" "}

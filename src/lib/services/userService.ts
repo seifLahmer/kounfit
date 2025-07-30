@@ -22,8 +22,10 @@ export async function updateUserProfile(uid: string, data: Partial<Omit<User, 'u
 
     Object.keys(data).forEach(keyStr => {
       const key = keyStr as keyof typeof data;
-      if (data[key] !== undefined) {
-        cleanData[key] = data[key];
+      const value = data[key];
+      // Keep photoURL even if it's null, but remove other undefined fields
+      if (value !== undefined) {
+        cleanData[key] = value;
       }
     });
 
@@ -111,5 +113,3 @@ export async function toggleFavoriteMeal(uid: string, mealId: string): Promise<s
         throw new Error("Could not update favorites.");
     }
 }
-
-    
