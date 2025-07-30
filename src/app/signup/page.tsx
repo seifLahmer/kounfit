@@ -68,7 +68,7 @@ export default function SignupStep1Page() {
        console.error("Signup Error:", error);
        let description = "Une erreur s'est produite lors de l'inscription.";
        if (error.code === 'auth/email-already-in-use') {
-         description = "Cette adresse e-mail est déjà utilisée par un autre compte.";
+         description = "Cette adresse e-mail est déjà utilisée. Essayez de vous connecter.";
        }
        toast({
          title: "Erreur d'inscription",
