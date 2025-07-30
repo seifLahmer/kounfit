@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -7,15 +6,13 @@ import { MainLayout } from "@/components/main-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { ShoppingCart, Loader2, Frown, CheckCircle, MapPin } from "lucide-react"
+import { ShoppingCart, Loader2, Frown, CheckCircle } from "lucide-react"
 import { auth } from "@/lib/firebase"
 import { useRouter } from "next/navigation"
 import type { Meal, User } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import { placeOrder } from "@/lib/services/orderService"
 import { getUserProfile } from "@/lib/services/userService"
-import { Input } from "@/components/ui/input"
-
 
 type DailyPlan = {
     breakfast: Meal | null;
@@ -28,7 +25,6 @@ type CartItem = Meal & { quantity: number };
 
 export default function ShoppingCartPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [deliveryAddress, setDeliveryAddress] = useState("");
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
@@ -40,14 +36,6 @@ export default function ShoppingCartPage() {
         router.replace("/welcome");
       } else {
         loadCartFromStorage();
-        try {
-            const userProfile = await getUserProfile(user.uid);
-            if (userProfile?.deliveryAddress) {
-                setDeliveryAddress(userProfile.deliveryAddress);
-            }
-        } catch (error) {
-            console.error("Failed to load user profile for address", error)
-        }
         setLoading(false);
       }
     });
@@ -86,15 +74,6 @@ export default function ShoppingCartPage() {
   const handlePlaceOrder = async () => {
       const user = auth.currentUser;
       if (!user || cartItems.length === 0) return;
-      
-      if (!deliveryAddress.trim()) {
-        toast({
-            title: "Adresse manquante",
-            description: "Veuillez saisir une adresse de livraison.",
-            variant: "destructive",
-        });
-        return;
-      }
 
       setIsPlacingOrder(true);
       try {
@@ -103,11 +82,21 @@ export default function ShoppingCartPage() {
               throw new Error("Profil utilisateur non trouvé.");
           }
 
+          if (!userProfile.deliveryAddress) {
+            toast({
+                title: "Adresse de livraison manquante",
+                description: "Veuillez ajouter une adresse dans votre profil avant de commander.",
+                variant: "destructive",
+            });
+            setIsPlacingOrder(false);
+            return;
+          }
+
           await placeOrder({
               clientId: user.uid,
               clientName: userProfile.fullName,
               clientRegion: userProfile.region || 'Non spécifiée',
-              deliveryAddress: deliveryAddress,
+              deliveryAddress: userProfile.deliveryAddress,
               items: cartItems.map(item => ({
                   mealId: item.id,
                   mealName: item.name,
@@ -204,19 +193,6 @@ export default function ShoppingCartPage() {
                     </div>
                   </div>
                   <Separator />
-                   <div className="space-y-2">
-                     <label htmlFor="delivery-address" className="text-sm font-medium">Adresse de livraison</label>
-                      <div className="relative">
-                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground"/>
-                        <Input 
-                            id="delivery-address" 
-                            value={deliveryAddress} 
-                            onChange={(e) => setDeliveryAddress(e.target.value)}
-                            placeholder="Saisissez votre adresse de livraison"
-                            className="pl-10"
-                        />
-                      </div>
-                   </div>
                   <div className="flex justify-between font-bold text-xl pt-2">
                     <span>Total</span>
                     <span>{total.toFixed(2)} DT</span>
