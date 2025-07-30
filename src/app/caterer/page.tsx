@@ -292,8 +292,8 @@ export default function CatererPage() {
   const getStatusBadge = (status: Order['status']) => {
     switch (status) {
       case 'pending': return <Badge variant="secondary">En attente</Badge>;
-      case 'in_preparation': return <Badge className="bg-yellow-500 text-white">En préparation</Badge>;
-      case 'delivered': return <Badge className="bg-green-500 text-white">Livrée</Badge>;
+      case 'in_preparation': return <Badge className="bg-yellow-500 text-white hover:bg-yellow-500/90">En préparation</Badge>;
+      case 'delivered': return <Badge className="bg-green-500 text-white hover:bg-green-500/90">Livrée</Badge>;
       case 'cancelled': return <Badge variant="destructive">Annulée</Badge>;
       default: return <Badge>{status}</Badge>;
     }
@@ -516,8 +516,10 @@ export default function CatererPage() {
                                           value={order.status}
                                           onValueChange={(value: Order['status']) => handleStatusChange(order.id, value)}
                                         >
-                                          <SelectTrigger className="w-[180px] h-8">
-                                            <SelectValue />
+                                          <SelectTrigger className="w-[180px] h-auto p-0 border-none focus:ring-0 focus:ring-offset-0">
+                                            <SelectValue asChild>
+                                                {getStatusBadge(order.status)}
+                                            </SelectValue>
                                           </SelectTrigger>
                                           <SelectContent>
                                             <SelectItem value="pending">En attente</SelectItem>
@@ -658,4 +660,5 @@ export default function CatererPage() {
     </div>
     </>
   );
-}
+
+    
