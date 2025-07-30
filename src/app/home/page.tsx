@@ -6,13 +6,15 @@ import { Bell, PlusCircle, Sun, Sunrise, Sunset, Heart, Loader2, Apple } from "l
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { auth } from "@/lib/firebase"
 import { getUserProfile, toggleFavoriteMeal } from "@/lib/services/userService"
-import type { User, Meal } from "@/lib/types"
+import { getNotifications, markNotificationAsRead } from "@/lib/services/notificationService"
+import type { User, Meal, Notification } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import Link from 'next/link';
 import { useRouter } from "next/navigation"
@@ -191,6 +193,8 @@ export default function HomePage() {
   const today = new Date()
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [hasUnread, setHasUnread] = useState(false);
   
   const getInitialDailyPlan = useCallback((): DailyPlan => {
     if (typeof window === "undefined") {
@@ -229,9 +233,15 @@ export default function HomePage() {
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
+        setLoading(true);
         try {
             const userProfile = await getUserProfile(firebaseUser.uid)
             setUser(userProfile)
+            
+            const userNotifications = await getNotifications(firebaseUser.uid);
+            setNotifications(userNotifications);
+            setHasUnread(userNotifications.some(n => !n.isRead));
+
             if (!userProfile?.photoURL) {
               const freshProfile = await getUserProfile(firebaseUser.uid);
               if (freshProfile?.photoURL) {
@@ -275,6 +285,20 @@ export default function HomePage() {
     }
   };
   
+  const handleNotificationClick = async (notificationId: string) => {
+    try {
+      await markNotificationAsRead(notificationId);
+      const updatedNotifications = notifications.map(n => 
+        n.id === notificationId ? { ...n, isRead: true } : n
+      );
+      setNotifications(updatedNotifications);
+      setHasUnread(updatedNotifications.some(n => !n.isRead));
+    } catch (error) {
+        toast({ title: "Erreur", description: "Impossible de marquer la notification comme lue.", variant: "destructive" });
+    }
+  };
+
+
   const consumedCalories = Object.values(dailyPlan)
     .filter(Boolean)
     .reduce((acc, meal) => acc + (meal?.calories || 0), 0);
@@ -347,9 +371,40 @@ export default function HomePage() {
                     </p>
                 </div>
             </div>
-          <Button variant="ghost" size="icon" className="rounded-full flex-shrink-0">
-            <Bell />
-          </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full flex-shrink-0 relative">
+                    <Bell />
+                    {hasUnread && <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-background" />}
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+                <div className="grid gap-4">
+                    <div className="space-y-2">
+                        <h4 className="font-medium leading-none">Notifications</h4>
+                    </div>
+                    <div className="grid gap-2">
+                        {notifications.length > 0 ? notifications.map((notification) => (
+                             <div
+                                key={notification.id}
+                                className={cn(
+                                    "text-sm p-2 rounded-md transition-colors",
+                                    !notification.isRead ? "bg-primary/10 cursor-pointer hover:bg-primary/20" : "text-muted-foreground"
+                                )}
+                                onClick={() => !notification.isRead && handleNotificationClick(notification.id)}
+                            >
+                                <p>{notification.message}</p>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    {format(notification.createdAt, "d MMM 'à' HH:mm", { locale: fr })}
+                                </p>
+                            </div>
+                        )) : (
+                            <p className="text-sm text-muted-foreground text-center p-4">Aucune notification</p>
+                        )}
+                    </div>
+                </div>
+            </PopoverContent>
+        </Popover>
         </header>
 
         <Card className="shadow-md">
@@ -384,5 +439,3 @@ export default function HomePage() {
       </div>
   )
 }
-
-    

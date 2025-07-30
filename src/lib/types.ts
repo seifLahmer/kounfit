@@ -1,5 +1,6 @@
 
 
+
 export type User = {
   uid: string;
   email: string;
@@ -87,11 +88,18 @@ export type Order = {
   deliveryAddress: string;
 };
 
+export type Notification = {
+  id: string;
+  userId: string;
+  message: string;
+  isRead: boolean;
+  createdAt: any;
+  link?: string;
+};
+
 
 export interface MealPlan {
   breakfast: Meal;
   lunch: Meal;
   dinner: Meal;
 }
-
-    

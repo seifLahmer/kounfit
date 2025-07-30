@@ -1,4 +1,5 @@
 
+
 import {
   collection,
   addDoc,
@@ -9,10 +10,12 @@ import {
   Timestamp,
   doc,
   writeBatch,
-  updateDoc
+  updateDoc,
+  getDoc
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { Order, User, Meal } from "@/lib/types";
+import { createNotification } from "./notificationService";
 
 const ORDERS_COLLECTION = "orders";
 
@@ -99,14 +102,35 @@ export async function getOrdersByCaterer(catererUid: string): Promise<Order[]> {
 
 
 /**
- * Updates the status of a specific order.
+ * Updates the status of a specific order and notifies the client.
  * @param orderId The ID of the order to update.
  * @param status The new status for the order.
  */
 export async function updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
+  const orderRef = doc(db, ORDERS_COLLECTION, orderId);
+  
   try {
-    const orderRef = doc(db, ORDERS_COLLECTION, orderId);
+    const orderSnap = await getDoc(orderRef);
+    if (!orderSnap.exists()) {
+      throw new Error("Order not found.");
+    }
+
+    const orderData = orderSnap.data() as Order;
+    
+    // Update the status in Firestore
     await updateDoc(orderRef, { status });
+
+    // Create a notification for the client
+    const statusMessages = {
+        pending: "est en attente de confirmation",
+        in_preparation: "est en cours de préparation",
+        delivered: "a été livrée",
+        cancelled: "a été annulée",
+    };
+    
+    const message = `Votre commande #${orderId.substring(0, 5)}... ${statusMessages[status]}.`;
+    await createNotification(orderData.clientId, message);
+
   } catch (error) {
     console.error("Error updating order status: ", error);
     throw new Error("Could not update the order status.");
