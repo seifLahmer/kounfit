@@ -56,35 +56,38 @@ export default function SignupStep1Page() {
   const handleNewOrReturningUser = async (firebaseUser: FirebaseUser) => {
     setLoading(true);
     try {
-      const role = await getUserRole(firebaseUser.uid);
+        const role = await getUserRole(firebaseUser.uid);
 
-      if (role === 'admin') {
-        router.replace('/admin');
-        return;
-      }
-      if (role === 'caterer') {
-        router.replace('/caterer');
-        return;
-      }
+        if (role === 'admin') {
+            router.replace('/admin');
+            return;
+        }
+        if (role === 'caterer') {
+            router.replace('/caterer');
+            return;
+        }
 
-      // If we are here, the user is a client
-      let userProfile = await getUserProfile(firebaseUser.uid);
+        // If we are here, the user is a client
+        let userProfile = await getUserProfile(firebaseUser.uid);
 
-      if (!userProfile) {
-         await updateUserProfile(firebaseUser.uid, {
-            fullName: firebaseUser.displayName || 'New User',
-            email: firebaseUser.email!,
-            photoURL: firebaseUser.photoURL,
-            role: 'client'
-         });
-         userProfile = await getUserProfile(firebaseUser.uid);
-      }
+        if (!userProfile) {
+            // This case handles Google Sign-in for a user that doesn't have a profile yet
+            await updateUserProfile(firebaseUser.uid, {
+                fullName: firebaseUser.displayName || 'New User',
+                email: firebaseUser.email!,
+                photoURL: firebaseUser.photoURL,
+                role: 'client'
+            });
+            userProfile = await getUserProfile(firebaseUser.uid);
+        }
 
-      if (!userProfile || !userProfile.mainGoal) {
-         router.replace('/signup/step2');
-      } else {
-         router.replace('/home');
-      }
+        // For both new and returning users, check if the profile is complete.
+        if (!userProfile?.mainGoal) {
+            router.replace('/signup/step2');
+        } else {
+            router.replace('/home');
+        }
+
     } catch (error) {
         console.error("Redirection error:", error);
         toast({ title: "Erreur", description: "Impossible de vous rediriger après la connexion.", variant: "destructive" });
@@ -137,11 +140,13 @@ export default function SignupStep1Page() {
       await handleNewOrReturningUser(userCredential.user);
     } catch (error: any) {
       console.error(error);
-      toast({
-        title: "Erreur de connexion Google",
-        description: "Une erreur s'est produite lors de la tentative de connexion avec Google.",
-        variant: "destructive",
-      });
+       if (error.code !== 'auth/popup-closed-by-user') {
+            toast({
+                title: "Erreur de connexion Google",
+                description: "Une erreur s'est produite lors de la tentative de connexion avec Google.",
+                variant: "destructive",
+            });
+        }
       setLoading(false);
     }
   };
@@ -231,3 +236,5 @@ export default function SignupStep1Page() {
     </div>
   );
 }
+
+    
