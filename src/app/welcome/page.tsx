@@ -26,9 +26,7 @@ export default function WelcomePage() {
         </div>
       </div>
       <footer className="absolute bottom-4 text-center text-sm text-muted-foreground">
-        <Link href="/privacy-policy.html" className="hover:underline">
-            Privacy Policy
-        </Link>
+        <p>&copy; 2024 NutriTrack. All rights reserved.</p>
       </footer>
     </div>
   );

@@ -13,17 +13,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { useState } from "react";
-import { createUserWithEmailAndPassword, signInWithPopup, User as FirebaseUser } from "firebase/auth";
-import { auth, facebookProvider } from "@/lib/firebase";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { updateUserProfile, getUserProfile } from "@/lib/services/userService";
-
-const FacebookIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg fill="#1877F2" viewBox="0 0 24 24" {...props}>
-    <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z"/>
-  </svg>
-);
-
+import { updateUserProfile } from "@/lib/services/userService";
 
 const signupSchema = z.object({
   fullName: z.string().min(2, "Le nom complet doit comporter au moins 2 caractères."),
@@ -48,48 +41,6 @@ export default function SignupStep1Page() {
     },
   });
   
-  const handleSocialSignIn = async (firebaseUser: FirebaseUser) => {
-    setLoading(true);
-    try {
-        const userProfile = await getUserProfile(firebaseUser.uid);
-        if (userProfile && userProfile.mainGoal) {
-            router.replace('/home'); // Already exists and profile is complete
-        } else {
-             await updateUserProfile(firebaseUser.uid, {
-                fullName: firebaseUser.displayName || 'New User',
-                email: firebaseUser.email!,
-                photoURL: firebaseUser.photoURL,
-                role: 'client'
-             });
-            router.replace('/signup/step2'); // New user or incomplete profile
-        }
-    } catch (error) {
-        console.error("Social sign-in error:", error);
-        toast({ title: "Erreur", description: "Impossible de vous connecter. Veuillez réessayer.", variant: "destructive" });
-        setLoading(false);
-    }
-  };
-
-  const handleFacebookSignIn = async () => {
-    setLoading(true);
-    try {
-      const result = await signInWithPopup(auth, facebookProvider);
-      await handleSocialSignIn(result.user);
-    } catch (error: any) {
-      setLoading(false);
-      let description = "Une erreur s'est produite lors de l'inscription avec Facebook.";
-      if (error.code === 'auth/account-exists-with-different-credential') {
-        description = "Un compte existe déjà avec cette adresse e-mail. Essayez de vous connecter avec une autre méthode.";
-      }
-      toast({
-        title: "Échec de l'inscription",
-        description: description,
-        variant: "destructive",
-      });
-    }
-  };
-
-
   const onSubmit = async (data: SignupFormValues) => {
     setLoading(true);
     try {
@@ -189,21 +140,7 @@ export default function SignupStep1Page() {
               </Button>
             </form>
           </Form>
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Ou continuer avec</span>
-            </div>
-          </div>
           
-          <Button variant="outline" className="w-full" onClick={handleFacebookSignIn} disabled={loading}>
-            <FacebookIcon className="mr-2 h-5 w-5" />
-            S'inscrire avec Facebook
-          </Button>
-
           <div className="mt-4 text-center text-sm">
             Vous avez déjà un compte?{" "}
             <Link href="/login" className="text-destructive hover:underline">

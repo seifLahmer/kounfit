@@ -1,116 +1,32 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Politique de Confidentialité - NutriTrack</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background-color: #f9fafb;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        h1, h2, h3 {
-            color: #111827;
-            font-weight: 600;
-        }
-        h1 {
-            font-size: 2em;
-            text-align: center;
-            margin-bottom: 0.5em;
-        }
-        h2 {
-            font-size: 1.5em;
-            margin-top: 1.5em;
-            padding-bottom: 0.3em;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        p, ul {
-            color: #374151;
-        }
-        ul {
-            padding-left: 20px;
-        }
-        a {
-            color: #ef4444;
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 2em;
-        }
-        .header-logo {
-            font-size: 2em;
-            color: #ef4444;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <div class="header-logo">NutriTrack</div>
-            <h1>Politique de Confidentialité</h1>
-            <p>Dernière mise à jour : 19/07/2024</p>
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Leaf } from "lucide-react";
+
+export default function WelcomePage() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
+      <div className="text-center space-y-8">
+        <div>
+          <Leaf className="w-24 h-24 text-primary mx-auto mb-4" />
+          <h1 className="text-4xl md:text-5xl font-bold text-foreground">
+            Welcome to NutriTrack
+          </h1>
+          <p className="text-muted-foreground mt-2 text-lg">
+            Your personal journey to fitness starts here.
+          </p>
         </div>
-
-        <h2>1. Collecte des informations</h2>
-        <p>
-            Nous collectons les informations que vous nous fournissez directement lors de votre inscription (nom, e-mail, etc.) et via des services tiers comme Facebook (informations de profil public). Nous collectons aussi les données que vous saisissez pour personnaliser votre expérience (âge, poids, objectifs).
-        </p>
-
-        <h2>2. Utilisation des informations</h2>
-        <p>
-            Vos informations sont utilisées pour fournir, personnaliser et améliorer nos services, notamment pour le calcul de vos besoins caloriques, la gestion de votre compte, et la communication avec vous.
-        </p>
-
-        <h2>3. Partage des informations</h2>
-        <p>
-            Nous ne partageons pas vos informations personnelles avec des tiers sans votre consentement, sauf pour nous conformer à la loi ou pour protéger nos droits. Les informations nécessaires à la livraison sont partagées avec les traiteurs concernés.
-        </p>
-        
-        <h2>4. Sécurité des données</h2>
-        <p>
-            Nous mettons en œuvre des mesures de sécurité pour protéger vos données contre tout accès non autorisé.
-        </p>
-
-        <h2>5. Suppression des données utilisateur</h2>
-        <p>
-            Conformément aux politiques de la plateforme Facebook, nous vous offrons la possibilité de demander la suppression de vos données.
-        </p>
-        <p>
-            <strong>Comment demander la suppression de vos données :</strong>
-        </p>
-        <ul>
-            <li>
-                Vous pouvez supprimer votre compte et toutes les données associées directement depuis la page "Profil" de l'application NutriTrack. L'option de suppression de compte est disponible dans les paramètres de votre profil.
-            </li>
-            <li>
-                Alternativement, vous pouvez envoyer une demande de suppression de données par e-mail à l'adresse suivante : <a href="mailto:contact@nutritrack.app">contact@nutritrack.app</a>. Veuillez inclure l'adresse e-mail associée à votre compte pour que nous puissions traiter votre demande.
-            </li>
-        </ul>
-        <p>
-            La suppression de votre compte est une action irréversible et entraînera la suppression de toutes vos données personnelles de nos systèmes dans un délai raisonnable.
-        </p>
-        
-        <h2>6. Contact</h2>
-        <p>
-            Pour toute question concernant cette politique, veuillez nous contacter à <a href="mailto:contact@nutritrack.app">contact@nutritrack.app</a>.
-        </p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Link href="/login">Login</Link>
+          </Button>
+          <Button asChild size="lg" variant="outline">
+            <Link href="/signup">Sign Up</Link>
+          </Button>
+        </div>
+      </div>
+      <footer className="absolute bottom-4 text-center text-sm text-muted-foreground">
+        <p>&copy; 2024 NutriTrack. All rights reserved.</p>
+      </footer>
     </div>
-</body>
-</html>
+  );
+}

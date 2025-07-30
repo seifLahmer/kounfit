@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
-import { getAuth, Auth, FacebookAuthProvider } from "firebase/auth";
+import { getAuth, Auth } from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
 import { getStorage, FirebaseStorage } from "firebase/storage";
 
@@ -16,7 +16,6 @@ let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
 let storage: FirebaseStorage;
-let facebookProvider: FacebookAuthProvider;
 
 if (getApps().length === 0) {
   app = initializeApp(firebaseConfig);
@@ -27,7 +26,5 @@ if (getApps().length === 0) {
 auth = getAuth(app);
 db = getFirestore(app);
 storage = getStorage(app);
-facebookProvider = new FacebookAuthProvider();
 
-
-export { app, db, auth, storage, facebookProvider };
+export { app, db, auth, storage };
