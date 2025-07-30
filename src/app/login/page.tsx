@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, signInWithRedirect, GoogleAuthProvider, getRedirectResult, User as FirebaseUser } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, User as FirebaseUser } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { getUserRole } from "@/lib/services/roleService";
@@ -30,7 +30,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [isCheckingRedirect, setIsCheckingRedirect] = useState(true);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -43,7 +43,7 @@ export default function LoginPage() {
   const redirectUser = async (uid: string) => {
     try {
         const userProfile = await getUserProfile(uid);
-        // If the profile is incomplete (e.g., from a fresh Google sign-in)
+        
         if (!userProfile || !userProfile.mainGoal) {
            router.replace('/signup/step2');
            return;
@@ -59,55 +59,9 @@ export default function LoginPage() {
         }
     } catch(error) {
         toast({ title: "Erreur de redirection", description: "Impossible de vérifier le profil utilisateur.", variant: "destructive"});
-        setLoading(false);
-        setIsCheckingRedirect(false);
-        router.replace('/welcome'); // Fallback
+        router.replace('/welcome');
     }
   }
-
-  // Effect to check for redirect result on component mount
-  useEffect(() => {
-    const checkRedirect = async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        if (result && result.user) {
-          const firebaseUser = result.user;
-          const userProfile = await getUserProfile(firebaseUser.uid);
-
-          if (!userProfile) {
-            // This is a brand new user. Create a partial profile.
-            await updateUserProfile(firebaseUser.uid, {
-              fullName: firebaseUser.displayName || 'Utilisateur Google',
-              email: firebaseUser.email!,
-              photoURL: firebaseUser.photoURL,
-              role: 'client'
-            });
-            // Redirect to step 2 to complete the profile.
-            router.replace('/signup/step2');
-          } else {
-            // Existing user, redirect them to the correct dashboard.
-            await redirectUser(firebaseUser.uid);
-          }
-        } else {
-          // No redirect result, just rendering the login page normally.
-          setIsCheckingRedirect(false);
-        }
-      } catch (error: any) {
-        console.error("Google Redirect Error:", error);
-        toast({
-          title: "Erreur de connexion Google",
-          description: `Une erreur est survenue: ${error.message} (code: ${error.code})`,
-          variant: "destructive",
-        });
-        setIsCheckingRedirect(false);
-      }
-    };
-    
-    checkRedirect();
-    // The dependency array should be empty to run only once on mount.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
 
   const onSubmit = async (data: LoginFormValues) => {
     setLoading(true);
@@ -130,31 +84,36 @@ export default function LoginPage() {
   };
   
   const handleGoogleSignIn = async () => {
-    setIsCheckingRedirect(true); // Show loading spinner
+    setGoogleLoading(true);
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithRedirect(auth, provider);
-      // The user is redirected. The result is handled by the useEffect hook on the next page load.
-    } catch (error: any) {
-        console.error("Google Sign-In Redirect Initiation Error:", error);
-        toast({
-          title: "Erreur de connexion Google",
-          description: `Impossible de démarrer la connexion Google: ${error.message}`,
-          variant: "destructive",
+      const result = await signInWithPopup(auth, provider);
+      const firebaseUser = result.user;
+      
+      const userProfile = await getUserProfile(firebaseUser.uid);
+      if (!userProfile) {
+        await updateUserProfile(firebaseUser.uid, {
+          fullName: firebaseUser.displayName || 'Utilisateur Google',
+          email: firebaseUser.email!,
+          photoURL: firebaseUser.photoURL,
+          role: 'client'
         });
-        setIsCheckingRedirect(false); // Hide loading spinner on error
+      }
+      await redirectUser(firebaseUser.uid);
+
+    } catch (error: any) {
+        if (error.code !== 'auth/popup-closed-by-user') {
+            console.error("Google Sign-In Error:", error);
+            toast({
+                title: "Erreur de connexion Google",
+                description: `Une erreur est survenue: ${error.message}`,
+                variant: "destructive",
+            });
+        }
+    } finally {
+        setGoogleLoading(false);
     }
   };
-
-  if (isCheckingRedirect) {
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-background">
-            <Loader2 className="h-12 w-12 animate-spin text-destructive" />
-            <p className="ml-4">Vérification de la connexion...</p>
-        </div>
-    );
-  }
-
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
@@ -168,8 +127,12 @@ export default function LoginPage() {
           <CardDescription>Entrez vos identifiants pour accéder à votre compte.</CardDescription>
         </CardHeader>
         <CardContent>
-           <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading}>
-              <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 381.5 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 21.2 177.2 56.4l-63.1 61.9C338.4 97.2 297.6 80 248 80c-82.8 0-150.5 67.7-150.5 150.5S165.2 406.5 248 406.5c92.2 0 142.2-64.7 146.7-104.4H248V261.8h239.2c.8 12.2 1.2 24.5 1.2 37z"></path></svg>
+           <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading || googleLoading}>
+              {googleLoading ? (
+                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 381.5 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 21.2 177.2 56.4l-63.1 61.9C338.4 97.2 297.6 80 248 80c-82.8 0-150.5 67.7-150.5 150.5S165.2 406.5 248 406.5c92.2 0 142.2-64.7 146.7-104.4H248V261.8h239.2c.8 12.2 1.2 24.5 1.2 37z"></path></svg>
+              )}
               Continuer avec Google
             </Button>
             <div className="relative my-4">
@@ -215,7 +178,7 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={loading}>
+              <Button type="submit" className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={loading || googleLoading}>
                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {loading ? "Connexion..." : "Se connecter"}
               </Button>
