@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, signInWithRedirect, GoogleAuthProvider, getRedirectResult } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithRedirect, GoogleAuthProvider, getRedirectResult, User as FirebaseUser } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { getUserRole } from "@/lib/services/roleService";
@@ -31,7 +31,7 @@ export default function LoginPage() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [isCheckingRedirect, setIsCheckingRedirect] = useState(true);
-  
+
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -59,6 +59,8 @@ export default function LoginPage() {
         }
     } catch(error) {
         toast({ title: "Erreur de redirection", description: "Impossible de vérifier le profil utilisateur.", variant: "destructive"});
+        setLoading(false);
+        setIsCheckingRedirect(false);
         router.push('/welcome'); // Fallback
     }
   }
@@ -68,23 +70,24 @@ export default function LoginPage() {
     const checkRedirect = async () => {
       try {
         const result = await getRedirectResult(auth);
-        if (result) {
-          // User has just been redirected from Google.
-          const user = result.user;
-          const userProfile = await getUserProfile(user.uid);
+        if (result && result.user) {
+          const firebaseUser = result.user;
+          const userProfile = await getUserProfile(firebaseUser.uid);
 
-          // If it's a brand new user, create a partial profile.
-           if (!userProfile) {
-              await updateUserProfile(user.uid, {
-                fullName: user.displayName || 'Utilisateur Google',
-                email: user.email!,
-                photoURL: user.photoURL,
-                role: 'client'
-              });
-            }
-
-          // Redirect them to complete their profile or to their dashboard.
-          await redirectUser(user.uid);
+          if (!userProfile) {
+            // This is a brand new user. Create a partial profile.
+            await updateUserProfile(firebaseUser.uid, {
+              fullName: firebaseUser.displayName || 'Utilisateur Google',
+              email: firebaseUser.email!,
+              photoURL: firebaseUser.photoURL,
+              role: 'client'
+            });
+            // Redirect to step 2 to complete the profile.
+            router.push('/signup/step2');
+          } else {
+            // Existing user, redirect them to the correct dashboard.
+            await redirectUser(firebaseUser.uid);
+          }
         } else {
           // No redirect result, just rendering the login page normally.
           setIsCheckingRedirect(false);
@@ -99,6 +102,7 @@ export default function LoginPage() {
         setIsCheckingRedirect(false);
       }
     };
+    
     checkRedirect();
     // The dependency array should be empty to run only once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -109,9 +113,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-      const user = userCredential.user;
-      await redirectUser(user.uid);
-
+      await redirectUser(userCredential.user.uid);
     } catch (error: any) {
       let description = "An error occurred during login.";
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
@@ -128,12 +130,11 @@ export default function LoginPage() {
   };
   
   const handleGoogleSignIn = async () => {
-    setLoading(true);
+    setIsCheckingRedirect(true); // Show loading spinner
     const provider = new GoogleAuthProvider();
     try {
       await signInWithRedirect(auth, provider);
-      // The user is redirected, so the code below will not execute in the same session.
-      // The redirect result is handled by the useEffect hook.
+      // The user is redirected. The result is handled by the useEffect hook on the next page load.
     } catch (error: any) {
         console.error("Google Sign-In Redirect Initiation Error:", error);
         toast({
@@ -141,7 +142,7 @@ export default function LoginPage() {
           description: `Impossible de démarrer la connexion Google: ${error.message}`,
           variant: "destructive",
         });
-        setLoading(false);
+        setIsCheckingRedirect(false); // Hide loading spinner on error
     }
   };
 
@@ -168,12 +169,8 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading}>
-                {loading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                    <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 381.5 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 21.2 177.2 56.4l-63.1 61.9C338.4 97.2 297.6 80 248 80c-82.8 0-150.5 67.7-150.5 150.5S165.2 406.5 248 406.5c92.2 0 142.2-64.7 146.7-104.4H248V261.8h239.2c.8 12.2 1.2 24.5 1.2 37z"></path></svg>
-                )}
-                Continuer avec Google
+              <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 381.5 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 21.2 177.2 56.4l-63.1 61.9C338.4 97.2 297.6 80 248 80c-82.8 0-150.5 67.7-150.5 150.5S165.2 406.5 248 406.5c92.2 0 142.2-64.7 146.7-104.4H248V261.8h239.2c.8 12.2 1.2 24.5 1.2 37z"></path></svg>
+              Continuer avec Google
             </Button>
             <div className="relative my-4">
                 <div className="absolute inset-0 flex items-center">
@@ -236,5 +233,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    

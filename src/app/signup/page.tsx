@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { useState } from "react";
-import { createUserWithEmailAndPassword, signInWithRedirect, GoogleAuthProvider } from "firebase/auth";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { updateUserProfile } from "@/lib/services/userService";
@@ -30,7 +30,6 @@ type SignupFormValues = z.infer<typeof signupSchema>;
 export default function SignupStep1Page() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<SignupFormValues>({
@@ -80,26 +79,6 @@ export default function SignupStep1Page() {
       setLoading(false);
     }
   };
-  
-  const handleGoogleSignUp = async () => {
-    setGoogleLoading(true);
-    const provider = new GoogleAuthProvider();
-    try {
-        await signInWithRedirect(auth, provider);
-        // The user will be redirected to Google to sign in.
-        // After they sign in, they will be redirected back to this page.
-        // The logic to handle the redirect result should be on the login page or a dedicated handler page.
-        // For simplicity, we'll let the login page handle the redirect result.
-    } catch (error: any) {
-        console.error("Google Sign-Up Redirect Initiation Error:", error);
-        toast({
-          title: "Erreur d'inscription Google",
-          description: `Impossible de démarrer l'inscription Google: ${error.message}`,
-          variant: "destructive",
-        });
-        setGoogleLoading(false);
-    }
-  };
 
 
   return (
@@ -114,24 +93,19 @@ export default function SignupStep1Page() {
           <CardDescription>Rejoignez-nous pour atteindre vos objectifs de forme.</CardDescription>
         </CardHeader>
         <CardContent>
-           <Button variant="outline" className="w-full" onClick={handleGoogleSignUp} disabled={googleLoading || loading}>
-                {googleLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                    <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 381.5 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 21.2 177.2 56.4l-63.1 61.9C338.4 97.2 297.6 80 248 80c-82.8 0-150.5 67.7-150.5 150.5S165.2 406.5 248 406.5c92.2 0 142.2-64.7 146.7-104.4H248V261.8h239.2c.8 12.2 1.2 24.5 1.2 37z"></path></svg>
-                )}
-                {googleLoading ? "Redirection..." : "S'inscrire avec Google"}
-            </Button>
-            <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
-                    OU
-                    </span>
-                </div>
-            </div>
+          <div className="text-center text-sm text-muted-foreground mb-4">
+              Pour vous inscrire avec Google, veuillez passer par la page de connexion.
+          </div>
+          <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                  S'inscrire avec un email
+                  </span>
+              </div>
+          </div>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                <FormField
@@ -174,7 +148,7 @@ export default function SignupStep1Page() {
                   )}
                 />
 
-              <Button type="submit" className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={loading || googleLoading}>
+              <Button type="submit" className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={loading}>
                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {loading ? "Création du compte..." : "Continuer vers l'étape 2"}
               </Button>
