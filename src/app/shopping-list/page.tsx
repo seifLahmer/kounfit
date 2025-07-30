@@ -14,6 +14,7 @@ import type { Meal, User } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import { placeOrder } from "@/lib/services/orderService"
 import { getUserProfile } from "@/lib/services/userService"
+import { cn } from "@/lib/utils"
 
 
 type DailyPlan = {
