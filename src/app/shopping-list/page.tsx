@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast"
 import { placeOrder } from "@/lib/services/orderService"
 import { getUserProfile } from "@/lib/services/userService"
 import { cn } from "@/lib/utils"
+import { Input } from "@/components/ui/input"
 
 
 type DailyPlan = {
@@ -42,12 +43,7 @@ export default function ShoppingCartPage() {
         loadCartFromStorage();
         try {
             const userProfile = await getUserProfile(user.uid);
-            // Check for address from local storage first (set by map page)
-            const selectedAddress = localStorage.getItem('selectedDeliveryAddress');
-            if (selectedAddress) {
-                setDeliveryAddress(selectedAddress);
-                localStorage.removeItem('selectedDeliveryAddress'); // Clean up
-            } else if (userProfile?.deliveryAddress) {
+            if (userProfile?.deliveryAddress) {
                 setDeliveryAddress(userProfile.deliveryAddress);
             }
         } catch (error) {
@@ -57,31 +53,8 @@ export default function ShoppingCartPage() {
       }
     });
 
-    const handleStorageChange = () => {
-        loadCartFromStorage();
-        const selectedAddress = localStorage.getItem('selectedDeliveryAddress');
-        if (selectedAddress) {
-            setDeliveryAddress(selectedAddress);
-            localStorage.removeItem('selectedDeliveryAddress');
-        }
-    };
-    window.addEventListener('storage', handleStorageChange);
-
-    // Also check on focus in case the user navigates back
-    const handleFocus = () => {
-        const selectedAddress = localStorage.getItem('selectedDeliveryAddress');
-        if (selectedAddress) {
-            setDeliveryAddress(selectedAddress);
-            localStorage.removeItem('selectedDeliveryAddress');
-        }
-    };
-    window.addEventListener('focus', handleFocus);
-
-
     return () => {
         unsubscribe();
-        window.removeEventListener('storage', handleStorageChange);
-        window.removeEventListener('focus', handleFocus);
     };
   }, [router]);
 
@@ -118,7 +91,7 @@ export default function ShoppingCartPage() {
       if (!deliveryAddress.trim()) {
         toast({
             title: "Adresse manquante",
-            description: "Veuillez choisir une adresse de livraison sur la carte.",
+            description: "Veuillez saisir une adresse de livraison.",
             variant: "destructive",
         });
         return;
@@ -233,16 +206,17 @@ export default function ShoppingCartPage() {
                   </div>
                   <Separator />
                    <div className="space-y-2">
-                     <label className="text-sm font-medium">Adresse de livraison</label>
-                      <button 
-                        className="w-full text-left p-3 border rounded-md flex items-center gap-3 hover:bg-muted"
-                        onClick={() => router.push('/home/set-location')}
-                      >
-                         <MapPin className="w-5 h-5 text-destructive"/>
-                         <span className={cn("truncate", !deliveryAddress && "text-muted-foreground")}>
-                            {deliveryAddress || "Choisir sur la carte"}
-                         </span>
-                      </button>
+                     <label htmlFor="delivery-address" className="text-sm font-medium">Adresse de livraison</label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground"/>
+                        <Input 
+                            id="delivery-address" 
+                            value={deliveryAddress} 
+                            onChange={(e) => setDeliveryAddress(e.target.value)}
+                            placeholder="Saisissez votre adresse de livraison"
+                            className="pl-10"
+                        />
+                      </div>
                    </div>
                   <div className="flex justify-between font-bold text-xl pt-2">
                     <span>Total</span>
