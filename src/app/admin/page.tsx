@@ -22,7 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Bot, ShieldAlert } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
 
 export default function AdminPage() {
   return (
@@ -33,80 +33,11 @@ export default function AdminPage() {
         </h1>
       </header>
 
-      <Tabs defaultValue="repas" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
-          <TabsTrigger value="repas">Gestion des Repas</TabsTrigger>
-          <TabsTrigger value="composants">Gestion des Composants</TabsTrigger>
+      <Tabs defaultValue="traiteurs" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="traiteurs">Gestion des Traiteurs</TabsTrigger>
           <TabsTrigger value="commandes">Gestion des Commandes</TabsTrigger>
         </TabsList>
-        <TabsContent value="repas">
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Liste des repas</CardTitle>
-                <CardDescription>Gérez tous les repas créés par les traiteurs.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Aucun repas n'a encore été créé.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-        <TabsContent value="composants">
-           <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Ajouter un composant de base</CardTitle>
-                <CardDescription>
-                  Ajoutez un ingrédient de base (ex: "Blanc de poulet cuit", "Frites maison"). L'IA trouvera automatiquement ses macros pour 100g.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="component-name">Nom du composant *</Label>
-                  <Input id="component-name" placeholder="Ex: Riz blanc cuit" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="component-price">Prix pour 100g (DT) *</Label>
-                  <Input id="component-price" type="number" defaultValue="0" />
-                </div>
-                <Button className="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white">
-                  <Sparkles className="mr-2" />
-                  Ajouter et Obtenir Macros (IA)
-                </Button>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Liste des composants</CardTitle>
-              </CardHeader>
-              <CardContent>
-                 <div className="border rounded-md">
-                   <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nom</TableHead>
-                        <TableHead>Prix/100g</TableHead>
-                        <TableHead>Macros (P/G/L)</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center text-muted-foreground h-24">
-                           Aucun composant n'a encore été ajouté.
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
         <TabsContent value="traiteurs">
            <div className="space-y-6">
             <Card>
