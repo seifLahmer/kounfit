@@ -211,15 +211,18 @@ export default function ShoppingCartPage() {
                   <Separator />
                    <div className="space-y-2">
                      <Label htmlFor="delivery-address">Adresse de livraison</Label>
-                     <div className="relative">
-                       <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                     <div className="flex gap-2">
                        <Input 
                          id="delivery-address"
                          value={deliveryAddress}
                          onChange={(e) => setDeliveryAddress(e.target.value)}
-                         placeholder="Saisissez votre adresse de livraison"
-                         className="pl-10"
+                         placeholder="Saisissez votre adresse"
+                         className="flex-1"
                        />
+                       <Button variant="outline" onClick={() => toast({ title: "Fonctionnalité à venir", description: "La sélection sur la carte sera bientôt disponible."})}>
+                          <MapPin className="mr-2 h-4 w-4"/>
+                          Carte
+                       </Button>
                      </div>
                    </div>
                   <div className="flex justify-between font-bold text-xl pt-2">
