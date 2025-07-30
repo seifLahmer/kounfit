@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, MapPin, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import 'leaflet/dist/leaflet.css';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import dynamic from 'next/dynamic';
 
@@ -23,37 +22,11 @@ const DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-const DraggableMarker = ({ position, setPosition }: { position: L.LatLngExpression, setPosition: (pos: L.LatLng) => void }) => {
-    const markerRef = useRef<L.Marker>(null);
-    
-    const map = useMapEvents({
-        click(e) {
-            setPosition(e.latlng);
-            map.flyTo(e.latlng, map.getZoom());
-        },
-    });
-
-    const eventHandlers = useMemo(
-        () => ({
-            dragend() {
-                const marker = markerRef.current;
-                if (marker != null) {
-                    setPosition(marker.getLatLng());
-                }
-            },
-        }),
-        [setPosition],
-    );
-
-    return (
-        <Marker
-            draggable={true}
-            eventHandlers={eventHandlers}
-            position={position}
-            ref={markerRef}>
-        </Marker>
-    );
-};
+// Dynamically import the map component to ensure it's only rendered on the client side.
+const MapContainerWrapper = dynamic(() => import('@/components/ui/map-container-wrapper'), {
+    ssr: false,
+    loading: () => <div className="h-full w-full bg-muted flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin"/></div>
+});
 
 
 function SetLocationPage() {
@@ -94,12 +67,6 @@ function SetLocationPage() {
             setLoading(false);
         }
     }
-    
-    const Map = useMemo(() => dynamic(() => import('@/components/ui/map-container-wrapper'), {
-        ssr: false,
-        loading: () => <div className="h-full w-full bg-muted flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin"/></div>
-    }), []);
-
 
     return (
         <div className="relative h-screen w-screen flex flex-col bg-gray-200">
@@ -113,7 +80,7 @@ function SetLocationPage() {
             </header>
 
             <div className="flex-grow z-10">
-                 <Map center={position} zoom={13} setPosition={setPosition} />
+                 <MapContainerWrapper center={position} zoom={13} setPosition={setPosition} />
             </div>
 
             <footer className="absolute bottom-0 left-0 right-0 z-20 p-4 bg-gradient-to-t from-black/20 to-transparent">
