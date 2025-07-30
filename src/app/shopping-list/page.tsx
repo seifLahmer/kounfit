@@ -14,8 +14,6 @@ import type { Meal, User } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import { placeOrder } from "@/lib/services/orderService"
 import { getUserProfile } from "@/lib/services/userService"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 
 
 type DailyPlan = {
@@ -43,7 +41,12 @@ export default function ShoppingCartPage() {
         loadCartFromStorage();
         try {
             const userProfile = await getUserProfile(user.uid);
-            if (userProfile?.deliveryAddress) {
+            // Check for address from local storage first (set by map page)
+            const selectedAddress = localStorage.getItem('selectedDeliveryAddress');
+            if (selectedAddress) {
+                setDeliveryAddress(selectedAddress);
+                localStorage.removeItem('selectedDeliveryAddress'); // Clean up
+            } else if (userProfile?.deliveryAddress) {
                 setDeliveryAddress(userProfile.deliveryAddress);
             }
         } catch (error) {
@@ -95,7 +98,7 @@ export default function ShoppingCartPage() {
       if (!deliveryAddress.trim()) {
         toast({
             title: "Adresse manquante",
-            description: "Veuillez saisir une adresse de livraison.",
+            description: "Veuillez choisir une adresse de livraison sur la carte.",
             variant: "destructive",
         });
         return;
@@ -210,20 +213,16 @@ export default function ShoppingCartPage() {
                   </div>
                   <Separator />
                    <div className="space-y-2">
-                     <Label htmlFor="delivery-address">Adresse de livraison</Label>
-                     <div className="flex gap-2">
-                       <Input 
-                         id="delivery-address"
-                         value={deliveryAddress}
-                         onChange={(e) => setDeliveryAddress(e.target.value)}
-                         placeholder="Saisissez votre adresse"
-                         className="flex-1"
-                       />
-                       <Button variant="outline" onClick={() => toast({ title: "Fonctionnalité à venir", description: "La sélection sur la carte sera bientôt disponible."})}>
-                          <MapPin className="mr-2 h-4 w-4"/>
-                          Carte
-                       </Button>
-                     </div>
+                     <label className="text-sm font-medium">Adresse de livraison</label>
+                      <button 
+                        className="w-full text-left p-3 border rounded-md flex items-center gap-3 hover:bg-muted"
+                        onClick={() => router.push('/home/set-location')}
+                      >
+                         <MapPin className="w-5 h-5 text-destructive"/>
+                         <span className={cn("truncate", !deliveryAddress && "text-muted-foreground")}>
+                            {deliveryAddress || "Choisir sur la carte"}
+                         </span>
+                      </button>
                    </div>
                   <div className="flex justify-between font-bold text-xl pt-2">
                     <span>Total</span>
