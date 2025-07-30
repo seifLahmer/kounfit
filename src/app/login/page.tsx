@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, getRedirectResult, User as FirebaseUser } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { getUserRole } from "@/lib/services/roleService";
@@ -31,6 +31,7 @@ export default function LoginPage() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [isCheckingRedirect, setIsCheckingRedirect] = useState(true);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -42,29 +43,74 @@ export default function LoginPage() {
 
   const redirectUser = async (uid: string) => {
     try {
-        const userProfile = await getUserProfile(uid);
-        
-        // If profile is incomplete (common for new sign-ups), go to step 2
-        if (!userProfile || !userProfile.mainGoal) {
-           router.replace('/signup/step2');
-           return;
-        }
-        
-        const role = await getUserRole(uid);
-        if (role === 'admin') {
-          router.replace('/admin');
-        } else if (role === 'caterer') {
-          router.replace('/caterer');
-        } else {
-          router.replace('/home'); // Default to client home page
-        }
+      const userProfile = await getUserProfile(uid);
+      
+      if (!userProfile || !userProfile.mainGoal) {
+         router.replace('/signup/step2');
+         return;
+      }
+      
+      const role = await getUserRole(uid);
+      if (role === 'admin') {
+        router.replace('/admin');
+      } else if (role === 'caterer') {
+        router.replace('/caterer');
+      } else {
+        router.replace('/home'); 
+      }
     } catch(error) {
         toast({ title: "Erreur de redirection", description: "Impossible de vérifier le profil utilisateur.", variant: "destructive"});
-        setLoading(false);
-        setGoogleLoading(false);
         router.replace('/welcome');
+    } finally {
+      setLoading(false);
+      setGoogleLoading(false);
     }
   }
+
+  const handleNewOrReturningUser = async (firebaseUser: FirebaseUser) => {
+    const userProfile = await getUserProfile(firebaseUser.uid);
+
+    if (!userProfile) {
+      await updateUserProfile(firebaseUser.uid, {
+        fullName: firebaseUser.displayName || 'Utilisateur Google',
+        email: firebaseUser.email!,
+        photoURL: firebaseUser.photoURL,
+        role: 'client'
+      });
+    }
+    
+    await redirectUser(firebaseUser.uid);
+  };
+  
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // User is already signed in, check where to redirect
+        setIsCheckingRedirect(false);
+      } else {
+        // No user signed in, check for redirect result
+        getRedirectResult(auth)
+          .then(async (result) => {
+            if (result) {
+              await handleNewOrReturningUser(result.user);
+            } else {
+              setIsCheckingRedirect(false);
+            }
+          })
+          .catch((error) => {
+            toast({
+              title: "Erreur de connexion",
+              description: `Une erreur est survenue pendant la redirection: ${error.message}`,
+              variant: "destructive",
+            });
+            setIsCheckingRedirect(false);
+          });
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
 
   const onSubmit = async (data: LoginFormValues) => {
     setLoading(true);
@@ -81,7 +127,6 @@ export default function LoginPage() {
         description: description,
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
   };
@@ -92,44 +137,40 @@ export default function LoginPage() {
 
     signInWithPopup(auth, provider)
       .then(async (result) => {
-        // This code runs only on successful sign-in
-        const firebaseUser = result.user;
-        const userProfile = await getUserProfile(firebaseUser.uid);
-
-        // If the user is new, create a partial profile
-        if (!userProfile) {
-          await updateUserProfile(firebaseUser.uid, {
-            fullName: firebaseUser.displayName || 'Utilisateur Google',
-            email: firebaseUser.email!,
-            photoURL: firebaseUser.photoURL,
-            role: 'client'
-          });
-        }
-        
-        // Redirect the user to the correct page
-        await redirectUser(firebaseUser.uid);
+        await handleNewOrReturningUser(result.user);
       })
       .catch((error) => {
-        // This code runs for any error
+        let description = `Une erreur est survenue: ${error.message}`;
         if (error.code === 'auth/popup-closed-by-user') {
           // This is a normal user action, so we don't show an error
           console.log("Popup closed by user.");
           return;
         }
+        if (error.code === 'auth/unauthorized-domain') {
+          description = `Ce domaine n'est pas autorisé. Ajoutez le domaine suivant à votre console Firebase -> Authentification -> Domaines Autorisés: ${window.location.hostname}`;
+        }
         
-        // For any other error, we show a descriptive toast
-        console.error("Google Sign-In Error:", error);
         toast({
             title: "Erreur de connexion Google",
-            description: `Une erreur est survenue: ${error.message} (Code: ${error.code})`,
+            description: description,
             variant: "destructive",
         });
       })
       .finally(() => {
-        // This always runs, ensuring the button is re-enabled
         setGoogleLoading(false);
       });
   };
+
+  if (isCheckingRedirect) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-destructive" />
+          <p className="text-muted-foreground">Vérification de la connexion...</p>
+        </div>
+      </div>
+    );
+  }
 
 
   return (
