@@ -13,10 +13,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { useState } from "react";
-import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithRedirect, GoogleAuthProvider } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { updateUserProfile, getUserProfile } from "@/lib/services/userService";
+import { updateUserProfile } from "@/lib/services/userService";
 
 const signupSchema = z.object({
   fullName: z.string().min(2, "Le nom complet doit comporter au moins 2 caractères."),
@@ -85,30 +85,18 @@ export default function SignupStep1Page() {
     setGoogleLoading(true);
     const provider = new GoogleAuthProvider();
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      
-      const userProfile = await getUserProfile(user.uid);
-       if (!userProfile) {
-          await updateUserProfile(user.uid, {
-            fullName: user.displayName || 'Utilisateur Google',
-            email: user.email!,
-            photoURL: user.photoURL,
-            role: 'client'
-          });
-        }
-      
-      router.push("/signup/step2");
+        await signInWithRedirect(auth, provider);
+        // The user will be redirected to Google to sign in.
+        // After they sign in, they will be redirected back to this page.
+        // The logic to handle the redirect result should be on the login page or a dedicated handler page.
+        // For simplicity, we'll let the login page handle the redirect result.
     } catch (error: any) {
-        // Affiche TOUTES les erreurs, sans exception.
-        console.error("Google Sign-Up Error:", error);
+        console.error("Google Sign-Up Redirect Initiation Error:", error);
         toast({
           title: "Erreur d'inscription Google",
-          description: `Une erreur est survenue: ${error.message} (code: ${error.code})`,
+          description: `Impossible de démarrer l'inscription Google: ${error.message}`,
           variant: "destructive",
         });
-    } finally {
-        // Garantit que le chargement s'arrête, quel que soit le résultat.
         setGoogleLoading(false);
     }
   };
@@ -132,7 +120,7 @@ export default function SignupStep1Page() {
                 ) : (
                     <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 381.5 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 21.2 177.2 56.4l-63.1 61.9C338.4 97.2 297.6 80 248 80c-82.8 0-150.5 67.7-150.5 150.5S165.2 406.5 248 406.5c92.2 0 142.2-64.7 146.7-104.4H248V261.8h239.2c.8 12.2 1.2 24.5 1.2 37z"></path></svg>
                 )}
-                {googleLoading ? "Inscription..." : "S'inscrire avec Google"}
+                {googleLoading ? "Redirection..." : "S'inscrire avec Google"}
             </Button>
             <div className="relative my-4">
                 <div className="absolute inset-0 flex items-center">

@@ -12,8 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
-import { useState } from "react";
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { useState, useEffect } from "react";
+import { signInWithEmailAndPassword, signInWithRedirect, GoogleAuthProvider, getRedirectResult } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { getUserRole } from "@/lib/services/roleService";
@@ -31,6 +31,7 @@ export default function LoginPage() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [isCheckingRedirect, setIsCheckingRedirect] = useState(true);
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -62,6 +63,42 @@ export default function LoginPage() {
     }
   }
 
+  // Effect to check for redirect result on component mount
+  useEffect(() => {
+    const checkRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          setGoogleLoading(true); // Show loading while we process the user
+          const user = result.user;
+          const userProfile = await getUserProfile(user.uid);
+           if (!userProfile) {
+              await updateUserProfile(user.uid, {
+                fullName: user.displayName || 'Utilisateur Google',
+                email: user.email!,
+                photoURL: user.photoURL,
+                role: 'client'
+              });
+            }
+          await redirectUser(user.uid);
+        } else {
+          setIsCheckingRedirect(false);
+        }
+      } catch (error: any) {
+        console.error("Google Redirect Error:", error);
+        toast({
+          title: "Erreur de connexion Google",
+          description: `Une erreur est survenue: ${error.message} (code: ${error.code})`,
+          variant: "destructive",
+        });
+        setIsCheckingRedirect(false);
+        setGoogleLoading(false);
+      }
+    };
+    checkRedirect();
+  }, [router, toast]);
+
+
   const onSubmit = async (data: LoginFormValues) => {
     setLoading(true);
     try {
@@ -88,33 +125,28 @@ export default function LoginPage() {
     setGoogleLoading(true);
     const provider = new GoogleAuthProvider();
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      
-      const userProfile = await getUserProfile(user.uid);
-       if (!userProfile) {
-          await updateUserProfile(user.uid, {
-            fullName: user.displayName || 'Utilisateur Google',
-            email: user.email!,
-            photoURL: user.photoURL,
-            role: 'client'
-          });
-        }
-
-      await redirectUser(user.uid);
+      await signInWithRedirect(auth, provider);
+      // The user is redirected, so the code below will not execute in the same session.
+      // The redirect result is handled by the useEffect hook.
     } catch (error: any) {
-      // Affiche TOUTES les erreurs, sans exception.
-      console.error("Google Sign-In Error:", error);
-      toast({
-        title: "Erreur de connexion Google",
-        description: `Une erreur est survenue: ${error.message} (code: ${error.code})`,
-        variant: "destructive",
-      });
-    } finally {
-        // Garantit que le chargement s'arrête, quel que soit le résultat.
+        console.error("Google Sign-In Redirect Initiation Error:", error);
+        toast({
+          title: "Erreur de connexion Google",
+          description: `Impossible de démarrer la connexion Google: ${error.message}`,
+          variant: "destructive",
+        });
         setGoogleLoading(false);
     }
   };
+
+  if (isCheckingRedirect) {
+    return (
+        <div className="flex items-center justify-center min-h-screen bg-background">
+            <Loader2 className="h-12 w-12 animate-spin text-destructive" />
+            <p className="ml-4">Vérification de la connexion...</p>
+        </div>
+    );
+  }
 
 
   return (
