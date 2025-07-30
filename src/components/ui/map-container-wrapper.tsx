@@ -33,6 +33,8 @@ const DraggableMarker = ({ position, onPositionChange }: { position: L.LatLngExp
     );
 
     useEffect(() => {
+        // This effect ensures the marker's position is updated if the initial prop changes,
+        // although in our flow, it's primarily set once.
         const marker = markerRef.current;
         if (marker) {
             marker.setLatLng(position);
