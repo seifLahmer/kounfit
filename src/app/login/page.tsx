@@ -41,58 +41,65 @@ export default function LoginPage() {
   });
   
   const handleNewOrReturningUser = async (firebaseUser: FirebaseUser) => {
-    const userProfile = await getUserProfile(firebaseUser.uid);
+    try {
+      const userProfile = await getUserProfile(firebaseUser.uid);
 
-    // If user is new (no profile or incomplete profile)
-    if (!userProfile || !userProfile.mainGoal) {
-       // Create a partial profile if it doesn't exist at all
-       if (!userProfile) {
-         await updateUserProfile(firebaseUser.uid, {
-            fullName: firebaseUser.displayName || 'Utilisateur Google',
-            email: firebaseUser.email!,
-            photoURL: firebaseUser.photoURL,
-            role: 'client'
-         });
-       }
-       // Redirect to step 2 to complete profile
-       router.replace('/signup/step2');
-    } else {
-        // User exists and profile is complete, redirect based on role
-        const role = await getUserRole(firebaseUser.uid);
-        if (role === 'admin') {
-            router.replace('/admin');
-        } else if (role === 'caterer') {
-            router.replace('/caterer');
-        } else {
-            router.replace('/home');
-        }
+      if (!userProfile || !userProfile.mainGoal) {
+         if (!userProfile) {
+           await updateUserProfile(firebaseUser.uid, {
+              fullName: firebaseUser.displayName || 'Utilisateur Google',
+              email: firebaseUser.email!,
+              photoURL: firebaseUser.photoURL,
+              role: 'client'
+           });
+         }
+         router.replace('/signup/step2');
+      } else {
+          const role = await getUserRole(firebaseUser.uid);
+          if (role === 'admin') {
+              router.replace('/admin');
+          } else if (role === 'caterer') {
+              router.replace('/caterer');
+          } else {
+              router.replace('/home');
+          }
+      }
+    } catch (error) {
+        console.error("Redirection error:", error);
+        toast({ title: "Erreur", description: "Impossible de vous rediriger après la connexion.", variant: "destructive" });
+        setLoading(false);
+        setIsCheckingRedirect(false);
     }
   };
 
   useEffect(() => {
-    getRedirectResult(auth)
-      .then(async (result) => {
+    const checkRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
         if (result) {
           // User has just signed in via redirect.
           await handleNewOrReturningUser(result.user);
         } else {
-          // No redirect result, just check if user is already signed in.
-          const unsubscribe = onAuthStateChanged(auth, (user) => {
-             // We don't want to redirect here, just finish loading.
-             // Redirection for already logged in users is handled by layouts.
+          // No redirect result, check for already signed-in user.
+           onAuthStateChanged(auth, (user) => {
+             if (user) {
+                // If user is already here and logged in, maybe they just refreshed.
+                // Let layouts handle redirection if they are on the wrong page.
+             }
              setIsCheckingRedirect(false);
-             unsubscribe();
           });
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         toast({
-          title: "Erreur de connexion",
-          description: `Une erreur est survenue pendant la redirection: ${error.message}`,
+          title: "Erreur de connexion Google",
+          description: `Une erreur est survenue: ${error.message}`,
           variant: "destructive",
         });
         setIsCheckingRedirect(false);
-      });
+      }
+    };
+    
+    checkRedirectResult();
   }, []);
 
 
