@@ -95,16 +95,10 @@ function SetLocationPage() {
         }
     }
     
-    // We use dynamic import for the map to ensure it only renders on the client side.
-    const Map = useMemo(() => dynamic(() => Promise.resolve(() => (
-        <MapContainer center={position} zoom={13} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }}>
-            <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <DraggableMarker position={position} setPosition={setPosition} />
-        </MapContainer>
-    )), [position, setPosition]), [position]);
+    const Map = useMemo(() => dynamic(() => import('@/components/ui/map-container-wrapper'), {
+        ssr: false,
+        loading: () => <div className="h-full w-full bg-muted flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin"/></div>
+    }), []);
 
 
     return (
@@ -119,7 +113,7 @@ function SetLocationPage() {
             </header>
 
             <div className="flex-grow z-10">
-                <Map />
+                 <Map center={position} zoom={13} setPosition={setPosition} />
             </div>
 
             <footer className="absolute bottom-0 left-0 right-0 z-20 p-4 bg-gradient-to-t from-black/20 to-transparent">
@@ -136,6 +130,4 @@ function SetLocationPage() {
     )
 }
 
-// Wrap the export in another dynamic call to ensure no SSR for the entire page.
-// This is a robust way to handle Leaflet in Next.js App Router.
 export default dynamic(() => Promise.resolve(SetLocationPage), { ssr: false });
