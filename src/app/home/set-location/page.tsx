@@ -1,62 +1,125 @@
 
 "use client"
 
-import { useState } from 'react';
-import Image from 'next/image';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, MapPin } from 'lucide-react';
+import { ChevronLeft, MapPin, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import 'leaflet/dist/leaflet.css';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import L from 'leaflet';
+import dynamic from 'next/dynamic';
 
-export default function SetLocationPage() {
+
+// Leaflet's default icon doesn't work well with bundlers, so we fix it.
+const DefaultIcon = L.icon({
+    iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
+L.Marker.prototype.options.icon = DefaultIcon;
+
+const DraggableMarker = ({ position, setPosition }: { position: L.LatLngExpression, setPosition: (pos: L.LatLng) => void }) => {
+    const markerRef = useRef<L.Marker>(null);
+    
+    const map = useMapEvents({
+        click(e) {
+            setPosition(e.latlng);
+            map.flyTo(e.latlng, map.getZoom());
+        },
+    });
+
+    const eventHandlers = useMemo(
+        () => ({
+            dragend() {
+                const marker = markerRef.current;
+                if (marker != null) {
+                    setPosition(marker.getLatLng());
+                }
+            },
+        }),
+        [setPosition],
+    );
+
+    return (
+        <Marker
+            draggable={true}
+            eventHandlers={eventHandlers}
+            position={position}
+            ref={markerRef}>
+        </Marker>
+    );
+};
+
+
+function SetLocationPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
+    const [position, setPosition] = useState<L.LatLng>(new L.LatLng(36.8065, 10.1815)); // Default to Tunis
 
-    const handleConfirmLocation = () => {
+    const handleConfirmLocation = async () => {
         setLoading(true);
-        // In a real app, you would get the coordinates from the map's center.
-        // For this placeholder, we'll use a hardcoded address.
-        const fakeAddress = "Avenue Habib Bourguiba, Tunis, Tunisie";
+        try {
+            // Reverse geocode the coordinates to get an address
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.lat}&lon=${position.lng}`);
+            if (!response.ok) {
+                throw new Error("Failed to fetch address from coordinates.");
+            }
+            const data = await response.json();
+            const address = data.display_name || `Lat: ${position.lat.toFixed(4)}, Lon: ${position.lng.toFixed(4)}`;
 
-        // Use localStorage to pass the address back to the cart page
-        localStorage.setItem('selectedDeliveryAddress', fakeAddress);
-        
-        toast({
-            title: "Adresse confirmée",
-            description: fakeAddress,
-        });
+            localStorage.setItem('selectedDeliveryAddress', address);
+            
+            toast({
+                title: "Adresse confirmée",
+                description: address,
+            });
 
-        // Simulate a small delay then redirect back
-        setTimeout(() => {
-            router.back();
+            setTimeout(() => {
+                router.back();
+            }, 300);
+
+        } catch (error) {
+            console.error("Reverse geocoding error:", error);
+            toast({
+                title: "Erreur",
+                description: "Impossible de récupérer l'adresse pour cet emplacement.",
+                variant: "destructive"
+            });
             setLoading(false);
-        }, 500);
+        }
     }
+    
+    // We use dynamic import for the map to ensure it only renders on the client side.
+    const Map = useMemo(() => dynamic(() => Promise.resolve(() => (
+        <MapContainer center={position} zoom={13} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }}>
+            <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <DraggableMarker position={position} setPosition={setPosition} />
+        </MapContainer>
+    )), [position, setPosition]), [position]);
+
 
     return (
         <div className="relative h-screen w-screen flex flex-col bg-gray-200">
-             <header className="absolute top-0 left-0 right-0 z-20 p-4">
+             <header className="absolute top-0 left-0 right-0 z-20 p-4 flex justify-between items-center bg-gradient-to-b from-black/20 to-transparent">
                 <Button variant="ghost" size="icon" className="bg-white rounded-full shadow-md" onClick={() => router.back()}>
                     <ChevronLeft />
                 </Button>
+                <div className="bg-white/80 backdrop-blur-sm rounded-full p-2 px-4 shadow-md text-center max-w-md truncate">
+                    <p className="font-semibold text-sm">Déplacez le marqueur ou cliquez sur la carte</p>
+                </div>
             </header>
 
-            <div className="flex-grow relative">
-                {/* Placeholder Map Image */}
-                <Image
-                    src="https://placehold.co/800x1200.png"
-                    alt="Map placeholder"
-                    layout="fill"
-                    objectFit="cover"
-                    data-ai-hint="city map"
-                />
-
-                {/* Central Map Pin */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex flex-col items-center">
-                     <MapPin className="w-12 h-12 text-destructive drop-shadow-lg" />
-                     <div className="w-3 h-3 bg-destructive rounded-full -mt-2 shadow-md"></div>
-                </div>
+            <div className="flex-grow z-10">
+                <Map />
             </div>
 
             <footer className="absolute bottom-0 left-0 right-0 z-20 p-4 bg-gradient-to-t from-black/20 to-transparent">
@@ -66,9 +129,13 @@ export default function SetLocationPage() {
                     onClick={handleConfirmLocation}
                     disabled={loading}
                 >
-                    Confirmer cet emplacement
+                    {loading ? <Loader2 className="animate-spin" /> : "Confirmer cet emplacement"}
                 </Button>
             </footer>
         </div>
     )
 }
+
+// Wrap the export in another dynamic call to ensure no SSR for the entire page.
+// This is a robust way to handle Leaflet in Next.js App Router.
+export default dynamic(() => Promise.resolve(SetLocationPage), { ssr: false });
