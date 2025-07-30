@@ -13,11 +13,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { signInWithEmailAndPassword, onAuthStateChanged, User as FirebaseUser, signInWithPopup } from "firebase/auth";
+import { auth, facebookProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { getUserRole } from "@/lib/services/roleService";
 import { getUserProfile, updateUserProfile } from "@/lib/services/userService";
+
+const FacebookIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg fill="#1877F2" viewBox="0 0 24 24" {...props}>
+    <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z"/>
+  </svg>
+);
+
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -75,10 +82,30 @@ export default function LoginPage() {
     } catch (error) {
         console.error("Redirection error:", error);
         toast({ title: "Erreur", description: "Impossible de vous rediriger après la connexion.", variant: "destructive" });
-    } finally {
         setLoading(false);
     }
   };
+  
+  const handleFacebookSignIn = async () => {
+    setLoading(true);
+    try {
+      const result = await signInWithPopup(auth, facebookProvider);
+      await handleNewOrReturningUser(result.user);
+    } catch (error: any) {
+      setLoading(false);
+      // Handle specific errors, like account-exists-with-different-credential
+      let description = "Une erreur s'est produite lors de la connexion avec Facebook.";
+      if (error.code === 'auth/account-exists-with-different-credential') {
+        description = "Un compte existe déjà avec cette adresse e-mail. Essayez de vous connecter avec une autre méthode.";
+      }
+      toast({
+        title: "Échec de la connexion",
+        description: description,
+        variant: "destructive",
+      });
+    }
+  };
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -171,6 +198,21 @@ export default function LoginPage() {
               </Button>
             </form>
           </Form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Ou continuer avec</span>
+            </div>
+          </div>
+          
+          <Button variant="outline" className="w-full" onClick={handleFacebookSignIn} disabled={loading}>
+            <FacebookIcon className="mr-2 h-5 w-5" />
+            Continuer avec Facebook
+          </Button>
+
 
           <div className="mt-4 text-center text-sm">
             Vous n'avez pas de compte?{" "}
