@@ -57,12 +57,31 @@ export default function ShoppingCartPage() {
       }
     });
 
-    const handleStorageChange = () => loadCartFromStorage();
+    const handleStorageChange = () => {
+        loadCartFromStorage();
+        const selectedAddress = localStorage.getItem('selectedDeliveryAddress');
+        if (selectedAddress) {
+            setDeliveryAddress(selectedAddress);
+            localStorage.removeItem('selectedDeliveryAddress');
+        }
+    };
     window.addEventListener('storage', handleStorageChange);
+
+    // Also check on focus in case the user navigates back
+    const handleFocus = () => {
+        const selectedAddress = localStorage.getItem('selectedDeliveryAddress');
+        if (selectedAddress) {
+            setDeliveryAddress(selectedAddress);
+            localStorage.removeItem('selectedDeliveryAddress');
+        }
+    };
+    window.addEventListener('focus', handleFocus);
+
 
     return () => {
         unsubscribe();
         window.removeEventListener('storage', handleStorageChange);
+        window.removeEventListener('focus', handleFocus);
     };
   }, [router]);
 
