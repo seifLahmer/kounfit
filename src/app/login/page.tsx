@@ -45,23 +45,23 @@ export default function LoginPage() {
         const userProfile = await getUserProfile(uid);
         // If the profile is incomplete (e.g., from a fresh Google sign-in)
         if (!userProfile || !userProfile.mainGoal) {
-           router.push('/signup/step2');
+           router.replace('/signup/step2');
            return;
         }
         
         const role = await getUserRole(uid);
         if (role === 'admin') {
-          router.push('/admin');
+          router.replace('/admin');
         } else if (role === 'caterer') {
-          router.push('/caterer');
+          router.replace('/caterer');
         } else {
-          router.push('/home');
+          router.replace('/home');
         }
     } catch(error) {
         toast({ title: "Erreur de redirection", description: "Impossible de vérifier le profil utilisateur.", variant: "destructive"});
         setLoading(false);
         setIsCheckingRedirect(false);
-        router.push('/welcome'); // Fallback
+        router.replace('/welcome'); // Fallback
     }
   }
 
@@ -83,7 +83,7 @@ export default function LoginPage() {
               role: 'client'
             });
             // Redirect to step 2 to complete the profile.
-            router.push('/signup/step2');
+            router.replace('/signup/step2');
           } else {
             // Existing user, redirect them to the correct dashboard.
             await redirectUser(firebaseUser.uid);
