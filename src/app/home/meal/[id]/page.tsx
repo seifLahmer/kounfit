@@ -1,46 +1,133 @@
 
 "use client"
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { ChevronLeft, Share2, Clock, Star, Minus, Plus } from 'lucide-react';
+import { ChevronLeft, Share2, Clock, Star, Minus, Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { getMealById } from '@/lib/services/mealService';
+import type { Meal } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
 
-// This is mock data. In a real app, you would fetch this based on the `id` param.
-const mealData = {
-  id: "1",
-  name: "Escalope Grillée",
-  price: 25.00,
-  discount: 10,
-  image: "https://placehold.co/600x400.png",
-  description: "Tendres escalopes de poulet grillées à la perfection, servies avec une garniture de légumes frais. Un plat sain, riche en protéines et délicieux pour un repas équilibré.",
-  rating: 4.8,
-  prepTime: 20,
-  calories: 600,
-  macros: {
-    protein: 45,
-    carbs: 30,
-    fat: 20
-  }
+type DailyPlan = {
+    breakfast: Meal | null;
+    lunch: Meal | null;
+    snack: Meal | null;
+    dinner: Meal | null;
 };
 
 export default function MealDetailPage({ params }: { params: { id: string } }) {
+  const [mealData, setMealData] = useState<Meal | null>(null);
+  const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
+  const router = useRouter();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchMeal = async () => {
+      if (params.id) {
+        try {
+          setLoading(true);
+          const meal = await getMealById(params.id as string);
+          if (meal) {
+            setMealData(meal);
+          } else {
+            toast({ title: "Erreur", description: "Repas non trouvé.", variant: "destructive" });
+            router.push('/home');
+          }
+        } catch (error) {
+          toast({ title: "Erreur", description: "Impossible de charger les détails du repas.", variant: "destructive" });
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    fetchMeal();
+  }, [params.id, router, toast]);
 
   const handleQuantityChange = (amount: number) => {
     setQuantity(prev => Math.max(1, prev + amount));
   };
+  
+  const handleAddToCart = () => {
+    if (!mealData) return;
+
+    try {
+      const savedData = localStorage.getItem("dailyPlanData");
+      const todayStr = new Date().toISOString().split('T')[0];
+      
+      let currentPlan: DailyPlan;
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
+        if (parsedData.date === todayStr) {
+          currentPlan = parsedData.plan;
+        } else {
+          currentPlan = { breakfast: null, lunch: null, snack: null, dinner: null };
+        }
+      } else {
+        currentPlan = { breakfast: null, lunch: null, snack: null, dinner: null };
+      }
+      
+      // Simple logic: add to the next available slot based on category, or lunch by default
+      const mealType = mealData.category as keyof DailyPlan;
+      if (currentPlan[mealType] === null) {
+          currentPlan[mealType] = mealData;
+      } else {
+          // If the specific slot is taken, add to the first empty slot
+          const availableSlot = (Object.keys(currentPlan) as Array<keyof DailyPlan>).find(slot => currentPlan[slot] === null);
+          if (availableSlot) {
+              currentPlan[availableSlot] = mealData;
+          } else {
+              // Or just override lunch as a fallback
+               currentPlan.lunch = mealData;
+          }
+      }
+      
+      localStorage.setItem("dailyPlanData", JSON.stringify({ date: todayStr, plan: currentPlan }));
+      
+      toast({
+          title: "Repas ajouté!",
+          description: `${mealData.name} a été ajouté à votre plan du jour.`,
+      });
+      router.push('/home');
+
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'ajouter le repas au plan.",
+        variant: "destructive",
+      });
+      console.error("Failed to update localStorage", error);
+    }
+  };
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!mealData) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen bg-background">
+        <p className="text-lg text-muted-foreground mb-4">Désolé, ce repas est introuvable.</p>
+        <Button onClick={() => router.push('/home')}>Retour à l'accueil</Button>
+      </div>
+    );
+  }
+
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground">
       <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4 bg-gradient-to-b from-black/50 to-transparent">
-        <Link href="/home" passHref>
-          <Button variant="ghost" size="icon" className="rounded-full bg-white/80 backdrop-blur-sm">
-            <ChevronLeft />
-          </Button>
-        </Link>
+        <Button variant="ghost" size="icon" className="rounded-full bg-white/80 backdrop-blur-sm" onClick={() => router.back()}>
+          <ChevronLeft />
+        </Button>
         <Button variant="ghost" size="icon" className="rounded-full bg-white/80 backdrop-blur-sm">
           <Share2 />
         </Button>
@@ -49,7 +136,7 @@ export default function MealDetailPage({ params }: { params: { id: string } }) {
       <main className="flex-1 overflow-y-auto">
         <div className="relative h-80">
           <Image
-            src={mealData.image}
+            src={mealData.imageUrl}
             alt={mealData.name}
             layout="fill"
             objectFit="cover"
@@ -64,23 +151,20 @@ export default function MealDetailPage({ params }: { params: { id: string } }) {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-2xl font-bold text-destructive">{mealData.price.toFixed(2)} DT</p>
-              {mealData.discount > 0 && (
-                <Badge variant="destructive" className="ml-2">-{mealData.discount}%</Badge>
-              )}
             </div>
           </div>
           
            <div className="flex items-center space-x-4 text-muted-foreground">
               <div className="flex items-center gap-2">
-                  <Badge variant="secondary">Livré</Badge>
+                <Badge variant="secondary" className="capitalize">{mealData.category}</Badge>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4" />
-                <span>{mealData.prepTime} min</span>
+                <span>~20 min</span>
               </div>
               <div className="flex items-center gap-2">
                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                <span>{mealData.rating}</span>
+                <span>4.8</span>
               </div>
             </div>
 
@@ -117,16 +201,16 @@ export default function MealDetailPage({ params }: { params: { id: string } }) {
       <footer className="p-4 border-t bg-background">
         <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-                 <Button variant="outline" size="icon" onClick={() => handleQuantityChange(-1)} className="rounded-full">
+                 <Button variant="outline" size="icon" onClick={() => handleQuantityChange(-1)} className="rounded-full" disabled>
                     <Minus className="h-4 w-4" />
                 </Button>
                 <span className="text-xl font-bold">{quantity}</span>
-                <Button variant="outline" size="icon" onClick={() => handleQuantityChange(1)} className="rounded-full">
+                <Button variant="outline" size="icon" onClick={() => handleQuantityChange(1)} className="rounded-full" disabled>
                     <Plus className="h-4 w-4" />
                 </Button>
             </div>
-          <Button size="lg" className="w-1/2 bg-destructive hover:bg-destructive/90 rounded-full">
-            Ajouter au panier
+          <Button size="lg" className="w-1/2 bg-destructive hover:bg-destructive/90 rounded-full" onClick={handleAddToCart}>
+            Ajouter au plan
           </Button>
         </div>
       </footer>

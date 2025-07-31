@@ -10,6 +10,7 @@ import {
   deleteDoc,
   doc,
   documentId,
+  getDoc,
 } from "firebase/firestore";
 import { db, storage } from "@/lib/firebase";
 import type { Meal } from "@/lib/types";
@@ -136,6 +137,35 @@ export async function getAvailableMealsByCategory(category: Meal['category']): P
 }
 
 /**
+ * Retrieves a single meal by its document ID.
+ * @param mealId The ID of the meal document.
+ * @returns A promise that resolves to the meal data, or null if not found.
+ */
+export async function getMealById(mealId: string): Promise<Meal | null> {
+    try {
+        const mealRef = doc(db, MEALS_COLLECTION, mealId);
+        const docSnap = await getDoc(mealRef);
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            const meal: Meal = {
+                id: docSnap.id,
+                ...data,
+                createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
+            } as Meal;
+            return meal;
+        } else {
+            console.log("No such meal document!");
+            return null;
+        }
+    } catch (error) {
+        console.error("Error fetching meal by ID: ", error);
+        throw new Error("Could not fetch the meal.");
+    }
+}
+
+
+/**
  * Retrieves a list of meals based on their IDs.
  * @param mealIds An array of meal IDs.
  * @returns A promise that resolves to an array of meals.
@@ -167,5 +197,3 @@ export async function getFavoriteMeals(mealIds: string[]): Promise<Meal[]> {
         throw new Error("Could not fetch favorite meals.");
     }
 }
-
-    
