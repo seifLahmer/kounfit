@@ -50,7 +50,6 @@ export default function LoginPage() {
   });
   
   const handleLoginSuccess = async (firebaseUser: FirebaseUser) => {
-    setLoading(true);
     try {
         const role = await getUserRole(firebaseUser.uid);
         if (role === 'admin') {
@@ -63,24 +62,27 @@ export default function LoginPage() {
     } catch (error) {
         console.error("Login redirection error:", error);
         toast({ title: "Erreur", description: "Impossible de vous rediriger après la connexion.", variant: "destructive" });
+    } finally {
         setLoading(false);
     }
   };
   
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      // The logic to redirect logged-in users is handled by the respective layouts.
-      // This page should just show the login form if no one is logged in.
       setIsAuthChecked(true);
+      if (user) {
+        // Once auth state is confirmed and there is a user, handle redirection.
+        handleLoginSuccess(user);
+      }
     });
     return () => unsubscribe();
-  }, [router]);
+  }, []);
 
   const onSubmit = async (data: LoginFormValues) => {
     setLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-      await handleLoginSuccess(userCredential.user);
+      await signInWithEmailAndPassword(auth, data.email, data.password);
+      // onAuthStateChanged will handle redirection
     } catch (error: any) {
       setLoading(false);
       let description = "An error occurred during login.";
@@ -98,10 +100,9 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      const userCredential = await signInWithPopup(auth, googleProvider);
-      await handleLoginSuccess(userCredential.user);
+      await signInWithPopup(auth, googleProvider);
+      // onAuthStateChanged will handle redirection
     } catch (error: any) {
-      console.error(error);
       if (error.code !== 'auth/popup-closed-by-user') {
         toast({
             title: "Erreur de connexion Google",

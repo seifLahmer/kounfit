@@ -12,8 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
-import { useState } from "react";
-import { createUserWithEmailAndPassword, signInWithPopup, User as FirebaseUser } from "firebase/auth";
+import { useState, useEffect } from "react";
+import { createUserWithEmailAndPassword, signInWithPopup, User as FirebaseUser, onAuthStateChanged } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { updateUserProfile, getUserProfile } from "@/lib/services/userService";
@@ -42,6 +42,7 @@ export default function SignupStep1Page() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -53,17 +54,14 @@ export default function SignupStep1Page() {
   });
 
   const handleNewUser = async (firebaseUser: FirebaseUser, fullName?: string | null) => {
-    setLoading(true);
     try {
         const userProfile = await getUserProfile(firebaseUser.uid);
 
-        // If user already has a full profile, send them to home
         if (userProfile?.mainGoal) {
             router.replace('/home');
             return;
         }
 
-        // If user has a partial profile or no profile, create/update it
         if (!userProfile) {
             await updateUserProfile(firebaseUser.uid, {
                 fullName: fullName || firebaseUser.displayName || 'New User',
@@ -73,7 +71,6 @@ export default function SignupStep1Page() {
             });
         }
         
-        // Everyone else goes to step 2 to complete their profile
         router.replace('/signup/step2');
 
     } catch (error) {
@@ -83,11 +80,22 @@ export default function SignupStep1Page() {
     }
   };
   
+   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsAuthChecked(true);
+      if (user) {
+        handleNewUser(user, user.displayName);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   const onSubmit = async (data: SignupFormValues) => {
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-      await handleNewUser(userCredential.user, data.fullName);
+      // onAuthStateChanged will handle redirection
+      await updateUserProfile(userCredential.user.uid, { fullName: data.fullName, email: data.email });
     } catch (error: any) {
        console.error("Signup Error:", error);
        let description = "Une erreur s'est produite lors de l'inscription.";
@@ -106,10 +114,9 @@ export default function SignupStep1Page() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      const userCredential = await signInWithPopup(auth, googleProvider);
-      await handleNewUser(userCredential.user);
+      await signInWithPopup(auth, googleProvider);
+      // onAuthStateChanged will handle redirection
     } catch (error: any) {
-      console.error(error);
        if (error.code !== 'auth/popup-closed-by-user') {
             toast({
                 title: "Erreur de connexion Google",
@@ -120,7 +127,17 @@ export default function SignupStep1Page() {
       setLoading(false);
     }
   };
-
+  
+  if (!isAuthChecked) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-destructive" />
+          <p className="text-muted-foreground">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
