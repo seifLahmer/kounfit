@@ -53,16 +53,27 @@ export default function SignupStep1Page() {
     },
   });
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const userProfile = await getUserProfile(user.uid);
+        if (userProfile?.mainGoal) {
+          router.replace('/home'); // Already fully registered
+        } else {
+          router.replace('/signup/step2'); // Needs to complete profile
+        }
+      } else {
+        setIsAuthChecked(true);
+      }
+    });
+    return () => unsubscribe();
+  }, [router]);
+
+
   const handleNewUser = async (firebaseUser: FirebaseUser, fullName?: string | null) => {
     try {
-        const userProfile = await getUserProfile(firebaseUser.uid);
-
-        if (userProfile?.mainGoal) {
-            router.replace('/home');
-            return;
-        }
-
-        if (!userProfile) {
+        const existingProfile = await getUserProfile(firebaseUser.uid);
+        if (!existingProfile) {
             await updateUserProfile(firebaseUser.uid, {
                 fullName: fullName || firebaseUser.displayName || 'New User',
                 email: firebaseUser.email!,
@@ -70,32 +81,18 @@ export default function SignupStep1Page() {
                 role: 'client'
             });
         }
-        
-        router.replace('/signup/step2');
-
     } catch (error) {
         console.error("New user handling error:", error);
         toast({ title: "Erreur", description: "Impossible de finaliser votre inscription.", variant: "destructive" });
-        setLoading(false);
     }
   };
   
-   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setIsAuthChecked(true);
-      if (user) {
-        handleNewUser(user, user.displayName);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
   const onSubmit = async (data: SignupFormValues) => {
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+      await handleNewUser(userCredential.user, data.fullName);
       // onAuthStateChanged will handle redirection
-      await updateUserProfile(userCredential.user.uid, { fullName: data.fullName, email: data.email });
     } catch (error: any) {
        console.error("Signup Error:", error);
        let description = "Une erreur s'est produite lors de l'inscription.";
@@ -107,14 +104,16 @@ export default function SignupStep1Page() {
          description: description,
          variant: "destructive",
        });
-       setLoading(false);
+    } finally {
+        setLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+      await handleNewUser(result.user);
       // onAuthStateChanged will handle redirection
     } catch (error: any) {
        if (error.code !== 'auth/popup-closed-by-user') {
@@ -124,6 +123,7 @@ export default function SignupStep1Page() {
                 variant: "destructive",
             });
         }
+    } finally {
       setLoading(false);
     }
   };

@@ -48,43 +48,34 @@ export default function LoginPage() {
       password: "",
     },
   });
-  
-  const handleLoginSuccess = async (firebaseUser: FirebaseUser) => {
-    try {
-        const role = await getUserRole(firebaseUser.uid);
-        if (role === 'admin') {
-            router.replace('/admin');
-        } else if (role === 'caterer') {
-            router.replace('/caterer');
-        } else {
-            router.replace('/home');
-        }
-    } catch (error) {
-        console.error("Login redirection error:", error);
-        toast({ title: "Erreur", description: "Impossible de vous rediriger après la connexion.", variant: "destructive" });
-    } finally {
-        setLoading(false);
-    }
-  };
-  
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setIsAuthChecked(true);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // Once auth state is confirmed and there is a user, handle redirection.
-        handleLoginSuccess(user);
+        // User is already signed in, redirect them.
+        try {
+            const role = await getUserRole(user.uid);
+            if (role === 'admin') router.replace('/admin');
+            else if (role === 'caterer') router.replace('/caterer');
+            else router.replace('/home');
+        } catch (error) {
+            toast({ title: "Erreur", description: "Impossible de vous rediriger.", variant: "destructive" });
+        }
+      } else {
+        // No user is signed in, safe to show the login page.
+        setIsAuthChecked(true);
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [router, toast]);
+
 
   const onSubmit = async (data: LoginFormValues) => {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, data.email, data.password);
-      // onAuthStateChanged will handle redirection
+      // onAuthStateChanged in protected layouts will handle redirection.
     } catch (error: any) {
-      setLoading(false);
       let description = "An error occurred during login.";
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         description = "Email ou mot de passe invalide. Veuillez réessayer.";
@@ -94,6 +85,8 @@ export default function LoginPage() {
         description: description,
         variant: "destructive",
       });
+    } finally {
+        setLoading(false);
     }
   };
 
@@ -101,7 +94,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signInWithPopup(auth, googleProvider);
-      // onAuthStateChanged will handle redirection
+      // onAuthStateChanged in protected layouts will handle redirection.
     } catch (error: any) {
       if (error.code !== 'auth/popup-closed-by-user') {
         toast({
@@ -110,6 +103,7 @@ export default function LoginPage() {
             variant: "destructive",
         });
       }
+    } finally {
       setLoading(false);
     }
   };
