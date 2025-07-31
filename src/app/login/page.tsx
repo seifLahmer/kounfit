@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, onAuthStateChanged, User as FirebaseUser, signInWithPopup } from "firebase/auth";
+import { signInWithEmailAndPassword, onAuthStateChanged, signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { getUserRole } from "@/lib/services/roleService";
@@ -52,29 +52,32 @@ export default function LoginPage() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // User is already signed in, redirect them.
+        // User is already signed in, redirect them based on their role.
+        // This handles cases where a logged-in user navigates to the login page.
         try {
             const role = await getUserRole(user.uid);
             if (role === 'admin') router.replace('/admin');
             else if (role === 'caterer') router.replace('/caterer');
             else router.replace('/home');
         } catch (error) {
-            toast({ title: "Erreur", description: "Impossible de vous rediriger.", variant: "destructive" });
+            // Stay on login page if role check fails
+            setIsAuthChecked(true);
         }
       } else {
         // No user is signed in, safe to show the login page.
         setIsAuthChecked(true);
       }
     });
+    // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, [router, toast]);
+  }, [router]);
 
 
   const onSubmit = async (data: LoginFormValues) => {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, data.email, data.password);
-      // onAuthStateChanged in protected layouts will handle redirection.
+      // Successful login will trigger onAuthStateChanged in protected layouts, which will handle redirection.
     } catch (error: any) {
       let description = "An error occurred during login.";
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
@@ -85,8 +88,7 @@ export default function LoginPage() {
         description: description,
         variant: "destructive",
       });
-    } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
@@ -94,7 +96,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signInWithPopup(auth, googleProvider);
-      // onAuthStateChanged in protected layouts will handle redirection.
+      // Successful login will trigger onAuthStateChanged in protected layouts, which will handle redirection.
     } catch (error: any) {
       if (error.code !== 'auth/popup-closed-by-user') {
         toast({
@@ -103,7 +105,6 @@ export default function LoginPage() {
             variant: "destructive",
         });
       }
-    } finally {
       setLoading(false);
     }
   };

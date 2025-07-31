@@ -38,7 +38,7 @@ const GoogleIcon = () => (
 );
 
 
-export default function SignupStep1Page() {
+export default function SignupPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -56,6 +56,7 @@ export default function SignupStep1Page() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        // User is already signed in. Check if their profile is complete.
         const userProfile = await getUserProfile(user.uid);
         if (userProfile?.mainGoal) {
           router.replace('/home'); // Already fully registered
@@ -63,6 +64,7 @@ export default function SignupStep1Page() {
           router.replace('/signup/step2'); // Needs to complete profile
         }
       } else {
+        // No user, safe to show the signup page.
         setIsAuthChecked(true);
       }
     });
@@ -74,6 +76,7 @@ export default function SignupStep1Page() {
     try {
         const existingProfile = await getUserProfile(firebaseUser.uid);
         if (!existingProfile) {
+            // Only create a new profile if one doesn't exist
             await updateUserProfile(firebaseUser.uid, {
                 fullName: fullName || firebaseUser.displayName || 'New User',
                 email: firebaseUser.email!,
@@ -81,9 +84,11 @@ export default function SignupStep1Page() {
                 role: 'client'
             });
         }
+        // Whether new or existing, the onAuthStateChanged in layout will handle redirection.
     } catch (error) {
         console.error("New user handling error:", error);
         toast({ title: "Erreur", description: "Impossible de finaliser votre inscription.", variant: "destructive" });
+        throw error; // Re-throw to be caught by the calling function
     }
   };
   
@@ -92,7 +97,8 @@ export default function SignupStep1Page() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       await handleNewUser(userCredential.user, data.fullName);
-      // onAuthStateChanged will handle redirection
+      // onAuthStateChanged in step2 layout will handle redirection if needed.
+      router.push('/signup/step2');
     } catch (error: any) {
        console.error("Signup Error:", error);
        let description = "Une erreur s'est produite lors de l'inscription.";
@@ -104,8 +110,7 @@ export default function SignupStep1Page() {
          description: description,
          variant: "destructive",
        });
-    } finally {
-        setLoading(false);
+       setLoading(false);
     }
   };
 
@@ -114,7 +119,8 @@ export default function SignupStep1Page() {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       await handleNewUser(result.user);
-      // onAuthStateChanged will handle redirection
+       // onAuthStateChanged in layouts will handle the final redirection.
+      router.push('/signup/step2');
     } catch (error: any) {
        if (error.code !== 'auth/popup-closed-by-user') {
             toast({
@@ -123,8 +129,7 @@ export default function SignupStep1Page() {
                 variant: "destructive",
             });
         }
-    } finally {
-      setLoading(false);
+       setLoading(false);
     }
   };
   
