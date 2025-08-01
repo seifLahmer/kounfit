@@ -56,15 +56,13 @@ export default function SignupPage() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // User is already signed in. Check if their profile is complete.
         const userProfile = await getUserProfile(user.uid);
         if (userProfile?.mainGoal) {
-          router.replace('/home'); // Already fully registered
+          router.replace('/home'); 
         } else {
-          router.replace('/signup/step2'); // Needs to complete profile
+          router.replace('/signup/step2'); 
         }
       } else {
-        // No user, safe to show the signup page.
         setIsAuthChecked(true);
       }
     });
@@ -76,7 +74,6 @@ export default function SignupPage() {
     try {
         const existingProfile = await getUserProfile(firebaseUser.uid);
         if (!existingProfile) {
-            // Only create a new profile if one doesn't exist
             await updateUserProfile(firebaseUser.uid, {
                 fullName: fullName || firebaseUser.displayName || 'New User',
                 email: firebaseUser.email!,
@@ -84,11 +81,10 @@ export default function SignupPage() {
                 role: 'client'
             });
         }
-        // Whether new or existing, the onAuthStateChanged in layout will handle redirection.
     } catch (error) {
         console.error("New user handling error:", error);
         toast({ title: "Erreur", description: "Impossible de finaliser votre inscription.", variant: "destructive" });
-        throw error; // Re-throw to be caught by the calling function
+        throw error; 
     }
   };
   
@@ -97,7 +93,6 @@ export default function SignupPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       await handleNewUser(userCredential.user, data.fullName);
-      // onAuthStateChanged in step2 layout will handle redirection if needed.
       router.push('/signup/step2');
     } catch (error: any) {
        console.error("Signup Error:", error);
@@ -119,7 +114,6 @@ export default function SignupPage() {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       await handleNewUser(result.user);
-       // onAuthStateChanged in layouts will handle the final redirection.
       router.push('/signup/step2');
     } catch (error: any) {
        if (error.code !== 'auth/popup-closed-by-user') {
@@ -146,14 +140,18 @@ export default function SignupPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
+      <Card className="w-full max-w-md overflow-hidden">
+        <div className="flex w-full">
+            <div className="w-1/2 h-1.5 bg-gray-200"></div>
+            <div className="w-1/2 h-1.5 bg-gray-200"></div>
+        </div>
+        <CardHeader className="text-center pt-6">
           <Link href="/welcome" className="flex justify-center items-center gap-2 mb-4">
             <Leaf className="w-8 h-8 text-destructive" />
             <span className="text-2xl font-bold">NutriTrack</span>
           </Link>
-          <CardTitle className="text-2xl">Créer votre compte (Étape 1/2)</CardTitle>
-          <CardDescription>Rejoignez-nous pour atteindre vos objectifs de forme.</CardDescription>
+          <CardTitle className="text-2xl">Créer votre compte</CardTitle>
+          <CardDescription>Étape 1 sur 2</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -200,7 +198,7 @@ export default function SignupPage() {
 
               <Button type="submit" className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={loading}>
                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {loading ? "Création du compte..." : "Continuer vers l'étape 2"}
+                {loading ? "Création du compte..." : "Continuer"}
               </Button>
             </form>
           </Form>
@@ -214,7 +212,7 @@ export default function SignupPage() {
           
           <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading}>
             <GoogleIcon />
-            <span className="ml-2">Continuer avec Google</span>
+            <span className="ml-2">S'inscrire avec Google</span>
           </Button>
           
           <div className="mt-4 text-center text-sm">

@@ -60,7 +60,6 @@ export default function SignupStep2Page() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
-        // If no user is logged in, they shouldn't be here.
         router.replace('/login');
       } else {
          setIsAuthCheckComplete(true);
@@ -81,7 +80,6 @@ export default function SignupStep2Page() {
     }
 
     try {
-      // 1. Calculate nutritional needs
       const nutritionalNeeds = calculateNutritionalNeeds({
           age: data.age,
           gender: data.biologicalSex,
@@ -91,7 +89,6 @@ export default function SignupStep2Page() {
           goal: data.mainGoal
       });
 
-      // 2. Prepare user data for Firestore update
       const userProfileData = {
           age: data.age,
           biologicalSex: data.biologicalSex,
@@ -103,7 +100,6 @@ export default function SignupStep2Page() {
           macroRatio: nutritionalNeeds.macros,
       };
 
-      // 3. Update user profile in Firestore
       await updateUserProfile(currentUser.uid, userProfileData);
 
       toast({
@@ -111,7 +107,6 @@ export default function SignupStep2Page() {
         description: "Bienvenue sur NutriTrack! Vous allez être redirigé.",
       });
 
-      // 4. Redirect to home page
       router.push("/home");
 
     } catch (error: any) {
@@ -136,14 +131,18 @@ export default function SignupStep2Page() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
-      <Card className="w-full max-w-lg">
-        <CardHeader className="text-center">
+      <Card className="w-full max-w-lg overflow-hidden">
+        <div className="flex w-full">
+            <div className="w-1/2 h-1.5 bg-destructive"></div>
+            <div className="w-1/2 h-1.5 bg-gray-200"></div>
+        </div>
+        <CardHeader className="text-center pt-6">
           <Link href="/welcome" className="flex justify-center items-center gap-2 mb-4">
             <Leaf className="w-8 h-8 text-destructive" />
             <span className="text-2xl font-bold">NutriTrack</span>
           </Link>
-          <CardTitle className="text-2xl">Finalisez votre profil (Étape 2/2)</CardTitle>
-          <CardDescription>Ces informations nous aideront à personnaliser votre expérience.</CardDescription>
+          <CardTitle className="text-2xl">Finalisez votre profil</CardTitle>
+          <CardDescription>Étape 2 sur 2</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
