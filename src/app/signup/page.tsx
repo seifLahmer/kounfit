@@ -151,7 +151,7 @@ export default function SignupPage() {
             <span className="text-2xl font-bold">NutriTrack</span>
           </Link>
           <CardTitle className="text-2xl">Créer votre compte</CardTitle>
-          <CardDescription>Étape 1 sur 2</CardDescription>
+          
         </CardHeader>
         <CardContent>
           <Form {...form}>

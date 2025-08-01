@@ -142,7 +142,7 @@ export default function SignupStep2Page() {
             <span className="text-2xl font-bold">NutriTrack</span>
           </Link>
           <CardTitle className="text-2xl">Finalisez votre profil</CardTitle>
-          <CardDescription>Étape 2 sur 2</CardDescription>
+          
         </CardHeader>
         <CardContent>
           <Form {...form}>
