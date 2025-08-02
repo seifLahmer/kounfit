@@ -12,8 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
-import { useState, useEffect } from "react";
-import { createUserWithEmailAndPassword, signInWithPopup, User as FirebaseUser, onAuthStateChanged } from "firebase/auth";
+import { useState } from "react";
+import { createUserWithEmailAndPassword, signInWithPopup, User as FirebaseUser } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { updateUserProfile, getUserProfile } from "@/lib/services/userService";
@@ -42,7 +42,6 @@ export default function SignupPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const [isAuthChecked, setIsAuthChecked] = useState(false);
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -52,23 +51,6 @@ export default function SignupPage() {
       password: "",
     },
   });
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const userProfile = await getUserProfile(user.uid);
-        if (userProfile?.mainGoal) {
-          router.replace('/home'); 
-        } else {
-          router.replace('/signup/step2'); 
-        }
-      } else {
-        setIsAuthChecked(true);
-      }
-    });
-    return () => unsubscribe();
-  }, [router]);
-
 
   const handleNewUser = async (firebaseUser: FirebaseUser, fullName?: string | null) => {
     try {
@@ -126,17 +108,6 @@ export default function SignupPage() {
        setLoading(false);
     }
   };
-  
-  if (!isAuthChecked) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-12 w-12 animate-spin text-destructive" />
-          <p className="text-muted-foreground">Chargement...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
@@ -151,7 +122,6 @@ export default function SignupPage() {
             <span className="text-2xl font-bold">NutriTrack</span>
           </Link>
           <CardTitle className="text-2xl">Créer votre compte</CardTitle>
-          
         </CardHeader>
         <CardContent>
           <Form {...form}>
