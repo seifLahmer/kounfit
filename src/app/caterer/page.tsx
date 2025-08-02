@@ -563,6 +563,7 @@ export default function CatererPage() {
                                                                         <TableCell className="text-right font-medium">{grams} g</TableCell>
                                                                     </TableRow>
                                                                 ))}
+                             
                                                             </TableBody>
                                                         </Table>
                                                     </div>
@@ -655,7 +656,7 @@ export default function CatererPage() {
                 </div>
               </CardContent>
             </Card>
-          </div>
+      </div>
     </div>
   );
 }
