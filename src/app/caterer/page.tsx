@@ -301,7 +301,6 @@ export default function CatererPage() {
 
 
   return (
-    <>
     <div className="p-4 space-y-6">
       <header>
         <h1 className="text-3xl font-bold text-destructive flex items-center gap-2">
@@ -658,6 +657,5 @@ export default function CatererPage() {
             </Card>
           </div>
     </div>
-    </>
   );
 }
