@@ -660,5 +660,4 @@ export default function CatererPage() {
     </div>
     </>
   );
-
-    
+}
