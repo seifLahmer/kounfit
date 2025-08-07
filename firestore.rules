@@ -4,69 +4,52 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // Helper function to check if a user is authenticated
-    function isAuthenticated() {
+    function isSignedIn() {
       return request.auth != null;
     }
 
-    // Helper function to check if the user is the owner of a document
+    // Helper function to check if the requesting user is the owner of the document
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
     
-    // Helper function to get a user's role from the 'users' collection
-    function getRole(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data.role;
-    }
-    
-    function isClient() {
-      return isAuthenticated() && getRole(request.auth.uid) == 'client';
-    }
-    
-    function isCaterer() {
-      return isAuthenticated() && getRole(request.auth.uid) == 'caterer';
-    }
-    
-    function isAdmin() {
-      return isAuthenticated() && getRole(request.auth.uid) == 'admin';
+    // Helper function to check if the user has a specific role
+    function hasRole(role) {
+        return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
     }
 
-    // Rules for the 'users' collection
+    // Users can read/write their own data. Admins can read anyone's data.
     match /users/{userId} {
-      allow read, update: if isAuthenticated() && isOwner(userId);
-      allow create: if isAuthenticated(); // Any authenticated user can create their own profile
+      allow read, update: if isOwner(userId) || hasRole('admin');
+      allow create: if isSignedIn();
     }
-
-    // Rules for the 'traiteur' (caterers) collection
+    
+    // Admins can manage caterers
     match /traiteur/{catererId} {
-      allow read, create, update, delete: if isAdmin();
-      allow read: if isCaterer() && isOwner(catererId);
-    }
-    
-     // Rules for the 'admin' collection
-    match /admin/{adminId} {
-      allow read, create, update, delete: if isAdmin() && isOwner(adminId);
+        allow read, write: if hasRole('admin');
     }
 
-    // Rules for the 'meals' collection
+    // Meals can be read by anyone.
+    // Caterers can manage their own meals. Admins can manage any meal.
     match /meals/{mealId} {
-      allow read: if isAuthenticated(); // Any authenticated user can read meals
-      allow create: if isCaterer(); // Only caterers can create meals
-      allow update, delete: if isCaterer() && resource.data.createdBy == request.auth.uid; // Caterer can only update/delete their own meals
+      allow read: if true;
+      allow create: if hasRole('caterer');
+      allow update, delete: if (hasRole('admin')) || (hasRole('caterer') && resource.data.createdBy == request.auth.uid);
     }
 
-    // Rules for the 'orders' collection
+    // Orders can be created by clients.
+    // Clients can read their own orders.
+    // Caterers can read/update orders they are part of.
+    // Admins have full access.
     match /orders/{orderId} {
-      allow create: if isClient(); // Only clients can place orders
-      allow read: if (isClient() && resource.data.clientId == request.auth.uid) || 
-                    (isCaterer() && request.auth.uid in resource.data.catererIds) ||
-                    isAdmin();
-      allow update: if (isCaterer() && request.auth.uid in resource.data.catererIds) || isAdmin(); // Caterers can update status, admins can manage
+      allow create: if hasRole('client');
+      allow read: if hasRole('admin') || (hasRole('client') && resource.data.clientId == request.auth.uid) || (hasRole('caterer') && request.auth.uid in resource.data.catererIds);
+      allow update: if hasRole('admin') || (hasRole('caterer') && request.auth.uid in resource.data.catererIds);
     }
     
-    // Rules for the 'notifications' collection
+    // Users can only interact with their own notifications.
     match /notifications/{notificationId} {
-      allow read, update: if isOwner(resource.data.userId);
-      // Notifications are created by the server/backend functions, so no client `create` rule is needed.
+        allow read, update, create: if isOwner(resource.data.userId);
     }
   }
 }

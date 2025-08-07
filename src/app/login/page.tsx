@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, signInWithRedirect, onAuthStateChanged } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithRedirect, onAuthStateChanged, User } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
@@ -49,22 +49,23 @@ export default function LoginPage() {
     },
   });
 
+  // This hook now only checks if a user is already logged in.
+  // If so, it redirects them. If not, it allows the page to render.
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // User is already signed in, redirect them.
-        handleRedirect(user.uid);
+        // A user is already signed in, so redirect them away from the login page.
+        await handleRedirect(user);
       } else {
-        // No user is signed in, show the login form.
+        // No user is signed in. Stop loading and show the form.
         setIsAuthChecking(false);
       }
     });
-
     return () => unsubscribe();
-  }, []);
+  }, [router]); // dependency on router to use it inside handleRedirect
 
-  const handleRedirect = async (uid: string) => {
-    const role = await getUserRole(uid);
+  const handleRedirect = async (user: User) => {
+    const role = await getUserRole(user.uid);
     if (role === 'admin') router.replace('/admin');
     else if (role === 'caterer') router.replace('/caterer');
     else router.replace('/home');
@@ -74,7 +75,7 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-      // The onAuthStateChanged listener will handle redirection.
+      // After successful sign-in, the onAuthStateChanged listener will handle the redirect.
     } catch (error: any) {
       let description = "An error occurred during login.";
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
@@ -85,8 +86,7 @@ export default function LoginPage() {
         description: description,
         variant: "destructive",
       });
-    } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false); // Only set to false on error, success will unmount the component
     }
   };
 
@@ -182,5 +182,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    

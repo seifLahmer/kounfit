@@ -18,12 +18,15 @@ export default function ClientLayout({
 }) {
   const router = useRouter();
   const { toast } = useToast();
-  const [authStatus, setAuthStatus] = useState<"loading" | "authorized" | "unauthorized">("loading");
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
 
   const handleNewUserFromRedirect = useCallback(async (firebaseUser: FirebaseUser) => {
     try {
       const existingProfile = await getUserProfile(firebaseUser.uid);
       if (!existingProfile) {
+        // Create a new profile for the user from Google
         await updateUserProfile(firebaseUser.uid, {
             fullName: firebaseUser.displayName || 'New User',
             email: firebaseUser.email!,
@@ -44,48 +47,49 @@ export default function ClientLayout({
 
   useEffect(() => {
     const processAuth = async () => {
+      // First, check for a redirect result from Google sign-in
       try {
         const result = await getRedirectResult(auth);
         if (result) {
-          // A redirect sign-in just happened.
-          setAuthStatus("loading"); // Stay in loading state while we process it.
           const isNew = await handleNewUserFromRedirect(result.user);
-          if (isNew) return; // Stop processing, redirection to onboarding is happening
+          if (isNew) {
+            // A new user was created and redirected to onboarding, so we can stop processing here.
+            return;
+          }
         }
       } catch (error) {
         console.error("Error getting redirect result", error);
         toast({ title: "Erreur d'authentification", description: "Un problème est survenu lors de la connexion.", variant: "destructive" });
-        setAuthStatus("unauthorized");
+        setIsLoading(false);
         router.replace('/welcome');
         return;
       }
       
+      // If there was no redirect, or the user from redirect was not new, listen for auth state changes.
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
           try {
             const role = await getUserRole(user.uid);
             if (role === 'client') {
               const profile = await getUserProfile(user.uid);
-              if (!profile?.age) { // Check if onboarding is complete
+              if (!profile?.age) { // Check if onboarding (step 2) is complete
                 router.replace('/signup/step2');
               } else {
-                setAuthStatus("authorized");
+                setIsAuthorized(true);
               }
             } else {
-              setAuthStatus("unauthorized");
-              if (role === 'admin') router.replace('/admin');
-              else if (role === 'caterer') router.replace('/caterer');
-              else router.replace('/welcome');
+              // User has the wrong role, send them away
+              router.replace('/welcome');
             }
           } catch (error) {
              console.error("Error verifying client role:", error);
-             setAuthStatus("unauthorized");
              router.replace('/welcome');
           }
         } else {
-          setAuthStatus("unauthorized");
+          // No user logged in, send to welcome page
           router.replace('/welcome');
         }
+        setIsLoading(false);
       });
       return () => unsubscribe();
     };
@@ -93,12 +97,16 @@ export default function ClientLayout({
     processAuth();
   }, [router, toast, handleNewUserFromRedirect]);
   
-  if (authStatus !== "authorized") {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
+  }
+
+  if (!isAuthorized) {
+    return null; // Render nothing while redirects are happening
   }
 
   return (

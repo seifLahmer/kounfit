@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { createUserWithEmailAndPassword, signInWithRedirect, User as FirebaseUser } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
@@ -52,7 +52,7 @@ export default function SignupPage() {
     },
   });
 
-  const handleNewUser = useCallback(async (firebaseUser: FirebaseUser, fullName?: string | null) => {
+  const handleNewUser = async (firebaseUser: FirebaseUser, fullName?: string | null) => {
     try {
         await updateUserProfile(firebaseUser.uid, {
             fullName: fullName || firebaseUser.displayName || 'New User',
@@ -65,14 +65,15 @@ export default function SignupPage() {
         toast({ title: "Erreur", description: "Impossible de finaliser votre inscription.", variant: "destructive" });
         throw error; 
     }
-  }, [toast]);
+  };
   
   const onSubmit = async (data: SignupFormValues) => {
     setIsSubmitting(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       await handleNewUser(userCredential.user, data.fullName);
-      router.push('/signup/step2');
+      // The `home` layout will handle redirecting the user to step2 if their profile is incomplete.
+      router.push('/home'); 
     } catch (error: any) {
        console.error("Signup Error:", error);
        let description = "Une erreur s'est produite lors de l'inscription.";

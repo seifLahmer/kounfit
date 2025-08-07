@@ -5,7 +5,7 @@ export async function getUserRole(uid: string): Promise<'admin' | 'caterer' | 'c
   if (!uid) return 'unknown';
   
   try {
-    // 1. Check the primary 'users' collection first, as it should be the source of truth.
+    // 1. Check the primary 'users' collection first. This should be the main source of truth.
     const userRef = doc(db, "users", uid);
     const userSnap = await getDoc(userRef);
     if (userSnap.exists()) {
@@ -15,24 +15,26 @@ export async function getUserRole(uid: string): Promise<'admin' | 'caterer' | 'c
       }
     }
 
-    // 2. Fallback to checking individual role collections for robustness.
+    // 2. Fallback check for admin in the 'admin' collection for robustness.
     const adminRef = doc(db, "admin", uid);
     const adminSnap = await getDoc(adminRef);
     if (adminSnap.exists()) {
       return 'admin';
     }
 
+    // 3. Fallback check for caterer in the 'traiteur' collection.
     const catererRef = doc(db, "traiteur", uid);
     const catererSnap = await getDoc(catererRef);
     if (catererSnap.exists()) {
       return 'caterer';
     }
 
-    // 3. If no specific role is found in any collection, default to 'client'.
-    // This handles cases where a user might exist in Auth but not yet in Firestore.
+    // 4. If a user exists in Auth but has no document in 'users' or role-specific collections,
+    // they are treated as a 'client' by default. This handles new sign-ups.
     return 'client';
   } catch (error) {
       console.error("Error getting user role: ", error);
-      return 'unknown'; // Return 'unknown' on error to prevent incorrect redirection
+      // Return 'unknown' on error to prevent incorrect access. The layout will redirect to /welcome.
+      return 'unknown';
   }
 }

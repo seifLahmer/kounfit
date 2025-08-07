@@ -16,7 +16,8 @@ export default function CatererLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [authStatus, setAuthStatus] = useState<"loading" | "authorized" | "unauthorized">("loading");
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -24,34 +25,35 @@ export default function CatererLayout({
         try {
           const role = await getUserRole(user.uid);
           if (role === 'caterer') {
-            setAuthStatus("authorized");
+            setIsAuthorized(true);
           } else {
-             setAuthStatus("unauthorized");
-             // If the wrong role is logged in, send them to the correct page, or welcome if unknown
-             if (role === 'admin') router.replace('/admin');
-             else if (role === 'client') router.replace('/home');
-             else router.replace('/welcome');
+             // If the wrong role is logged in, send them away
+             router.replace('/welcome');
           }
         } catch (error) {
            console.error("Error verifying caterer role:", error);
-           setAuthStatus("unauthorized");
            router.replace('/welcome');
         }
       } else {
-        setAuthStatus("unauthorized");
+        // No user found, redirect
         router.replace('/welcome');
       }
+      setIsLoading(false);
     });
 
     return () => unsubscribe();
   }, [router]);
 
-  if (authStatus !== "authorized") {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <Loader2 className="h-12 w-12 animate-spin text-red-500" />
       </div>
     );
+  }
+  
+  if (!isAuthorized) {
+    return null; // Render nothing while redirecting
   }
 
   return (
@@ -72,5 +74,3 @@ export default function CatererLayout({
     </div>
   );
 }
-
-    
