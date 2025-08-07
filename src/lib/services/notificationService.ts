@@ -44,10 +44,12 @@ export async function createNotification(userId: string, message: string): Promi
 export async function getNotifications(userId: string): Promise<Notification[]> {
   try {
     const notificationsCollection = collection(db, NOTIFICATIONS_COLLECTION);
+    // The query with orderBy('createdAt') requires a composite index.
+    // Removing it to prevent app blockage until the index is created in Firebase console.
     const q = query(
       notificationsCollection,
       where('userId', '==', userId),
-      orderBy('createdAt', 'desc'),
+      // orderBy('createdAt', 'desc'), // This requires a composite index.
       limit(20) // Limit to the last 20 notifications
     );
 
@@ -61,6 +63,9 @@ export async function getNotifications(userId: string): Promise<Notification[]> 
         createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
       } as Notification);
     });
+    
+    // Manual sort after fetching
+    notifications.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     return notifications;
   } catch (error) {

@@ -15,27 +15,26 @@ export default function ClientLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [authStatus, setAuthStatus] = useState<"loading" | "authorized" | "unauthorized">("loading");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
           const role = await getUserRole(user.uid);
-          // Only clients are allowed in this section.
-          // Admins and Caterers should be redirected to their own dashboards.
           if (role === 'client') {
-            setIsAuthorized(true);
+            setAuthStatus("authorized");
           } else {
-            // User is logged in but not a client, boot them out to welcome.
+            setAuthStatus("unauthorized");
             router.replace('/welcome'); 
           }
         } catch (error) {
            console.error("Error verifying client role:", error);
+           setAuthStatus("unauthorized");
            router.replace('/welcome');
         }
       } else {
-        // No user is logged in, redirect to welcome page.
+        setAuthStatus("unauthorized");
         router.replace('/welcome');
       }
     });
@@ -43,7 +42,7 @@ export default function ClientLayout({
     return () => unsubscribe();
   }, [router]);
   
-  if (!isAuthorized) {
+  if (authStatus === "loading") {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -51,9 +50,19 @@ export default function ClientLayout({
     );
   }
 
+  if (authStatus === "authorized") {
+      return (
+        <MainLayout>
+          {children}
+        </MainLayout>
+      );
+  }
+
+  // In the "unauthorized" state, the redirection has already been triggered.
+  // We can return a loading spinner or null to avoid rendering anything while redirecting.
   return (
-    <MainLayout>
-      {children}
-    </MainLayout>
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
   );
 }

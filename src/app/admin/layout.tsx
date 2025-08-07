@@ -15,7 +15,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [authStatus, setAuthStatus] = useState<"loading" | "authorized" | "unauthorized">("loading");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -23,17 +23,18 @@ export default function AdminLayout({
         try {
           const role = await getUserRole(user.uid);
           if (role === 'admin') {
-            setIsAuthorized(true);
+            setAuthStatus("authorized");
           } else {
-            // User is logged in but not an admin, redirect to welcome page
+            setAuthStatus("unauthorized");
             router.replace('/welcome');
           }
         } catch (error) {
            console.error("Error verifying admin role:", error);
+           setAuthStatus("unauthorized");
            router.replace('/welcome');
         }
       } else {
-        // No user is logged in, redirect to welcome page
+        setAuthStatus("unauthorized");
         router.replace('/welcome');
       }
     });
@@ -41,7 +42,7 @@ export default function AdminLayout({
     return () => unsubscribe();
   }, [router]);
 
-  if (!isAuthorized) {
+  if (authStatus !== "authorized") {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <Loader2 className="h-12 w-12 animate-spin text-red-500" />
