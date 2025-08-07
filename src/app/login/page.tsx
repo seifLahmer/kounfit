@@ -59,14 +59,14 @@ export default function LoginPage() {
         router.replace('/admin');
       } else if (role === 'caterer') {
         router.replace('/caterer');
-      } else { // client or unknown
+      } else {
         router.replace('/home');
       }
 
     } catch (error: any) {
-      console.error("Login Error:", error.code);
+      console.error("Login Error:", error.code, error.message);
       let description = "Une erreur inconnue s'est produite. Veuillez réessayer.";
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
         description = "L'adresse e-mail ou le mot de passe est incorrect. Veuillez vérifier vos informations.";
       }
       toast({
@@ -81,7 +81,6 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = () => {
     setIsSubmitting(true);
-    // The home layout will handle the redirect result.
     signInWithRedirect(auth, googleProvider).catch((error) => {
        toast({
           title: "Erreur de connexion Google",
