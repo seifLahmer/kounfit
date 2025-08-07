@@ -16,7 +16,6 @@ export default function CatererLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -24,21 +23,18 @@ export default function CatererLayout({
       if (user) {
         try {
           const role = await getUserRole(user.uid);
-          if (role === 'caterer') {
-            setIsAuthorized(true);
-          } else {
-             // If any other role is logged in, send them away
+          if (role !== 'caterer') {
              router.replace('/welcome');
+          } else {
+            setIsLoading(false);
           }
         } catch (error) {
            console.error("Error verifying caterer role:", error);
            router.replace('/welcome');
         }
       } else {
-        // No user found, redirect to welcome
         router.replace('/welcome');
       }
-      setIsLoading(false);
     });
 
     return () => unsubscribe();
@@ -50,10 +46,6 @@ export default function CatererLayout({
         <Loader2 className="h-12 w-12 animate-spin text-red-500" />
       </div>
     );
-  }
-  
-  if (!isAuthorized) {
-    return null; // Render nothing while redirecting
   }
 
   return (

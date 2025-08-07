@@ -15,7 +15,6 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [isAuthorized, setIsAuthorized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -23,21 +22,18 @@ export default function AdminLayout({
       if (user) {
         try {
           const role = await getUserRole(user.uid);
-          if (role === 'admin') {
-            setIsAuthorized(true);
-          } else {
-            // If any other role, redirect to welcome
+          if (role !== 'admin') {
             router.replace('/welcome');
+          } else {
+            setIsLoading(false);
           }
         } catch (error) {
            console.error("Error verifying admin role:", error);
            router.replace('/welcome');
         }
       } else {
-        // No user, not authorized, redirect to welcome
         router.replace('/welcome');
       }
-      setIsLoading(false);
     });
 
     return () => unsubscribe();
@@ -50,11 +46,6 @@ export default function AdminLayout({
       </div>
     );
   }
-
-  if (!isAuthorized) {
-    return null; // Render nothing while redirects are happening
-  }
-
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">

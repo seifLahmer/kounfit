@@ -12,12 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
-import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, signInWithRedirect, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
+import { useState } from "react";
+import { signInWithEmailAndPassword, signInWithRedirect } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { getUserRole } from "@/lib/services/roleService";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -39,7 +38,6 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isAuthChecking, setIsAuthChecking] = useState(true);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -49,29 +47,13 @@ export default function LoginPage() {
     },
   });
 
-  // This hook now only checks if a user is already logged in to avoid showing the login page unnecessarily.
-  // It redirects them if a session exists.
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        // A user is already signed in, so redirect them away from the login page.
-        const role = await getUserRole(user.uid);
-        if (role === 'admin') router.replace('/admin');
-        else if (role === 'caterer') router.replace('/caterer');
-        else router.replace('/home');
-      } else {
-        // No user is signed in. Stop loading and show the form.
-        setIsAuthChecking(false);
-      }
-    });
-    return () => unsubscribe();
-  }, [router]);
-
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
     try {
-      // The onAuthStateChanged listener above will handle the redirect on successful login.
       await signInWithEmailAndPassword(auth, data.email, data.password);
+      // On success, redirect to the central /home route.
+      // The home layout will handle role-based redirection from there.
+      router.replace('/home');
     } catch (error: any) {
       let description = "An error occurred during login.";
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
@@ -88,6 +70,7 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = () => {
     setIsSubmitting(true);
+    // Redirect to home after Google sign-in. The home layout will handle the rest.
     signInWithRedirect(auth, googleProvider).catch((error) => {
        toast({
           title: "Erreur de connexion Google",
@@ -97,14 +80,6 @@ export default function LoginPage() {
        setIsSubmitting(false);
     });
   };
-
-  if (isAuthChecking) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <Loader2 className="h-12 w-12 animate-spin text-destructive" />
-      </div>
-    );
-  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
