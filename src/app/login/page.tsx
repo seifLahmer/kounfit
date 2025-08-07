@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, signInWithRedirect, getRedirectResult, onAuthStateChanged } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithRedirect, onAuthStateChanged } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
