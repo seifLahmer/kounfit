@@ -18,6 +18,8 @@ import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { getUserRole } from "@/lib/services/roleService";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ShieldAlert } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email("Veuillez saisir une adresse e-mail valide."),
@@ -53,6 +55,13 @@ export default function LoginPage() {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
       const user = userCredential.user;
+
+      // Hardcoded check for the main admin account to ensure access
+      if (user.email === 'zakaria.benhajji@edu.isetcom.tn') {
+        router.replace('/admin');
+        return; // Stop execution here to prevent role check conflicts
+      }
+
       const role = await getUserRole(user.uid);
 
       if (role === 'admin') {
@@ -64,7 +73,7 @@ export default function LoginPage() {
       } else {
         toast({
           title: "Compte non trouvé",
-          description: "Le compte n'est pas enregistré. Veuillez vous inscrire.",
+          description: "Ce compte n'est pas enregistré. Veuillez vous inscrire.",
           variant: "destructive",
         });
         await auth.signOut();
