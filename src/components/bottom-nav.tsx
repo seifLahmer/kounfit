@@ -26,7 +26,7 @@ import { Button } from "./ui/button"
 
 const links = [
   { href: "/profile", label: "Profile", icon: User },
-  { href: "/meal-plans", label: "favourites", icon: Heart },
+  { href: "/meal-plans", label: "Meal Plans", icon: Heart },
   { href: "/home", label: "Home", icon: LayoutGrid },
   { href: "/shopping-list", label: "Cart", icon: ShoppingCart },
 ]

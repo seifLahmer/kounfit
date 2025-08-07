@@ -205,7 +205,6 @@ export default function HomePage() {
       if (savedData) {
         const { date, plan } = JSON.parse(savedData);
         const todayStr = new Date().toISOString().split('T')[0];
-        // If the saved date is not today, reset the plan
         if (date !== todayStr) {
           localStorage.setItem("dailyPlanData", JSON.stringify({ date: todayStr, plan: emptyPlan }));
           return emptyPlan;
@@ -216,7 +215,6 @@ export default function HomePage() {
       console.error("Failed to parse daily plan from localStorage", error);
       localStorage.removeItem("dailyPlanData");
     }
-    // If nothing is saved, create a new entry for today
     const todayStr = new Date().toISOString().split('T')[0];
     localStorage.setItem("dailyPlanData", JSON.stringify({ date: todayStr, plan: emptyPlan }));
     return emptyPlan;
@@ -225,37 +223,28 @@ export default function HomePage() {
   const [dailyPlan, setDailyPlan] = useState<DailyPlan>(emptyPlan);
 
   useEffect(() => {
-    // This effect syncs state with localStorage on mount and when returning to the page.
     setDailyPlan(getInitialDailyPlan());
-  }, [getInitialDailyPlan]);
 
-
-  useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
-        setLoading(true);
         try {
             const userProfile = await getUserProfile(firebaseUser.uid)
-            setUser(userProfile)
-            
             const userNotifications = await getNotifications(firebaseUser.uid);
+            
+            setUser(userProfile);
             setNotifications(userNotifications);
             setHasUnread(userNotifications.some(n => !n.isRead));
 
-            if (!userProfile?.photoURL) {
-              const freshProfile = await getUserProfile(firebaseUser.uid);
-              if (freshProfile?.photoURL) {
-                setUser(freshProfile);
-              }
-            }
         } catch(e) {
             toast({
                 title: "Error fetching user",
                 description: "There was an error fetching your user data.",
                 variant: "destructive",
             });
+            setUser(null);
+            router.replace('/welcome');
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
       } else {
         setUser(null)
@@ -263,8 +252,9 @@ export default function HomePage() {
         router.replace('/welcome');
       }
     })
+    
     return () => unsubscribe()
-  }, [toast, router])
+  }, [toast, router, getInitialDailyPlan])
 
 
   
@@ -350,8 +340,11 @@ export default function HomePage() {
 
   if (loading) {
       return (
-          <div className="flex justify-center items-center h-full">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="flex justify-center items-center h-screen bg-background">
+             <div className="flex flex-col items-center gap-4">
+                <Loader2 className="h-12 w-12 animate-spin text-destructive" />
+                <p className="text-muted-foreground">Chargement...</p>
+             </div>
           </div>
       )
   }
