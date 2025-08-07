@@ -24,7 +24,7 @@ export default function ClientLayout({
     try {
       const existingProfile = await getUserProfile(firebaseUser.uid);
       if (existingProfile) {
-        return false; 
+        return false; // Not a new user
       }
 
       await updateUserProfile(firebaseUser.uid, {
@@ -43,7 +43,7 @@ export default function ClientLayout({
         toast({ title: "Erreur", description: "Impossible de finaliser votre inscription.", variant: "destructive" });
         await auth.signOut();
         router.replace('/welcome');
-        return true; 
+        return true; // Stop processing
     }
   }, [router, toast]);
 
@@ -60,7 +60,6 @@ export default function ClientLayout({
       } catch (error: any) {
         console.error("Error processing redirect result:", error);
         toast({ title: "Erreur de connexion", description: "Un problème est survenu lors de la connexion.", variant: "destructive" });
-        setIsLoading(false);
         router.replace('/welcome');
         return;
       }
@@ -71,7 +70,7 @@ export default function ClientLayout({
           try {
             const role = await getUserRole(user.uid);
             
-            // This is a client-only layout. Redirect other roles.
+            // This layout is for CLIENTS. Redirect other roles.
             if (role === 'admin') {
                 router.replace('/admin');
                 return;
@@ -80,23 +79,15 @@ export default function ClientLayout({
                 router.replace('/caterer');
                 return;
             }
-            if (role === 'unknown') {
-              // Could be a new user via email/pass. Let's check their profile.
-               const profile = await getUserProfile(user.uid);
-               if (!profile) {
-                 // No profile exists, likely an error state. Sign out.
-                 await auth.signOut();
-                 router.replace('/welcome');
-                 return;
-               }
-            }
+            // Now, we only handle 'client' and 'unknown' roles.
+            // 'unknown' could be a new user who needs to complete their profile.
             
-            // At this point, we assume the user is a client.
-            // Check if their profile is complete.
             const profile = await getUserProfile(user.uid);
-            if (!profile?.age) { 
+            // If the user is missing core profile data, redirect to step 2
+            if (!profile?.age || !profile.mainGoal) { 
               router.replace('/signup/step2');
             } else {
+              // User is a client with a complete profile, show the page.
               setIsLoading(false);
             }
           } catch (error) {

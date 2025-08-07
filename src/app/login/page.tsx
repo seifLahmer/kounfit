@@ -12,8 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
-import { useState } from "react";
-import { signInWithEmailAndPassword, signInWithRedirect } from "firebase/auth";
+import { useState, useEffect } from "react";
+import { signInWithEmailAndPassword, signInWithRedirect, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
@@ -39,6 +39,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -47,6 +48,22 @@ export default function LoginPage() {
       password: "",
     },
   });
+  
+  // This effect checks if a user is ALREADY logged in and redirects them.
+  // It prevents logged-in users from seeing the login page again.
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const role = await getUserRole(user.uid);
+        if (role === 'admin') router.replace('/admin');
+        else if (role === 'caterer') router.replace('/caterer');
+        else router.replace('/home'); // Default for clients or incomplete profiles
+      } else {
+        setIsAuthLoading(false);
+      }
+    });
+    return () => unsubscribe();
+  }, [router]);
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
@@ -55,30 +72,32 @@ export default function LoginPage() {
       const user = userCredential.user;
       const role = await getUserRole(user.uid);
 
+      // This is the definitive redirection logic based on role.
       if (role === 'admin') {
         router.replace('/admin');
       } else if (role === 'caterer') {
         router.replace('/caterer');
-      } else { // Includes 'client' and 'unknown' roles
+      } else { // Includes 'client' and 'unknown' roles, which are handled by the /home layout.
         router.replace('/home');
       }
     } catch (error: any) {
       let description = "Une erreur s'est produite lors de la connexion.";
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        description = "Email ou mot de passe invalide. Veuillez réessayer ou créer un compte.";
+        description = "Email ou mot de passe invalide. Veuillez réessayer.";
       }
       toast({
         title: "Échec de la connexion",
         description: description,
         variant: "destructive",
       });
-      setIsSubmitting(false);
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
   const handleGoogleSignIn = () => {
     setIsSubmitting(true);
-    // The home layout will handle the redirect result and user creation.
+    // The home layout will handle the redirect result.
     signInWithRedirect(auth, googleProvider).catch((error) => {
        toast({
           title: "Erreur de connexion Google",
@@ -88,6 +107,14 @@ export default function LoginPage() {
        setIsSubmitting(false);
     });
   };
+  
+  if (isAuthLoading) {
+     return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-destructive" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
