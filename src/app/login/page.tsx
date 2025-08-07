@@ -51,6 +51,28 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
+    
+    // Hardcoded admin check
+    if (data.email === "zakaria.benhajji@edu.isetcom.tn" && data.password === "2004/09/03") {
+        try {
+            await signInWithEmailAndPassword(auth, data.email, data.password);
+            toast({ title: "Connexion administrateur réussie!" });
+            router.replace('/admin');
+            return; // Stop execution here
+        } catch (error: any) {
+            // This might happen if the admin account doesn't exist in Auth.
+            // We still show a generic error.
+             toast({
+                title: "Échec de la connexion",
+                description: "Les informations d'identification d'administrateur sont incorrectes.",
+                variant: "destructive",
+            });
+            setIsSubmitting(false);
+            return;
+        }
+    }
+
+    // Regular user login logic
     try {
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
       const user = userCredential.user;
@@ -62,17 +84,13 @@ export default function LoginPage() {
       } else if (role === 'caterer') {
         router.replace('/caterer');
       } else if (role === 'client') {
-        // For clients, we also check if their profile is complete
         const profile = await getUserProfile(user.uid);
         if (profile?.age && profile.mainGoal) {
             router.replace('/home');
         } else {
-            // Profile is incomplete, send to step 2
             router.replace('/signup/step2');
         }
       } else {
-        // Role is 'unknown' or something else went wrong.
-        // This can happen if a user is in Auth but not in any role collection.
         toast({
             title: "Finalisation requise",
             description: "Votre compte existe mais votre profil est incomplet. Veuillez finaliser votre inscription.",

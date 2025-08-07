@@ -13,12 +13,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { useState } from "react";
-import { createUserWithEmailAndPassword, signInWithRedirect } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithRedirect, updateProfile } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { updateUserProfile } from "@/lib/services/userService";
 import { Separator } from "@/components/ui/separator";
-
 
 const signupSchema = z.object({
   fullName: z.string().min(2, "Le nom complet doit comporter au moins 2 caractères."),
@@ -55,22 +53,25 @@ export default function SignupPage() {
   const onSubmit = async (data: SignupFormValues) => {
     setIsSubmitting(true);
     try {
+      // Step 1: Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       
-      await updateUserProfile(userCredential.user.uid, {
-            fullName: data.fullName,
-            email: userCredential.user.email!,
-            photoURL: userCredential.user.photoURL,
-            role: 'client'
-        });
+      // Step 2: Update the user's profile in Firebase Auth itself (displayName)
+      await updateProfile(userCredential.user, {
+          displayName: data.fullName
+      });
 
-      // On successful creation, directly navigate to step 2
-      router.push('/signup/step2'); 
+      // Step 3: Redirect to Step 2 page to complete the profile in Firestore.
+      // We do NOT create the Firestore document here anymore.
+      router.push('/signup/step2');
+
     } catch (error: any) {
        console.error("Signup Error:", error);
        let description = "Une erreur s'est produite lors de l'inscription.";
        if (error.code === 'auth/email-already-in-use') {
          description = "Cette adresse e-mail est déjà utilisée. Veuillez essayer de vous connecter.";
+         // Clear any lingering auth state that might cause issues.
+         await auth.signOut();
        }
        toast({
          title: "Erreur d'inscription",

@@ -73,8 +73,8 @@ export default function SignupStep2Page() {
   const onSubmit = async (data: Step2FormValues) => {
     setLoading(true);
     const currentUser = auth.currentUser;
-    if (!currentUser) {
-        toast({ title: "Erreur", description: "Utilisateur non trouvé. Veuillez vous reconnecter.", variant: "destructive" });
+    if (!currentUser || !currentUser.email) {
+        toast({ title: "Erreur", description: "Utilisateur non trouvé ou informations manquantes. Veuillez vous reconnecter.", variant: "destructive" });
         router.push('/login');
         return;
     }
@@ -88,8 +88,13 @@ export default function SignupStep2Page() {
           activityLevel: data.activityLevel,
           goal: data.mainGoal
       });
-
+      
+      // This is where the full user profile is created in Firestore for the first time.
       const userProfileData = {
+          fullName: currentUser.displayName || 'Utilisateur',
+          email: currentUser.email,
+          photoURL: currentUser.photoURL,
+          role: 'client' as const,
           age: data.age,
           biologicalSex: data.biologicalSex,
           weight: data.weight,
