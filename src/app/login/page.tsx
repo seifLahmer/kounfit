@@ -39,8 +39,8 @@ const GoogleIcon = () => (
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAuthProcessing, setIsAuthProcessing] = useState(true);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -49,7 +49,7 @@ export default function LoginPage() {
       password: "",
     },
   });
-
+  
   const handleNewUser = useCallback(async (firebaseUser: FirebaseUser) => {
     const existingProfile = await getUserProfile(firebaseUser.uid);
     if (!existingProfile) {
@@ -72,47 +72,46 @@ export default function LoginPage() {
         else router.replace('/home');
       } catch(e) {
          console.error("Redirection error:", e)
-         router.replace('/home');
+         toast({ title: "Erreur de redirection", description: "Impossible de vous rediriger.", variant: "destructive" });
+         router.replace('/welcome');
       }
-  }, [router]);
+  }, [router, toast]);
 
 
   useEffect(() => {
-    const processAuth = async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        if (result) {
-          setLoading(true); // Keep loading while we process the new user
-          const isNewUser = await handleNewUser(result.user);
-          if (isNewUser) {
-            router.replace('/signup/step2');
-          } else {
-            await redirectToRole(result.user.uid);
-          }
-          return; // Stop execution here, redirection is happening
+    const processRedirect = async () => {
+        try {
+            const result = await getRedirectResult(auth);
+            if (result) {
+                // A user has just signed in via redirect.
+                // handleNewUser will create a profile if they are new.
+                const isNewUser = await handleNewUser(result.user);
+                // The onAuthStateChanged listener below will handle the redirection.
+            } else {
+                // No redirect result, proceed with auth state check.
+                setIsAuthProcessing(false);
+            }
+        } catch (error) {
+            console.error("Google Redirect Auth Error:", error);
+            toast({ title: "Erreur de connexion", description: "La connexion avec Google a échoué.", variant: "destructive" });
+            setIsAuthProcessing(false);
         }
-      } catch (error) {
-        console.error("Google Redirect Auth Error:", error);
-        toast({ title: "Erreur de connexion", description: "La connexion avec Google a échoué.", variant: "destructive" });
-        // Fall through to the onAuthStateChanged listener
-      }
-
-      // This will run if there's no redirect result
-      const unsubscribe = onAuthStateChanged(auth, async (user) => {
-        if (user) {
-          // A user is already logged in, redirect them
-          await redirectToRole(user.uid);
-        } else {
-           // No user is logged in, show the login form
-           setLoading(false);
-        }
-      });
-      
-      return () => unsubscribe();
     };
 
-    processAuth();
-  }, [handleNewUser, redirectToRole, toast, router]);
+    processRedirect();
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+            // User is logged in, redirect them.
+            redirectToRole(user.uid);
+        } else {
+            // No user, stop loading.
+            setIsAuthProcessing(false);
+        }
+    });
+
+    return () => unsubscribe();
+}, [handleNewUser, redirectToRole, toast]);
 
 
   const onSubmit = async (data: LoginFormValues) => {
@@ -130,13 +129,13 @@ export default function LoginPage() {
         description: description,
         variant: "destructive",
       });
-    } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
   const handleGoogleSignIn = () => {
     setIsSubmitting(true);
+    setIsAuthProcessing(true);
     signInWithRedirect(auth, googleProvider).catch((error) => {
        toast({
           title: "Erreur de connexion Google",
@@ -144,15 +143,16 @@ export default function LoginPage() {
           variant: "destructive",
        });
        setIsSubmitting(false);
+       setIsAuthProcessing(false);
     });
   };
   
-  if (loading) {
+  if (isAuthProcessing) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-12 w-12 animate-spin text-destructive" />
-          <p className="text-muted-foreground">Chargement...</p>
+          <p className="text-muted-foreground">Vérification de l'authentification...</p>
         </div>
       </div>
     );
@@ -233,3 +233,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    

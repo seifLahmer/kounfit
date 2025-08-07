@@ -40,7 +40,8 @@ const GoogleIcon = () => (
 
 export default function SignupPage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAuthProcessing, setIsAuthProcessing] = useState(true);
   const { toast } = useToast();
 
   const form = useForm<SignupFormValues>({
@@ -71,26 +72,31 @@ export default function SignupPage() {
   }, [toast]);
   
    useEffect(() => {
-    setLoading(true);
-    getRedirectResult(auth)
-      .then(async (result) => {
-        if (result) {
-          await handleNewUser(result.user);
-          router.replace('/signup/step2');
-        } else {
-            setLoading(false);
+    const processRedirect = async () => {
+        try {
+            const result = await getRedirectResult(auth);
+            if (result) {
+                // A user has just signed in via redirect.
+                // handleNewUser will create a profile if they are new.
+                await handleNewUser(result.user);
+                // Now force redirect to step 2, no turning back.
+                router.replace('/signup/step2');
+            } else {
+                // No redirect result, ok to show the form.
+                setIsAuthProcessing(false);
+            }
+        } catch (error) {
+            console.error("Redirect Error:", error);
+            toast({ title: "Erreur de connexion", description: "La connexion avec Google a échoué.", variant: "destructive" });
+            setIsAuthProcessing(false);
         }
-      })
-      .catch((error) => {
-        console.error("Redirect Error:", error);
-        toast({ title: "Erreur de connexion", description: "La connexion avec Google a échoué.", variant: "destructive" });
-        setLoading(false);
-      });
+    };
+    processRedirect();
   }, [handleNewUser, router, toast]);
 
 
   const onSubmit = async (data: SignupFormValues) => {
-    setLoading(true);
+    setIsSubmitting(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       await handleNewUser(userCredential.user, data.fullName);
@@ -106,12 +112,13 @@ export default function SignupPage() {
          description: description,
          variant: "destructive",
        });
-       setLoading(false);
+       setIsSubmitting(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
-    setLoading(true);
+    setIsSubmitting(true);
+    setIsAuthProcessing(true);
     try {
       await signInWithRedirect(auth, googleProvider);
     } catch (error: any) {
@@ -120,9 +127,21 @@ export default function SignupPage() {
            description: "Une erreur s'est produite lors de la tentative de connexion avec Google.",
            variant: "destructive",
        });
-       setLoading(false);
+       setIsSubmitting(false);
+       setIsAuthProcessing(false);
     }
   };
+  
+  if (isAuthProcessing) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-destructive" />
+          <p className="text-muted-foreground">Vérification de l'authentification...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
@@ -183,9 +202,9 @@ export default function SignupPage() {
                   )}
                 />
 
-              <Button type="submit" className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={loading}>
-                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {loading ? "Création du compte..." : "Continuer"}
+              <Button type="submit" className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isSubmitting}>
+                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting ? "Création du compte..." : "Continuer"}
               </Button>
             </form>
           </Form>
@@ -197,7 +216,7 @@ export default function SignupPage() {
             </div>
           </div>
           
-          <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading}>
+          <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isSubmitting}>
             <GoogleIcon />
             <span className="ml-2">S'inscrire avec Google</span>
           </Button>
@@ -213,3 +232,5 @@ export default function SignupPage() {
     </div>
   );
 }
+
+    
