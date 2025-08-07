@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { useState } from "react";
-import { createUserWithEmailAndPassword, signInWithRedirect, User as FirebaseUser } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithRedirect } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { updateUserProfile } from "@/lib/services/userService";
@@ -70,7 +70,7 @@ export default function SignupPage() {
        let description = "Une erreur s'est produite lors de l'inscription.";
        if (error.code === 'auth/email-already-in-use') {
          description = "Cette adresse e-mail est déjà utilisée. Veuillez essayer de vous connecter.";
-         // Force sign out to clear any lingering auth state
+         // Force sign out to clear any lingering auth state on the client
          await auth.signOut();
        }
        toast({

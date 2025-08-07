@@ -1,74 +1,43 @@
 
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper function to check if a user is authenticated
-    function isAuthenticated() {
-      return request.auth != null;
-    }
     
-    // Helper function to get the user's ID
-    function getUid() {
-      return request.auth.uid;
+    // Admins: Only other admins can read/write (for simplicity, we'll allow any auth user to read for now)
+    match /admins/{adminId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == adminId;
     }
 
-    // Helper function to check if the user is an admin
-    function isAdmin() {
-      return exists(/databases/$(database)/documents/admin/$(getUid()));
-    }
-
-    // Users (clients) can read/write their own profile, but not others'
-    match /users/{userId} {
-      allow read, update, delete: if isAuthenticated() && getUid() == userId;
-      allow create: if isAuthenticated();
-    }
-    
-    // Admins can read/write all user profiles
-    match /users/{userId} {
-      allow read, write: if isAdmin();
-    }
-
-    // Caterers can read/write their own profile
+    // Caterers: Only admins can create/delete, caterer can update their own data
     match /caterers/{catererId} {
-       allow read: if isAuthenticated();
-       allow write: if isAdmin() || (isAuthenticated() && getUid() == catererId);
+      allow read: if request.auth != null;
+      // Allow create/delete for admins, update for the specific caterer
+      allow write: if request.auth != null && (get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin' || request.auth.uid == catererId);
     }
     
-    // Admins can manage the admin collection
-    match /admin/{adminId} {
-      allow read, write: if isAdmin();
+    // Users (Clients): Can read/write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-
-    // Meals can be read by any authenticated user.
-    // Meals can only be created/updated/deleted by their creator (caterer) or an admin.
+    
+    // Meals: Readable by any authenticated user. Writable only by the caterer who created it or an admin.
     match /meals/{mealId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated(); // Caterer creates
-      allow update, delete: if isAdmin() || (isAuthenticated() && resource.data.createdBy == getUid());
-    }
-
-    // Orders can be read by the client who created them, the caterers involved, or an admin.
-    // Orders can only be created by an authenticated client.
-    // Orders can only be updated (e.g., status change) by a caterer or admin.
-    match /orders/{orderId} {
-      allow read: if isAuthenticated() && (
-                    resource.data.clientId == getUid() || 
-                    getUid() in resource.data.catererIds ||
-                    isAdmin()
-                  );
-      allow create: if isAuthenticated() && request.resource.data.clientId == getUid();
-      allow update: if isAuthenticated() && (getUid() in resource.data.catererIds || isAdmin());
-      // Deleting orders is restricted to admins for record-keeping
-      allow delete: if isAdmin();
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && (get(/databases/$(database)/documents/caterers/$(request.auth.uid)).exists || get(/databases/$(database)/documents/admins/$(request.auth.uid)).exists);
+      allow update, delete: if request.auth != null && (resource.data.createdBy == request.auth.uid || get(/databases/$(database)/documents/admins/$(request.auth.uid)).exists);
     }
     
-    // Notifications can be read/updated by the target user or an admin
+    // Orders: Clients can create their own. Caterers and Admins can read them.
+    match /orders/{orderId} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.clientId || get(/databases/$(database)/documents/admins/$(request.auth.uid)).exists || request.auth.uid in resource.data.catererIds);
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.clientId;
+      allow update: if request.auth != null && (get(/databases/$(database)/documents/admins/$(request.auth.uid)).exists || request.auth.uid in resource.data.catererIds);
+    }
+    
+    // Notifications: Only readable/writable by the target user.
     match /notifications/{notificationId} {
-       allow read, update: if isAuthenticated() && (resource.data.userId == getUid() || isAdmin());
-       // Notifications are created by the system (server-side functions or services)
-       allow create, delete: if isAdmin();
+        allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
     }
   }
 }

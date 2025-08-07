@@ -8,19 +8,14 @@ const CATERERS_COLLECTION = "caterers";
 /**
  * Adds a new caterer document to the 'caterers' collection.
  * The document ID will be the caterer's UID.
- * @param uid The UID of the caterer (from Firebase Auth).
- * @param name The full name of the caterer.
- * @param email The email of the caterer.
- * @param region The region of the caterer.
+ * @param catererData The caterer data to be added.
  */
 export async function addCaterer(catererData: Omit<Caterer, 'turnover'>): Promise<void> {
   try {
     const catererRef = doc(db, CATERERS_COLLECTION, catererData.uid);
     await setDoc(catererRef, {
-        name: catererData.name,
-        email: catererData.email,
-        region: catererData.region,
-        uid: catererData.uid
+      ...catererData,
+      role: 'caterer' // Ensure role is set
     });
   } catch (error) {
     console.error("Error adding caterer: ", error);
@@ -37,17 +32,11 @@ export async function getAllCaterers(): Promise<Caterer[]> {
     const caterersCollection = collection(db, CATERERS_COLLECTION);
     const querySnapshot = await getDocs(caterersCollection);
 
-    const caterers: Caterer[] = [];
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      caterers.push({
-        uid: doc.id,
-        name: data.name,
-        email: data.email,
-        region: data.region,
-      });
-    });
-
+    const caterers: Caterer[] = querySnapshot.docs.map(doc => ({
+      uid: doc.id,
+      ...doc.data()
+    } as Caterer));
+    
     return caterers;
   } catch (error) {
     console.error("Error fetching all caterers: ", error);

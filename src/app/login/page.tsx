@@ -18,8 +18,6 @@ import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { getUserRole } from "@/lib/services/roleService";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ShieldAlert } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email("Veuillez saisir une adresse e-mail valide."),
@@ -65,15 +63,12 @@ export default function LoginPage() {
       } else if (role === 'client') {
         router.replace('/home');
       } else {
-        // This case handles users that exist in Auth but not in any role collection.
-        // They are likely new users who haven't completed signup.
         toast({
-          title: "Compte non finalisé",
-          description: "Votre compte existe mais n'est pas complètement configuré. Veuillez vous inscrire pour finaliser le processus.",
+          title: "Compte non trouvé",
+          description: "Votre compte existe mais aucun rôle ne lui est assigné. Veuillez contacter le support ou vous réinscrire.",
           variant: "destructive",
         });
         await auth.signOut();
-        router.replace('/signup'); 
       }
     } catch (error: any) {
       console.error("Login Error:", error.code, error.message);
@@ -93,6 +88,7 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = () => {
     setIsSubmitting(true);
+    // After redirect, the logic in home/layout.tsx will handle user creation/redirection.
     signInWithRedirect(auth, googleProvider).catch((error) => {
        toast({
           title: "Erreur de connexion Google",
