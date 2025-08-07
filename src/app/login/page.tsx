@@ -12,13 +12,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
-import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, signInWithRedirect, getRedirectResult } from "firebase/auth";
+import { useState } from "react";
+import { signInWithEmailAndPassword, signInWithRedirect } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { getUserRole } from "@/lib/services/roleService";
-import { updateUserProfile } from "@/lib/services/userService";
 
 const loginSchema = z.object({
   email: z.string().email("Veuillez saisir une adresse e-mail valide."),
@@ -49,46 +48,6 @@ export default function LoginPage() {
     },
   });
 
-  // Handle Google sign-in redirect result
-  useEffect(() => {
-    const handleRedirect = async () => {
-      setIsSubmitting(true);
-      try {
-        const result = await getRedirectResult(auth);
-        if (result) {
-          const user = result.user;
-          const role = await getUserRole(user.uid);
-          
-          if (role === 'unknown') {
-            // New user from Google, create their profile
-            await updateUserProfile(user.uid, {
-                fullName: user.displayName || 'New User',
-                email: user.email!,
-                photoURL: user.photoURL,
-                role: 'client'
-            });
-            router.replace('/signup/step2');
-          } else {
-            // Existing user, redirect based on role
-            if (role === 'admin') router.replace('/admin');
-            else if (role === 'caterer') router.replace('/caterer');
-            else router.replace('/home');
-          }
-        }
-      } catch (error) {
-         toast({
-          title: "Erreur de connexion Google",
-          description: "Un problème est survenu lors de la connexion.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsSubmitting(false);
-      }
-    };
-    handleRedirect();
-  }, [router, toast]);
-
-
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
     try {
@@ -105,7 +64,7 @@ export default function LoginPage() {
       } else {
         toast({
           title: "Compte non trouvé",
-          description: "Votre compte n'est pas enregistré. Veuillez vous inscrire.",
+          description: "Le compte n'est pas enregistré. Veuillez vous inscrire.",
           variant: "destructive",
         });
         await auth.signOut();
