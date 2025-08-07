@@ -82,30 +82,33 @@ export default function LoginPage() {
       try {
         const result = await getRedirectResult(auth);
         if (result) {
-          setLoading(true);
+          setLoading(true); // Keep loading while we process the new user
           const isNewUser = await handleNewUser(result.user);
           if (isNewUser) {
             router.replace('/signup/step2');
           } else {
             await redirectToRole(result.user.uid);
           }
-          return;
+          return; // Stop execution here, redirection is happening
         }
-
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-          if (user) {
-            await redirectToRole(user.uid);
-          } else {
-             setLoading(false);
-          }
-        });
-        return () => unsubscribe();
-
       } catch (error) {
-        console.error("Authentication check failed:", error);
-        toast({ title: "Erreur de connexion", description: "La vérification de la connexion a échoué.", variant: "destructive" });
-        setLoading(false);
+        console.error("Google Redirect Auth Error:", error);
+        toast({ title: "Erreur de connexion", description: "La connexion avec Google a échoué.", variant: "destructive" });
+        // Fall through to the onAuthStateChanged listener
       }
+
+      // This will run if there's no redirect result
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          // A user is already logged in, redirect them
+          await redirectToRole(user.uid);
+        } else {
+           // No user is logged in, show the login form
+           setLoading(false);
+        }
+      });
+      
+      return () => unsubscribe();
     };
 
     processAuth();
@@ -115,7 +118,7 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
     try {
-      const cred = await signInWithEmailAndPassword(auth, data.email, data.password);
+      await signInWithEmailAndPassword(auth, data.email, data.password);
       // The onAuthStateChanged listener will handle redirection
     } catch (error: any) {
       let description = "An error occurred during login.";
@@ -127,7 +130,8 @@ export default function LoginPage() {
         description: description,
         variant: "destructive",
       });
-      setIsSubmitting(false);
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
