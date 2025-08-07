@@ -52,13 +52,6 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
     try {
-      // Special check for the admin user to bypass role check issues
-      if (data.email === "zakaria.benhajji@edu.isetcom.tn") {
-          const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-          router.replace('/admin');
-          return;
-      }
-      
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
       const user = userCredential.user;
       
@@ -76,9 +69,11 @@ export default function LoginPage() {
           router.replace('/home');
         }
       } else {
+         // This case handles users authenticated in Firebase but without a role document.
+         // This can happen if the profile creation was interrupted.
         toast({
           title: "Compte non finalisé",
-          description: "Votre compte existe mais nécessite d'être complété.",
+          description: "Votre compte existe mais nécessite d'être complété pour continuer.",
           variant: "destructive",
         });
         router.replace('/signup/step2');

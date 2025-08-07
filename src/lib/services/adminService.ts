@@ -16,7 +16,6 @@ export async function addAdmin({ uid, email }: { uid: string, email: string }): 
     const docSnap = await getDoc(adminRef);
 
     if (docSnap.exists()) {
-      // Avoid overwriting existing admin data, or handle as needed
       console.log(`Admin with UID ${uid} already exists.`);
       return;
     }
