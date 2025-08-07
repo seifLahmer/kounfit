@@ -82,7 +82,7 @@ export default function CatererPage() {
         try {
             setLoadingMeals(true);
             setLoadingOrders(true);
-            const catererDocRef = doc(db, 'traiteur', user.uid);
+            const catererDocRef = doc(db, 'caterers', user.uid);
             const [meals, receivedOrders, catererSnap] = await Promise.all([
               getMealsByCaterer(user.uid),
               getOrdersByCaterer(user.uid),

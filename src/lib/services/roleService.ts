@@ -9,14 +9,14 @@ export async function getUserRole(uid: string): Promise<'admin' | 'caterer' | 'c
     // Check collections in order of privilege: admin -> caterer -> client
     
     // 1. Check for admin role.
-    const adminRef = doc(db, "admin", uid);
+    const adminRef = doc(db, "admins", uid);
     const adminSnap = await getDoc(adminRef);
     if (adminSnap.exists()) {
       return 'admin';
     }
 
     // 2. Check for caterer role.
-    const catererRef = doc(db, "traiteur", uid);
+    const catererRef = doc(db, "caterers", uid);
     const catererSnap = await getDoc(catererRef);
     if (catererSnap.exists()) {
       return 'caterer';

@@ -3,10 +3,10 @@ import { collection, doc, getDocs, setDoc, deleteDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase";
 import type { Caterer } from "@/lib/types";
 
-const CATERERS_COLLECTION = "traiteur";
+const CATERERS_COLLECTION = "caterers";
 
 /**
- * Adds a new caterer document to the 'traiteur' collection.
+ * Adds a new caterer document to the 'caterers' collection.
  * The document ID will be the caterer's UID.
  * @param uid The UID of the caterer (from Firebase Auth).
  * @param name The full name of the caterer.
@@ -20,6 +20,7 @@ export async function addCaterer(catererData: Omit<Caterer, 'turnover'>): Promis
         name: catererData.name,
         email: catererData.email,
         region: catererData.region,
+        uid: catererData.uid
     });
   } catch (error) {
     console.error("Error adding caterer: ", error);
@@ -28,7 +29,7 @@ export async function addCaterer(catererData: Omit<Caterer, 'turnover'>): Promis
 }
 
 /**
- * Retrieves all caterers from the 'traiteur' collection.
+ * Retrieves all caterers from the 'caterers' collection.
  * @returns A promise that resolves to an array of caterers.
  */
 export async function getAllCaterers(): Promise<Caterer[]> {
@@ -55,7 +56,7 @@ export async function getAllCaterers(): Promise<Caterer[]> {
 }
 
 /**
- * Deletes a caterer from the 'traiteur' collection.
+ * Deletes a caterer from the 'caterers' collection.
  * @param uid The UID of the caterer to delete.
  */
 export async function deleteCaterer(uid: string): Promise<void> {
