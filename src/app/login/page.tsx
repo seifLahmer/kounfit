@@ -13,11 +13,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, onAuthStateChanged, signInWithRedirect } from "firebase/auth";
+import { signInWithEmailAndPassword, onAuthStateChanged, signInWithRedirect, getRedirectResult, User as FirebaseUser } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { getUserRole } from "@/lib/services/roleService";
 import { Separator } from "@/components/ui/separator";
+import { updateUserProfile, getUserProfile } from "@/lib/services/userService";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -49,35 +50,68 @@ export default function LoginPage() {
     },
   });
 
+  const handleNewUser = async (firebaseUser: FirebaseUser) => {
+    const existingProfile = await getUserProfile(firebaseUser.uid);
+    if (!existingProfile) {
+      await updateUserProfile(firebaseUser.uid, {
+        fullName: firebaseUser.displayName || 'New User',
+        email: firebaseUser.email!,
+        photoURL: firebaseUser.photoURL,
+        role: 'client'
+      });
+      return true; // Indicates a new user that needs onboarding
+    }
+    return false; // Indicates an existing user
+  };
+
+  const redirectToRole = async (uid: string) => {
+      const role = await getUserRole(uid);
+      if (role === 'admin') router.replace('/admin');
+      else if (role === 'caterer') router.replace('/caterer');
+      else router.replace('/home');
+  };
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        // User is already signed in, redirect them based on their role.
-        // This handles cases where a logged-in user navigates to the login page.
-        try {
-            const role = await getUserRole(user.uid);
-            if (role === 'admin') router.replace('/admin');
-            else if (role === 'caterer') router.replace('/caterer');
-            else router.replace('/home');
-        } catch (error) {
-            // Stay on login page if role check fails
-            setIsAuthChecked(true);
+    // This effect handles the result from Google's redirect
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (result) {
+          setLoading(true);
+          const user = result.user;
+          const isNewUser = await handleNewUser(user);
+          if (isNewUser) {
+            router.replace('/signup/step2');
+          } else {
+            await redirectToRole(user.uid);
+          }
+        } else {
+           setIsAuthChecked(true);
         }
-      } else {
-        // No user is signed in, safe to show the login page.
+      })
+      .catch((error) => {
+        console.error("Redirect Error:", error);
+        toast({ title: "Erreur de connexion", description: "La connexion avec Google a échoué.", variant: "destructive" });
+        setLoading(false);
         setIsAuthChecked(true);
+      });
+
+    // This effect handles users who are already logged in
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user && isAuthChecked) {
+        setLoading(true);
+        await redirectToRole(user.uid);
       }
     });
-    // Cleanup subscription on unmount
+
     return () => unsubscribe();
-  }, [router]);
+  }, [isAuthChecked]);
 
 
   const onSubmit = async (data: LoginFormValues) => {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, data.email, data.password);
-      // Successful login will trigger onAuthStateChanged in protected layouts, which will handle redirection.
+      // onAuthStateChanged will handle redirection
     } catch (error: any) {
       let description = "An error occurred during login.";
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
@@ -96,7 +130,6 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signInWithRedirect(auth, googleProvider);
-      // After redirection, onAuthStateChanged will be triggered, and the user will be routed correctly.
     } catch (error: any) {
       toast({
           title: "Erreur de connexion Google",
@@ -107,7 +140,7 @@ export default function LoginPage() {
     }
   };
   
-  if (!isAuthChecked) {
+  if (!isAuthChecked || loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -117,7 +150,6 @@ export default function LoginPage() {
       </div>
     );
   }
-
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">

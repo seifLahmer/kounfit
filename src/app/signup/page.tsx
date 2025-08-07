@@ -12,8 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
-import { useState } from "react";
-import { createUserWithEmailAndPassword, signInWithRedirect, User as FirebaseUser } from "firebase/auth";
+import { useState, useEffect } from "react";
+import { createUserWithEmailAndPassword, signInWithRedirect, getRedirectResult, User as FirebaseUser } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { updateUserProfile, getUserProfile } from "@/lib/services/userService";
@@ -70,6 +70,23 @@ export default function SignupPage() {
     }
   };
   
+   useEffect(() => {
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (result) {
+          setLoading(true);
+          await handleNewUser(result.user);
+          router.replace('/signup/step2');
+        }
+      })
+      .catch((error) => {
+        console.error("Redirect Error:", error);
+        toast({ title: "Erreur de connexion", description: "La connexion avec Google a échoué.", variant: "destructive" });
+        setLoading(false);
+      });
+  }, [router, toast]);
+
+
   const onSubmit = async (data: SignupFormValues) => {
     setLoading(true);
     try {
@@ -95,7 +112,6 @@ export default function SignupPage() {
     setLoading(true);
     try {
       await signInWithRedirect(auth, googleProvider);
-      // After redirection, the onAuthStateChanged listener in the step2/or home layout will handle user creation and redirection.
     } catch (error: any) {
        toast({
            title: "Erreur de connexion Google",
@@ -110,7 +126,7 @@ export default function SignupPage() {
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
       <Card className="w-full max-w-md overflow-hidden">
          <div className="flex w-full">
-            <div className="w-1/2 h-1.5 bg-destructive"></div>
+            <div className="w-1/2 h-1.5 bg-gray-200"></div>
             <div className="w-1/2 h-1.5 bg-gray-200"></div>
         </div>
         <CardHeader className="text-center pt-6">
@@ -119,6 +135,7 @@ export default function SignupPage() {
             <span className="text-2xl font-bold">NutriTrack</span>
           </Link>
           <CardTitle className="text-2xl">Créer votre compte</CardTitle>
+          
         </CardHeader>
         <CardContent>
           <Form {...form}>
