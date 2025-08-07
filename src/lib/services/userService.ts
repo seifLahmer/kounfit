@@ -39,7 +39,7 @@ export async function updateUserProfile(uid: string, data: Partial<Omit<User, 'u
     await setDoc(userRef, dataToSet, { merge: true });
   } catch (error) {
     console.error("Error in updateUserProfile: ", error);
-    throw error;
+    throw new Error(`Failed to update user profile: ${error}`);
   }
 }
 
@@ -51,6 +51,9 @@ export async function updateUserProfile(uid: string, data: Partial<Omit<User, 'u
  */
 export async function getUserProfile(uid: string): Promise<User | null> {
   try {
+    if (!uid) {
+        return null;
+    }
     const userRef = doc(db, USERS_COLLECTION, uid);
     const docSnap = await getDoc(userRef);
 
@@ -68,6 +71,8 @@ export async function getUserProfile(uid: string): Promise<User | null> {
     }
   } catch (error) {
     console.error("Could not fetch user profile.", error);
+    // It's better to let the calling function decide what to do with the error
+    // than to crash the entire app here.
     throw new Error("Could not fetch user profile.");
   }
 }

@@ -52,27 +52,20 @@ export default function SignupPage() {
     },
   });
 
-  const handleNewUser = async (firebaseUser: FirebaseUser, fullName?: string | null) => {
-    try {
-        await updateUserProfile(firebaseUser.uid, {
-            fullName: fullName || firebaseUser.displayName || 'New User',
-            email: firebaseUser.email!,
-            photoURL: firebaseUser.photoURL,
-            role: 'client'
-        });
-    } catch (error) {
-        console.error("New user handling error:", error);
-        toast({ title: "Erreur", description: "Impossible de finaliser votre inscription.", variant: "destructive" });
-        throw error; 
-    }
-  };
-  
   const onSubmit = async (data: SignupFormValues) => {
     setIsSubmitting(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-      await handleNewUser(userCredential.user, data.fullName);
-      // The `home` layout will handle redirecting the user to step2 if their profile is incomplete.
+      
+      // Create the user profile document immediately after creating the auth user.
+      await updateUserProfile(userCredential.user.uid, {
+            fullName: data.fullName,
+            email: userCredential.user.email!,
+            photoURL: userCredential.user.photoURL,
+            role: 'client'
+        });
+
+      // The `home` layout will now handle redirecting the user to step2 if their profile is incomplete.
       router.push('/home'); 
     } catch (error: any) {
        console.error("Signup Error:", error);
@@ -91,17 +84,16 @@ export default function SignupPage() {
 
   const handleGoogleSignIn = async () => {
     setIsSubmitting(true);
-    try {
-      // The home layout will now handle the redirect result and user creation.
-      await signInWithRedirect(auth, googleProvider);
-    } catch (error: any) {
-       toast({
+    // The home layout will handle the redirect result and user creation.
+    // This provides a single, consistent entry point for new users.
+    await signInWithRedirect(auth, googleProvider).catch((error) => {
+        toast({
            title: "Erreur de connexion Google",
            description: "Une erreur s'est produite lors de la tentative de connexion avec Google.",
            variant: "destructive",
        });
        setIsSubmitting(false);
-    }
+    });
   };
 
   return (
