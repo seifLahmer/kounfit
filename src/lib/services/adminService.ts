@@ -2,10 +2,10 @@
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
-const ADMINS_COLLECTION = "admins";
+const ADMINS_COLLECTION = "admin";
 
 /**
- * Adds a new admin document to the 'admins' collection.
+ * Adds a new admin document to the 'admin' collection.
  * The document ID will be the admin's UID.
  * @param uid The UID of the admin (from Firebase Auth).
  * @param email The email of the admin.
