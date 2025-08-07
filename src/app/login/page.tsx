@@ -40,7 +40,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [isAuthCheckComplete, setIsAuthCheckComplete] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -72,58 +72,51 @@ export default function LoginPage() {
         else router.replace('/home');
       } catch(e) {
          console.error("Redirection error:", e)
-         // Fallback to home page if role check fails
          router.replace('/home');
       }
   }, [router]);
 
 
   useEffect(() => {
-    // This one effect handles all auth scenarios on page load
     const processAuth = async () => {
       try {
         const result = await getRedirectResult(auth);
         if (result) {
-          // User just signed in via redirect.
+          setLoading(true);
           const isNewUser = await handleNewUser(result.user);
           if (isNewUser) {
             router.replace('/signup/step2');
           } else {
             await redirectToRole(result.user.uid);
           }
-          return; // Stop processing, redirection is happening
+          return;
         }
-        
-        // If no redirect, check for an existing session
+
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
           if (user) {
             await redirectToRole(user.uid);
           } else {
-            // Only set loading to false if no user is found
              setLoading(false);
-             setIsAuthCheckComplete(true);
           }
         });
-        return () => unsubscribe(); // Cleanup subscription
+        return () => unsubscribe();
 
       } catch (error) {
         console.error("Authentication check failed:", error);
         toast({ title: "Erreur de connexion", description: "La vérification de la connexion a échoué.", variant: "destructive" });
         setLoading(false);
-        setIsAuthCheckComplete(true);
       }
     };
 
     processAuth();
-    
   }, [handleNewUser, redirectToRole, toast, router]);
 
 
   const onSubmit = async (data: LoginFormValues) => {
-    setLoading(true);
+    setIsSubmitting(true);
     try {
       const cred = await signInWithEmailAndPassword(auth, data.email, data.password);
-      await redirectToRole(cred.user.uid);
+      // The onAuthStateChanged listener will handle redirection
     } catch (error: any) {
       let description = "An error occurred during login.";
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
@@ -134,23 +127,23 @@ export default function LoginPage() {
         description: description,
         variant: "destructive",
       });
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   const handleGoogleSignIn = () => {
-    setLoading(true);
+    setIsSubmitting(true);
     signInWithRedirect(auth, googleProvider).catch((error) => {
        toast({
           title: "Erreur de connexion Google",
           description: "Impossible de démarrer la connexion avec Google.",
           variant: "destructive",
        });
-       setLoading(false);
+       setIsSubmitting(false);
     });
   };
   
-  if (loading || !isAuthCheckComplete) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -206,9 +199,9 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={loading}>
-                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {loading ? "Connexion..." : "Se connecter"}
+              <Button type="submit" className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isSubmitting}>
+                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting ? "Connexion..." : "Se connecter"}
               </Button>
             </form>
           </Form>
@@ -220,7 +213,7 @@ export default function LoginPage() {
             </div>
           </div>
           
-          <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={loading}>
+          <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isSubmitting}>
             <GoogleIcon />
             <span className="ml-2">Continuer avec Google</span>
           </Button>
