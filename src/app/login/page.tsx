@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { signInWithEmailAndPassword, onAuthStateChanged, signInWithRedirect, getRedirectResult, User as FirebaseUser } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
@@ -39,7 +39,7 @@ const GoogleIcon = () => (
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true); // Start with loading true
+  const [loading, setLoading] = useState(true);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -49,7 +49,7 @@ export default function LoginPage() {
     },
   });
 
-  const handleNewUser = async (firebaseUser: FirebaseUser) => {
+  const handleNewUser = useCallback(async (firebaseUser: FirebaseUser) => {
     const existingProfile = await getUserProfile(firebaseUser.uid);
     if (!existingProfile) {
       await updateUserProfile(firebaseUser.uid, {
@@ -58,75 +58,62 @@ export default function LoginPage() {
         photoURL: firebaseUser.photoURL,
         role: 'client'
       });
-      return true; // Indicates a new user that needs onboarding
+      return true; // New user, needs onboarding
     }
-    return false; // Indicates an existing user
-  };
+    return false; // Existing user
+  }, []);
 
-  const redirectToRole = async (uid: string) => {
+  const redirectToRole = useCallback(async (uid: string) => {
       const role = await getUserRole(uid);
       if (role === 'admin') router.replace('/admin');
       else if (role === 'caterer') router.replace('/caterer');
       else router.replace('/home');
-  };
+  }, [router]);
+
 
   useEffect(() => {
-    let isMounted = true;
-
-    const handleAuth = async () => {
+    // This effect handles all authentication logic on page load.
+    const processAuth = async () => {
       try {
+        // First, check if we're returning from a Google redirect
         const result = await getRedirectResult(auth);
-        if (result && isMounted) {
-          // User has just signed in via redirect.
-          const user = result.user;
-          const isNewUser = await handleNewUser(user);
+        if (result) {
+          // User signed in via redirect.
+          const isNewUser = await handleNewUser(result.user);
           if (isNewUser) {
             router.replace('/signup/step2');
           } else {
-            await redirectToRole(user.uid);
+            await redirectToRole(result.user.uid);
           }
-          // setLoading will remain true until redirection completes
-          return;
+          return; // Stop further processing, redirection is happening
         }
+        
+        // If no redirect result, check if a user is already signed in
+        if (auth.currentUser) {
+           await redirectToRole(auth.currentUser.uid);
+           return; // Stop further processing
+        }
+
       } catch (error) {
-        if (isMounted) {
-            console.error("Redirect Error:", error);
-            toast({ title: "Erreur de connexion", description: "La connexion avec Google a échoué.", variant: "destructive" });
-            setLoading(false);
-        }
+        console.error("Authentication check failed:", error);
+        toast({ title: "Erreur de connexion", description: "La vérification de la connexion a échoué.", variant: "destructive" });
       }
-      
-      // If no redirect result, check current auth state
-      const unsubscribe = onAuthStateChanged(auth, async (user) => {
-        if (isMounted) {
-            if (user) {
-                // User is already logged in
-                await redirectToRole(user.uid);
-            } else {
-                // No user, stop loading
-                setLoading(false);
-            }
-        }
-      });
-      
-      return () => {
-          if (unsubscribe) unsubscribe();
-      };
+
+      // If no user is found after all checks, stop loading
+      setLoading(false);
     };
 
-    handleAuth();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    processAuth();
+    
+    // We don't need onAuthStateChanged here as we handle all cases on mount.
+  }, [handleNewUser, redirectToRole, toast, router]);
 
 
   const onSubmit = async (data: LoginFormValues) => {
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, data.email, data.password);
-      // onAuthStateChanged will handle redirection
+      const cred = await signInWithEmailAndPassword(auth, data.email, data.password);
+      await redirectToRole(cred.user.uid);
     } catch (error: any) {
       let description = "An error occurred during login.";
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
@@ -141,18 +128,16 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = () => {
     setLoading(true);
-    try {
-      await signInWithRedirect(auth, googleProvider);
-    } catch (error: any) {
-      toast({
+    signInWithRedirect(auth, googleProvider).catch((error) => {
+       toast({
           title: "Erreur de connexion Google",
-          description: "Une erreur s'est produite lors de la tentative de connexion avec Google.",
+          description: "Impossible de démarrer la connexion avec Google.",
           variant: "destructive",
-      });
-      setLoading(false);
-    }
+       });
+       setLoading(false);
+    });
   };
   
   if (loading) {
@@ -241,3 +226,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    
