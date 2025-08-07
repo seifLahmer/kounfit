@@ -3,7 +3,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 /**
- * Checks for a user's role by checking collections in a specific order: admins, caterers, then users.
+ * Checks for a user's role by checking collections in a specific order: admin, caterers, then users.
  * @param uid The user's UID from Firebase Auth.
  * @returns A promise that resolves to the user's role or 'unknown'.
  */
@@ -11,8 +11,8 @@ export async function getUserRole(uid: string): Promise<'admin' | 'caterer' | 'c
   if (!uid) return 'unknown';
 
   try {
-    // 1. Check for admin role in 'admins' collection
-    const adminRef = doc(db, "admins", uid);
+    // 1. Check for admin role in 'admin' collection (singular)
+    const adminRef = doc(db, "admin", uid);
     const adminSnap = await getDoc(adminRef);
     if (adminSnap.exists()) {
       return 'admin';

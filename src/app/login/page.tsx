@@ -55,29 +55,10 @@ export default function LoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
       const user = userCredential.user;
       
-      const role = await getUserRole(user.uid);
+      // The layouts will handle the role-based redirection.
+      // We just need to send the user to a neutral, authenticated page.
+      router.replace('/home');
 
-      if (role === 'admin') {
-        router.replace('/admin');
-      } else if (role === 'caterer') {
-        router.replace('/caterer');
-      } else if (role === 'client') {
-        const profile = await getUserProfile(user.uid);
-        if (!profile?.age || !profile.mainGoal) {
-          router.replace('/signup/step2');
-        } else {
-          router.replace('/home');
-        }
-      } else {
-         // This case handles users authenticated in Firebase but without a role document.
-         // This can happen if the profile creation was interrupted.
-        toast({
-          title: "Compte non finalisé",
-          description: "Votre compte existe mais nécessite d'être complété pour continuer.",
-          variant: "destructive",
-        });
-        router.replace('/signup/step2');
-      }
     } catch (error: any) {
       console.error("Login Error:", error.code, error.message);
       let description = "Une erreur inconnue s'est produite. Veuillez réessayer.";
