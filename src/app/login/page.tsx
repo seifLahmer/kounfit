@@ -12,8 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
-import { useState } from "react";
-import { signInWithEmailAndPassword, signInWithRedirect } from "firebase/auth";
+import { useState, useEffect } from "react";
+import { signInWithEmailAndPassword, signInWithRedirect, onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
@@ -39,6 +39,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -48,14 +49,29 @@ export default function LoginPage() {
     },
   });
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // If user is already logged in, redirect them based on their role
+        const role = await getUserRole(user.uid);
+        if (role === 'admin') router.replace('/admin');
+        else if (role === 'caterer') router.replace('/caterer');
+        else router.replace('/home');
+      } else {
+        // If no user, we can show the login page
+        setAuthChecked(true);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
+
+
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-      const role = await getUserRole(userCredential.user.uid);
-      if (role === 'admin') router.replace('/admin');
-      else if (role === 'caterer') router.replace('/caterer');
-      else router.replace('/home');
+      // The onAuthStateChanged listener will handle the redirection, no need to do it here.
     } catch (error: any) {
       let description = "An error occurred during login.";
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
@@ -81,6 +97,14 @@ export default function LoginPage() {
        setIsSubmitting(false);
     });
   };
+
+  if (!authChecked) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-destructive" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
