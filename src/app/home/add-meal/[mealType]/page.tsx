@@ -20,6 +20,15 @@ type DailyPlan = {
     dinner: Meal | null;
 };
 
+export async function generateStaticParams() {
+  return [
+    { mealType: 'breakfast' },
+    { mealType: 'lunch' },
+    { mealType: 'snack' },
+    { mealType: 'dinner' },
+  ];
+}
+
 export default function AddMealPage() {
   const router = useRouter();
   const params = useParams();
