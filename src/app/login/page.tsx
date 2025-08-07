@@ -64,7 +64,7 @@ export default function LoginPage() {
       } else {
         toast({
           title: "Compte non trouvé",
-          description: "Votre compte n'a pas de rôle. Veuillez contacter le support ou vous inscrire.",
+          description: "Votre compte n'a pas de rôle valide. Veuillez contacter le support ou vous inscrire.",
           variant: "destructive",
         });
         await auth.signOut();
