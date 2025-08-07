@@ -21,7 +21,7 @@ import { getUserRole } from "@/lib/services/roleService";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
-  password: z.string().min(6, "Password must be at least 6 characters."),
+  password: z.string().min(1, "Password cannot be empty."),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -39,7 +39,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -50,38 +50,43 @@ export default function LoginPage() {
   });
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        // If user is already logged in, redirect them based on their role
-        const role = await getUserRole(user.uid);
-        if (role === 'admin') router.replace('/admin');
-        else if (role === 'caterer') router.replace('/caterer');
-        else router.replace('/home');
+        // User is already signed in, redirect them.
+        handleRedirect(user.uid);
       } else {
-        // If no user, we can show the login page
-        setIsCheckingAuth(false);
+        // No user is signed in, show the login form.
+        setIsAuthChecking(false);
       }
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, []);
+
+  const handleRedirect = async (uid: string) => {
+    const role = await getUserRole(uid);
+    if (role === 'admin') router.replace('/admin');
+    else if (role === 'caterer') router.replace('/caterer');
+    else router.replace('/home');
+  };
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-      // The onAuthStateChanged listener above will handle the redirection.
+      // The onAuthStateChanged listener will handle redirection.
     } catch (error: any) {
       let description = "An error occurred during login.";
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        description = "Email ou mot de passe invalide. Veuillez réessayer.";
+        description = "Email ou mot de passe invalide. Veuillez réessayer ou créer un compte.";
       }
       toast({
         title: "Échec de la connexion",
         description: description,
         variant: "destructive",
       });
-      setIsSubmitting(false);
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
@@ -97,7 +102,7 @@ export default function LoginPage() {
     });
   };
 
-  if (isCheckingAuth) {
+  if (isAuthChecking) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-destructive" />
@@ -139,9 +144,6 @@ export default function LoginPage() {
                   <FormItem>
                     <div className="flex items-center justify-between">
                       <Label>Mot de passe</Label>
-                      <Link href="#" className="text-sm text-muted-foreground hover:underline">
-                        Mot de passe oublié?
-                      </Link>
                     </div>
                     <FormControl>
                       <Input type="password" {...field} />
@@ -180,3 +182,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    

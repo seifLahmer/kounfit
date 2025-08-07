@@ -20,8 +20,8 @@ import { analyzeMeal, MealAnalysis } from "@/ai/flows/meal-analysis-flow";
 import { addMeal, getMealsByCaterer, deleteMeal } from "@/lib/services/mealService";
 import { getOrdersByCaterer, updateOrderStatus } from "@/lib/services/orderService";
 import { uploadMealImage } from "@/lib/services/storageService";
-import type { Meal, Order } from "@/lib/types";
-import { auth } from "@/lib/firebase";
+import type { Meal, Order, User, Caterer } from "@/lib/types";
+import { auth, db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import {
@@ -53,10 +53,12 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { doc, getDoc } from 'firebase/firestore';
 
 type ConsolidatedIngredients = { [name: string]: { grams: number } };
 
 export default function CatererPage() {
+  const [caterer, setCaterer] = useState<Caterer | null>(null);
   const [mealDescription, setMealDescription] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -80,10 +82,17 @@ export default function CatererPage() {
         try {
             setLoadingMeals(true);
             setLoadingOrders(true);
-            const [meals, receivedOrders] = await Promise.all([
+            const catererDocRef = doc(db, 'traiteur', user.uid);
+            const [meals, receivedOrders, catererSnap] = await Promise.all([
               getMealsByCaterer(user.uid),
-              getOrdersByCaterer(user.uid)
+              getOrdersByCaterer(user.uid),
+              getDoc(catererDocRef)
             ]);
+            
+            if (catererSnap.exists()) {
+                setCaterer(catererSnap.data() as Caterer);
+            }
+
             setCatererMeals(meals);
             setOrders(receivedOrders);
         } catch (error) {
@@ -307,6 +316,7 @@ export default function CatererPage() {
           <ChefHat className="w-8 h-8" />
           Tableau de Bord Traiteur
         </h1>
+        {caterer && <p className="text-muted-foreground">Connecté en tant que: <span className="font-semibold">{caterer.name}</span></p>}
       </header>
 
       <div className="space-y-6">
@@ -660,3 +670,5 @@ export default function CatererPage() {
     </div>
   );
 }
+
+    

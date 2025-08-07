@@ -27,7 +27,10 @@ export default function CatererLayout({
             setAuthStatus("authorized");
           } else {
              setAuthStatus("unauthorized");
-             router.replace('/welcome');
+             // If the wrong role is logged in, send them to the correct page, or welcome if unknown
+             if (role === 'admin') router.replace('/admin');
+             else if (role === 'client') router.replace('/home');
+             else router.replace('/welcome');
           }
         } catch (error) {
            console.error("Error verifying caterer role:", error);
@@ -69,3 +72,5 @@ export default function CatererLayout({
     </div>
   );
 }
+
+    
