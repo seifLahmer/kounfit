@@ -12,11 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
-import { useState, useEffect, useCallback } from "react";
-import { createUserWithEmailAndPassword, signInWithRedirect, getRedirectResult, User as FirebaseUser } from "firebase/auth";
+import { useState, useCallback } from "react";
+import { createUserWithEmailAndPassword, signInWithRedirect, User as FirebaseUser } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { updateUserProfile, getUserProfile } from "@/lib/services/userService";
+import { updateUserProfile } from "@/lib/services/userService";
 import { Separator } from "@/components/ui/separator";
 
 
@@ -41,7 +41,6 @@ const GoogleIcon = () => (
 export default function SignupPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isProcessingRedirect, setIsProcessingRedirect] = useState(true);
   const { toast } = useToast();
 
   const form = useForm<SignupFormValues>({
@@ -55,15 +54,12 @@ export default function SignupPage() {
 
   const handleNewUser = useCallback(async (firebaseUser: FirebaseUser, fullName?: string | null) => {
     try {
-        const existingProfile = await getUserProfile(firebaseUser.uid);
-        if (!existingProfile) {
-            await updateUserProfile(firebaseUser.uid, {
-                fullName: fullName || firebaseUser.displayName || 'New User',
-                email: firebaseUser.email!,
-                photoURL: firebaseUser.photoURL,
-                role: 'client'
-            });
-        }
+        await updateUserProfile(firebaseUser.uid, {
+            fullName: fullName || firebaseUser.displayName || 'New User',
+            email: firebaseUser.email!,
+            photoURL: firebaseUser.photoURL,
+            role: 'client'
+        });
     } catch (error) {
         console.error("New user handling error:", error);
         toast({ title: "Erreur", description: "Impossible de finaliser votre inscription.", variant: "destructive" });
@@ -71,28 +67,6 @@ export default function SignupPage() {
     }
   }, [toast]);
   
-   useEffect(() => {
-    const processRedirect = async () => {
-        setIsProcessingRedirect(true);
-        try {
-            const result = await getRedirectResult(auth);
-            if (result) {
-                // A user has just signed in via redirect.
-                await handleNewUser(result.user);
-                // Now force redirect to step 2, no turning back.
-                router.replace('/signup/step2');
-                return;
-            }
-        } catch (error) {
-            console.error("Redirect Error:", error);
-            toast({ title: "Erreur de connexion", description: "La connexion avec Google a échoué.", variant: "destructive" });
-        }
-        setIsProcessingRedirect(false);
-    };
-    processRedirect();
-  }, [handleNewUser, router, toast]);
-
-
   const onSubmit = async (data: SignupFormValues) => {
     setIsSubmitting(true);
     try {
@@ -110,8 +84,7 @@ export default function SignupPage() {
          description: description,
          variant: "destructive",
        });
-    } finally {
-        setIsSubmitting(false);
+       setIsSubmitting(false);
     }
   };
 
@@ -119,6 +92,8 @@ export default function SignupPage() {
     setIsSubmitting(true);
     try {
       await signInWithRedirect(auth, googleProvider);
+      // After redirect, the user will land on a page with a protected layout,
+      // which will handle the user creation and redirection to step2.
     } catch (error: any) {
        toast({
            title: "Erreur de connexion Google",
@@ -128,17 +103,6 @@ export default function SignupPage() {
        setIsSubmitting(false);
     }
   };
-  
-  if (isProcessingRedirect) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-12 w-12 animate-spin text-destructive" />
-          <p className="text-muted-foreground">Vérification de l'authentification...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
@@ -201,7 +165,7 @@ export default function SignupPage() {
 
               <Button type="submit" className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isSubmitting}>
                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? "Création du compte..." : "Continuer"}
+                Continuer
               </Button>
             </form>
           </Form>

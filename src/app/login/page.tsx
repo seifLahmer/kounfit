@@ -12,13 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
-import { useState, useEffect, useCallback } from "react";
-import { signInWithEmailAndPassword, onAuthStateChanged, signInWithRedirect, getRedirectResult, User as FirebaseUser } from "firebase/auth";
+import { useState } from "react";
+import { signInWithEmailAndPassword, signInWithRedirect } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { getUserRole } from "@/lib/services/roleService";
 import { Separator } from "@/components/ui/separator";
-import { updateUserProfile, getUserProfile } from "@/lib/services/userService";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -40,7 +38,6 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isProcessingRedirect, setIsProcessingRedirect] = useState(true);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -49,74 +46,13 @@ export default function LoginPage() {
       password: "",
     },
   });
-  
-  const handleNewUser = useCallback(async (firebaseUser: FirebaseUser) => {
-    const existingProfile = await getUserProfile(firebaseUser.uid);
-    if (!existingProfile) {
-      await updateUserProfile(firebaseUser.uid, {
-        fullName: firebaseUser.displayName || 'New User',
-        email: firebaseUser.email!,
-        photoURL: firebaseUser.photoURL,
-        role: 'client'
-      });
-    }
-  }, []);
-
-  const redirectToRole = useCallback((role: string) => {
-      if (role === 'admin') router.replace('/admin');
-      else if (role === 'caterer') router.replace('/caterer');
-      else router.replace('/home');
-  }, [router]);
-
-
-  useEffect(() => {
-    const processAuth = async () => {
-        setIsProcessingRedirect(true);
-        try {
-            const result = await getRedirectResult(auth);
-            if (result) {
-                // User has just returned from Google Sign-In. Process them.
-                await handleNewUser(result.user);
-                const role = await getUserRole(result.user.uid);
-                redirectToRole(role);
-                // We don't need to do anything else, as the redirect will happen.
-                return;
-            }
-        } catch (error) {
-            console.error("Google Redirect Auth Error:", error);
-            toast({ title: "Erreur de connexion", description: "La connexion avec Google a échoué.", variant: "destructive" });
-        }
-        // If there was no redirect result, it means we are not coming back from Google.
-        // We can now safely check the normal auth state.
-        setIsProcessingRedirect(false);
-    };
-
-    processAuth();
-  }, [handleNewUser, redirectToRole, toast]);
-
-
-  useEffect(() => {
-    // This runs only after the redirect check is complete.
-    if (isProcessingRedirect) return;
-
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            // A user is already signed in, find their role and redirect them.
-            const role = await getUserRole(user.uid);
-            redirectToRole(role);
-        }
-    });
-
-    return () => unsubscribe();
-  }, [isProcessingRedirect, redirectToRole]);
-
-
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
     try {
       await signInWithEmailAndPassword(auth, data.email, data.password);
-      // The onAuthStateChanged listener will handle redirection
+      // Let the protected layout handle redirection.
+      router.push('/home'); 
     } catch (error: any) {
       let description = "An error occurred during login.";
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
@@ -127,8 +63,7 @@ export default function LoginPage() {
         description: description,
         variant: "destructive",
       });
-    } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -143,17 +78,6 @@ export default function LoginPage() {
        setIsSubmitting(false);
     });
   };
-  
-  if (isProcessingRedirect) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-12 w-12 animate-spin text-destructive" />
-          <p className="text-muted-foreground">Vérification de l'authentification...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
@@ -202,7 +126,7 @@ export default function LoginPage() {
               />
               <Button type="submit" className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isSubmitting}>
                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? "Connexion..." : "Se connecter"}
+                Se connecter
               </Button>
             </form>
           </Form>

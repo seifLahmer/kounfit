@@ -22,6 +22,8 @@ export default function CatererLayout({
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
+          // Wait for a moment to ensure all redirect logic has time to settle
+          await new Promise(resolve => setTimeout(resolve, 50)); 
           const role = await getUserRole(user.uid);
           if (role === 'caterer') {
             setAuthStatus("authorized");
