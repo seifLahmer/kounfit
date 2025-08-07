@@ -59,14 +59,22 @@ export default function LoginPage() {
         router.replace('/admin');
       } else if (role === 'caterer') {
         router.replace('/caterer');
-      } else {
+      } else if (role === 'client') {
         router.replace('/home');
+      } else {
+        // This case handles users that exist in Auth but not in any role collection.
+        // They are likely new users who haven't completed signup.
+        toast({
+          title: "Profil incomplet",
+          description: "Veuillez finaliser la création de votre compte.",
+        });
+        router.replace('/signup/step2'); 
       }
 
     } catch (error: any) {
       console.error("Login Error:", error.code, error.message);
       let description = "Une erreur inconnue s'est produite. Veuillez réessayer.";
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+      if (error.code === 'auth/invalid-credential') {
         description = "L'adresse e-mail ou le mot de passe est incorrect. Veuillez vérifier vos informations.";
       }
       toast({
