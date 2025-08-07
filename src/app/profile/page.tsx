@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { Camera, Loader2, CheckCircle } from "lucide-react"
+import { Camera, Loader2, CheckCircle, LogOut } from "lucide-react"
 import Image from "next/image"
 import * as React from "react"
 import { useEffect, useState, useRef } from "react"
@@ -84,7 +84,6 @@ export default function ProfilePage() {
     mode: "onBlur",
   });
   
-  // Load user data on mount
   useEffect(() => {
     isMounted.current = true;
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -122,14 +121,13 @@ export default function ProfilePage() {
     }
   }, [form, router, toast]);
 
-  // Auto-save on form change
   useEffect(() => {
     const subscription = form.watch((data, { name }) => {
        if (loading || !form.formState.isDirty) return;
 
       const debouncedSave = setTimeout(() => {
         handleAutoSave(data as ProfileFormValues);
-      }, 1000); // Debounce time
+      }, 1000); 
 
       return () => clearTimeout(debouncedSave);
     });
@@ -191,11 +189,20 @@ export default function ProfilePage() {
       try {
         const photoURL = await uploadProfileImage(currentUser.uid, file);
         form.setValue("photoURL", photoURL, { shouldDirty: true, shouldValidate: true });
-        // The watch subscription will trigger the auto-save
       } catch (error) {
         toast({ title: "Erreur de téléversement", description: "L'image n'a pas pu être sauvegardée.", variant: "destructive" });
         setSaveStatus("idle");
       }
+    }
+  };
+  
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      router.push('/welcome');
+      toast({ title: 'Déconnexion réussie' });
+    } catch (error) {
+      toast({ title: 'Erreur de déconnexion', variant: 'destructive' });
     }
   };
 
@@ -410,12 +417,13 @@ export default function ProfilePage() {
                 </FormItem>
               )}
             />
-
           </form>
         </Form>
+        <Button variant="outline" className="w-full mt-6" onClick={handleLogout}>
+          <LogOut className="mr-2 h-4 w-4" />
+          Déconnexion
+        </Button>
       </div>
     </MainLayout>
   )
 }
-
-    

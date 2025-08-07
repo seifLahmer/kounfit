@@ -12,8 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
-import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, signInWithRedirect, onAuthStateChanged } from "firebase/auth";
+import { useState } from "react";
+import { signInWithEmailAndPassword, signInWithRedirect } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
@@ -39,7 +39,6 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -48,25 +47,6 @@ export default function LoginPage() {
       password: "",
     },
   });
-
-  // Redirect user if already logged in
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        // User is already signed in, find their role and redirect
-        setIsSubmitting(true);
-        const role = await getUserRole(user.uid);
-        if (role === 'admin') router.replace('/admin');
-        else if (role === 'caterer') router.replace('/caterer');
-        else router.replace('/home'); // client or new user
-      } else {
-        // No user is signed in.
-        setIsAuthLoading(false);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [router]);
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
@@ -82,13 +62,12 @@ export default function LoginPage() {
       } else if (role === 'client') {
         router.replace('/home');
       } else {
-        // Role is 'unknown'
         toast({
           title: "Compte non trouvé",
-          description: "Votre compte existe mais n'a pas de rôle défini. Veuillez contacter le support ou vous inscrire.",
+          description: "Votre compte n'a pas de rôle. Veuillez contacter le support ou vous inscrire.",
           variant: "destructive",
         });
-        await auth.signOut(); // Sign out the user
+        await auth.signOut();
         setIsSubmitting(false);
       }
     } catch (error: any) {
@@ -107,7 +86,6 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = () => {
     setIsSubmitting(true);
-    // Redirect to home after Google sign-in. The home layout will handle the rest for new/existing Google users.
     signInWithRedirect(auth, googleProvider).catch((error) => {
        toast({
           title: "Erreur de connexion Google",
@@ -117,14 +95,6 @@ export default function LoginPage() {
        setIsSubmitting(false);
     });
   };
-
-  if (isAuthLoading) {
-    return (
-       <div className="flex items-center justify-center min-h-screen bg-background">
-        <Loader2 className="h-12 w-12 animate-spin text-destructive" />
-      </div>
-    );
-  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
