@@ -1,55 +1,74 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
     // Helper function to check if a user is authenticated
-    function isSignedIn() {
+    function isAuthenticated() {
       return request.auth != null;
     }
-
-    // Helper function to check if the requesting user is the owner of the document
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
     
-    // Helper function to check if the user has a specific role
-    function hasRole(role) {
-        return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    // Helper function to get the user's ID
+    function getUid() {
+      return request.auth.uid;
     }
 
-    // Users can read/write their own data. Admins can read anyone's data.
+    // Helper function to check if the user is an admin
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/admin/$(getUid()));
+    }
+
+    // Users (clients) can read/write their own profile, but not others'
     match /users/{userId} {
-      allow read, update: if isOwner(userId) || hasRole('admin');
-      allow create: if isSignedIn();
+      allow read, update, delete: if isAuthenticated() && getUid() == userId;
+      allow create: if isAuthenticated();
     }
     
-    // Admins can manage caterers
-    match /traiteur/{catererId} {
-        allow read, write: if hasRole('admin');
+    // Admins can read/write all user profiles
+    match /users/{userId} {
+      allow read, write: if isAdmin();
     }
 
-    // Meals can be read by anyone.
-    // Caterers can manage their own meals. Admins can manage any meal.
+    // Caterers can read/write their own profile
+    match /caterers/{catererId} {
+       allow read: if isAuthenticated();
+       allow write: if isAdmin() || (isAuthenticated() && getUid() == catererId);
+    }
+    
+    // Admins can manage the admin collection
+    match /admin/{adminId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Meals can be read by any authenticated user.
+    // Meals can only be created/updated/deleted by their creator (caterer) or an admin.
     match /meals/{mealId} {
-      allow read: if true;
-      allow create: if hasRole('caterer');
-      allow update, delete: if (hasRole('admin')) || (hasRole('caterer') && resource.data.createdBy == request.auth.uid);
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated(); // Caterer creates
+      allow update, delete: if isAdmin() || (isAuthenticated() && resource.data.createdBy == getUid());
     }
 
-    // Orders can be created by clients.
-    // Clients can read their own orders.
-    // Caterers can read/update orders they are part of.
-    // Admins have full access.
+    // Orders can be read by the client who created them, the caterers involved, or an admin.
+    // Orders can only be created by an authenticated client.
+    // Orders can only be updated (e.g., status change) by a caterer or admin.
     match /orders/{orderId} {
-      allow create: if hasRole('client');
-      allow read: if hasRole('admin') || (hasRole('client') && resource.data.clientId == request.auth.uid) || (hasRole('caterer') && request.auth.uid in resource.data.catererIds);
-      allow update: if hasRole('admin') || (hasRole('caterer') && request.auth.uid in resource.data.catererIds);
+      allow read: if isAuthenticated() && (
+                    resource.data.clientId == getUid() || 
+                    getUid() in resource.data.catererIds ||
+                    isAdmin()
+                  );
+      allow create: if isAuthenticated() && request.resource.data.clientId == getUid();
+      allow update: if isAuthenticated() && (getUid() in resource.data.catererIds || isAdmin());
+      // Deleting orders is restricted to admins for record-keeping
+      allow delete: if isAdmin();
     }
     
-    // Users can only interact with their own notifications.
+    // Notifications can be read/updated by the target user or an admin
     match /notifications/{notificationId} {
-        allow read, update, create: if isOwner(resource.data.userId);
+       allow read, update: if isAuthenticated() && (resource.data.userId == getUid() || isAdmin());
+       // Notifications are created by the system (server-side functions or services)
+       allow create, delete: if isAdmin();
     }
   }
 }

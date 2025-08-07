@@ -65,9 +65,10 @@ export default function LoginPage() {
       } else if (role === 'client') {
         router.replace('/home');
       } else {
+        // This case handles users that exist in Auth but not in any role collection.
         toast({
-          title: "Compte non trouvé",
-          description: "Le compte n'est pas enregistré. Veuillez vous inscrire.",
+          title: "Compte non finalisé",
+          description: "Votre compte existe mais n'est pas complètement configuré. Veuillez vous inscrire pour finaliser le processus.",
           variant: "destructive",
         });
         await auth.signOut();
