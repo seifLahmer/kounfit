@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, onAuthStateChanged, signInWithPopup } from "firebase/auth";
+import { signInWithEmailAndPassword, onAuthStateChanged, signInWithRedirect } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { getUserRole } from "@/lib/services/roleService";
@@ -95,16 +95,14 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      await signInWithPopup(auth, googleProvider);
-      // Successful login will trigger onAuthStateChanged in protected layouts, which will handle redirection.
+      await signInWithRedirect(auth, googleProvider);
+      // After redirection, onAuthStateChanged will be triggered, and the user will be routed correctly.
     } catch (error: any) {
-      if (error.code !== 'auth/popup-closed-by-user') {
-        toast({
-            title: "Erreur de connexion Google",
-            description: "Une erreur s'est produite lors de la tentative de connexion avec Google.",
-            variant: "destructive",
-        });
-      }
+      toast({
+          title: "Erreur de connexion Google",
+          description: "Une erreur s'est produite lors de la tentative de connexion avec Google.",
+          variant: "destructive",
+      });
       setLoading(false);
     }
   };

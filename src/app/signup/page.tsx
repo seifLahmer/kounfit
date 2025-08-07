@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { useState } from "react";
-import { createUserWithEmailAndPassword, signInWithPopup, User as FirebaseUser } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithRedirect, User as FirebaseUser } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { updateUserProfile, getUserProfile } from "@/lib/services/userService";
@@ -94,17 +94,14 @@ export default function SignupPage() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      await handleNewUser(result.user);
-      router.push('/signup/step2');
+      await signInWithRedirect(auth, googleProvider);
+      // After redirection, the onAuthStateChanged listener in the step2/or home layout will handle user creation and redirection.
     } catch (error: any) {
-       if (error.code !== 'auth/popup-closed-by-user') {
-            toast({
-                title: "Erreur de connexion Google",
-                description: "Une erreur s'est produite lors de la tentative de connexion avec Google.",
-                variant: "destructive",
-            });
-        }
+       toast({
+           title: "Erreur de connexion Google",
+           description: "Une erreur s'est produite lors de la tentative de connexion avec Google.",
+           variant: "destructive",
+       });
        setLoading(false);
     }
   };
@@ -112,8 +109,8 @@ export default function SignupPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
       <Card className="w-full max-w-md overflow-hidden">
-        <div className="flex w-full">
-            <div className="w-1/2 h-1.5 bg-gray-200"></div>
+         <div className="flex w-full">
+            <div className="w-1/2 h-1.5 bg-destructive"></div>
             <div className="w-1/2 h-1.5 bg-gray-200"></div>
         </div>
         <CardHeader className="text-center pt-6">
