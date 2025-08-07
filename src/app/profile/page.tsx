@@ -122,46 +122,39 @@ export default function ProfilePage() {
     }
   }, [form, router, toast]);
 
-  useEffect(() => {
-    const subscription = form.watch((data, { name }) => {
-       if (loading || !form.formState.isDirty) return;
-
-      const debouncedSave = setTimeout(() => {
-        handleAutoSave(data as ProfileFormValues);
-      }, 1000); 
-
-      return () => clearTimeout(debouncedSave);
-    });
-    return () => subscription.unsubscribe();
-  }, [form, loading, form.formState.isDirty]);
-
-
-  const handleAutoSave = async (data: ProfileFormValues) => {
+  const handleAutoSave = async (data: Partial<ProfileFormValues>) => {
     const currentUser = auth.currentUser;
-    if (!currentUser || !form.formState.isValid) {
+    if (!currentUser) return;
+    
+    // Check if the form is valid before auto-saving
+    const result = profileFormSchema.safeParse(form.getValues());
+    if (!result.success) {
+      // Don't save if the full form isn't valid yet, but don't show an error either
+      // to allow the user to fill out the form without premature validation messages.
       return;
     }
-    
+
     setSaveStatus("saving");
 
     try {
+        const fullData = result.data;
         const nutritionalNeeds = calculateNutritionalNeeds({
-            age: data.age,
-            gender: data.biologicalSex,
-            weight: data.weight,
-            height: data.height,
-            activityLevel: data.activityLevel,
-            goal: data.mainGoal
+            age: fullData.age,
+            gender: fullData.biologicalSex,
+            weight: fullData.weight,
+            height: fullData.height,
+            activityLevel: fullData.activityLevel,
+            goal: fullData.mainGoal
         });
 
         const userProfileData: Partial<User> = {
-            ...data,
+            ...fullData,
             calorieGoal: nutritionalNeeds.calories,
             macroRatio: nutritionalNeeds.macros,
         };
         
         await updateUserProfile(currentUser.uid, userProfileData);
-        form.reset(data, { keepValues: true, keepDirty: false });
+        form.reset(fullData, { keepValues: true, keepDirty: false });
         
         setTimeout(() => setSaveStatus("saved"), 500);
         setTimeout(() => setSaveStatus("idle"), 2000);
@@ -189,7 +182,8 @@ export default function ProfilePage() {
 
       try {
         const photoURL = await uploadProfileImage(currentUser.uid, file);
-        form.setValue("photoURL", photoURL, { shouldDirty: true, shouldValidate: true });
+        form.setValue("photoURL", photoURL, { shouldDirty: true });
+        await handleAutoSave({ ...form.getValues(), photoURL });
       } catch (error) {
         toast({ title: "Erreur de téléversement", description: "L'image n'a pas pu être sauvegardée.", variant: "destructive" });
         setSaveStatus("idle");
@@ -206,6 +200,14 @@ export default function ProfilePage() {
       toast({ title: 'Erreur de déconnexion', variant: 'destructive' });
     }
   };
+  
+  const onBlur = (fieldName: keyof ProfileFormValues) => {
+    form.trigger(fieldName).then(isValid => {
+      if (isValid) {
+        handleAutoSave(form.getValues());
+      }
+    })
+  }
 
   if (loading) {
     return (
@@ -246,9 +248,6 @@ export default function ProfilePage() {
                   </svg>
                 </div>
               </div>
-               <button type="button" className="text-red-500 font-semibold" onClick={handleImageClick}>
-                {profileImagePreview ? "Changer la photo" : "Ajouter photo"}
-               </button>
             </div>
 
             <div className="h-6 flex items-center justify-center">
@@ -263,7 +262,7 @@ export default function ProfilePage() {
                 <FormItem>
                   <FormLabel>Nom Complet</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} onBlur={() => onBlur('fullName')} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -277,7 +276,7 @@ export default function ProfilePage() {
                 <FormItem>
                   <FormLabel>Âge (années)</FormLabel>
                   <FormControl>
-                    <Input type="number" {...field} />
+                    <Input type="number" {...field} onBlur={() => onBlur('age')}/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -292,7 +291,10 @@ export default function ProfilePage() {
                   <FormLabel>Sexe Biologique</FormLabel>
                   <FormControl>
                     <RadioGroup
-                      onValueChange={field.onChange}
+                      onValueChange={(value) => {
+                          field.onChange(value);
+                          handleAutoSave({ ...form.getValues(), biologicalSex: value as "male" | "female" });
+                      }}
                       value={field.value}
                       className="flex items-center space-x-6"
                     >
@@ -322,7 +324,7 @@ export default function ProfilePage() {
                 <FormItem>
                   <FormLabel>Poids (kg)</FormLabel>
                   <FormControl>
-                    <Input type="number" {...field} />
+                    <Input type="number" {...field} onBlur={() => onBlur('weight')}/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -336,7 +338,7 @@ export default function ProfilePage() {
                 <FormItem>
                   <FormLabel>Taille (cm)</FormLabel>
                   <FormControl>
-                    <Input type="number" {...field} />
+                    <Input type="number" {...field} onBlur={() => onBlur('height')}/>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -350,7 +352,7 @@ export default function ProfilePage() {
                 <FormItem>
                   <FormLabel>Adresse de livraison</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Rue de Russie, Ariana" value={field.value ?? ''} />
+                    <Input {...field} placeholder="Rue de Russie, Ariana" value={field.value ?? ''} onBlur={() => onBlur('deliveryAddress')} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -364,7 +366,7 @@ export default function ProfilePage() {
                 <FormItem>
                   <FormLabel>Région/Ville</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Tunis" value={field.value ?? ''} />
+                    <Input {...field} placeholder="Tunis" value={field.value ?? ''} onBlur={() => onBlur('region')} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -377,7 +379,10 @@ export default function ProfilePage() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Niveau d'Activité</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={(value) => {
+                      field.onChange(value);
+                      handleAutoSave({ ...form.getValues(), activityLevel: value as any });
+                  }} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionnez votre niveau d'activité" />
@@ -402,7 +407,10 @@ export default function ProfilePage() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Objectif Principal</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={(value) => {
+                      field.onChange(value);
+                      handleAutoSave({ ...form.getValues(), mainGoal: value as any });
+                  }} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionnez votre objectif principal" />
@@ -446,3 +454,5 @@ export default function ProfilePage() {
     </MainLayout>
   )
 }
+
+    
