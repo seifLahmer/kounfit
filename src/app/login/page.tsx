@@ -59,18 +59,8 @@ export default function LoginPage() {
         router.replace('/admin');
       } else if (role === 'caterer') {
         router.replace('/caterer');
-      } else if (role === 'client') {
+      } else { // Includes 'client' and 'unknown' roles
         router.replace('/home');
-      } else {
-        // If the user is authenticated but has no role or an 'unknown' role,
-        // sign them out and show an error. This prevents getting stuck.
-        await auth.signOut();
-        toast({
-          title: "Compte non trouvé",
-          description: "Votre compte n'a pas pu être trouvé. Veuillez créer un compte.",
-          variant: "destructive",
-        });
-        router.replace('/signup');
       }
     } catch (error: any) {
       let description = "Une erreur s'est produite lors de la connexion.";
