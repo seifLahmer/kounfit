@@ -57,7 +57,6 @@ export default function SignupPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       
-      // Create the user profile document immediately after creating the auth user.
       await updateUserProfile(userCredential.user.uid, {
             fullName: data.fullName,
             email: userCredential.user.email!,
@@ -65,27 +64,25 @@ export default function SignupPage() {
             role: 'client'
         });
 
-      // The `home` layout will now handle redirecting the user to step2 if their profile is incomplete.
       router.push('/home'); 
     } catch (error: any) {
        console.error("Signup Error:", error);
        let description = "Une erreur s'est produite lors de l'inscription.";
        if (error.code === 'auth/email-already-in-use') {
-         description = "Cette adresse e-mail est déjà utilisée. Essayez de vous connecter.";
+         description = "Cette adresse e-mail est déjà utilisée. Veuillez vous connecter.";
        }
        toast({
          title: "Erreur d'inscription",
          description: description,
          variant: "destructive",
        });
-       setIsSubmitting(false);
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
     setIsSubmitting(true);
-    // The home layout will handle the redirect result and user creation.
-    // This provides a single, consistent entry point for new users.
     await signInWithRedirect(auth, googleProvider).catch((error) => {
         toast({
            title: "Erreur de connexion Google",
