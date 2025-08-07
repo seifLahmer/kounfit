@@ -59,19 +59,14 @@ export default function LoginPage() {
         router.replace('/admin');
       } else if (role === 'caterer') {
         router.replace('/caterer');
-      } else if (role === 'client') {
-        router.replace('/home');
       } else {
-        toast({
-          title: "Compte non trouvé",
-          description: "Votre compte n'a pas de rôle valide. Veuillez contacter le support ou vous inscrire.",
-          variant: "destructive",
-        });
-        await auth.signOut();
-        setIsSubmitting(false);
+        // For 'client' or 'unknown' roles, redirect to home.
+        // The home layout will handle profile completion if needed.
+        router.replace('/home');
       }
     } catch (error: any) {
       let description = "Une erreur s'est produite lors de la connexion.";
+      // This specifically checks for authentication errors from Firebase
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         description = "Email ou mot de passe invalide. Veuillez réessayer ou créer un compte.";
       }
