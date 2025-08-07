@@ -34,12 +34,14 @@ export default function ClientLayout({
           role: 'client'
       });
       
+      // New user from Google, needs to complete profile
       router.replace('/signup/step2');
       return true;
 
     } catch (error) {
         console.error("New user handling error:", error);
         toast({ title: "Erreur", description: "Impossible de finaliser votre inscription.", variant: "destructive" });
+        await auth.signOut();
         router.replace('/welcome');
         return true; 
     }
@@ -48,27 +50,28 @@ export default function ClientLayout({
 
   useEffect(() => {
     const processAuth = async () => {
+      // First, handle potential Google sign-in redirect
       try {
         const result = await getRedirectResult(auth);
         if (result) {
-          const isNewUser = await handleNewUserFromRedirect(result.user);
-          if (isNewUser) {
-            return; 
-          }
+          const isNew = await handleNewUserFromRedirect(result.user);
+          if (isNew) return; // Stop processing to allow redirect to step2
         }
       } catch (error: any) {
         console.error("Error processing redirect result:", error);
-        toast({ title: "Erreur de connexion", description: "Un problème est survenu lors de la connexion avec Google.", variant: "destructive" });
+        toast({ title: "Erreur de connexion", description: "Un problème est survenu lors de la connexion.", variant: "destructive" });
         setIsLoading(false);
         router.replace('/welcome');
         return;
       }
       
+      // Then, set up the listener for ongoing auth state
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
           try {
             const role = await getUserRole(user.uid);
             
+            // This is a client-only layout. Redirect other roles.
             if (role === 'admin') {
                 router.replace('/admin');
                 return;
@@ -77,12 +80,21 @@ export default function ClientLayout({
                 router.replace('/caterer');
                 return;
             }
-
+            if (role === 'unknown') {
+              // Could be a new user via email/pass. Let's check their profile.
+               const profile = await getUserProfile(user.uid);
+               if (!profile) {
+                 // No profile exists, likely an error state. Sign out.
+                 await auth.signOut();
+                 router.replace('/welcome');
+                 return;
+               }
+            }
+            
+            // At this point, we assume the user is a client.
+            // Check if their profile is complete.
             const profile = await getUserProfile(user.uid);
-            if (!profile) {
-              const fixed = await handleNewUserFromRedirect(user);
-              if (fixed) return;
-            } else if (!profile.age) { 
+            if (!profile?.age) { 
               router.replace('/signup/step2');
             } else {
               setIsLoading(false);
@@ -94,6 +106,7 @@ export default function ClientLayout({
              router.replace('/welcome');
           }
         } else {
+          // No user logged in, send to welcome page.
           router.replace('/welcome');
         }
       });

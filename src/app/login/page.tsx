@@ -62,9 +62,15 @@ export default function LoginPage() {
       } else if (role === 'client') {
         router.replace('/home');
       } else {
-        // Fallback for 'unknown' or new users without a role doc.
-        // Let the home layout handle profile completion.
-        router.replace('/home');
+        // If the user is authenticated but has no role or an 'unknown' role,
+        // sign them out and show an error. This prevents getting stuck.
+        await auth.signOut();
+        toast({
+          title: "Compte non trouvé",
+          description: "Votre compte n'a pas pu être trouvé. Veuillez créer un compte.",
+          variant: "destructive",
+        });
+        router.replace('/signup');
       }
     } catch (error: any) {
       let description = "Une erreur s'est produite lors de la connexion.";
@@ -76,13 +82,13 @@ export default function LoginPage() {
         description: description,
         variant: "destructive",
       });
-    } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
   const handleGoogleSignIn = () => {
     setIsSubmitting(true);
+    // The home layout will handle the redirect result and user creation.
     signInWithRedirect(auth, googleProvider).catch((error) => {
        toast({
           title: "Erreur de connexion Google",
