@@ -1,8 +1,5 @@
 
 
-
-
-
 export type User = {
   uid: string;
   email: string;
@@ -84,6 +81,7 @@ export type Order = {
     unitPrice: number;
     catererId: string;
   }[];
+  catererIds: string[]; // List of caterer UIDs involved in the order
   totalPrice: number;
   status: "pending" | "in_preparation" | "delivered" | "cancelled";
   orderDate: any;

@@ -1,6 +1,5 @@
 
 
-
 import {
   collection,
   addDoc,
@@ -22,7 +21,7 @@ import { createNotification } from "./notificationService";
 const ORDERS_COLLECTION = "orders";
 
 
-type PlaceOrderInput = Omit<Order, 'id' | 'orderDate' | 'deliveryDate' | 'status'> & {
+type PlaceOrderInput = Omit<Order, 'id' | 'orderDate' | 'deliveryDate' | 'status' | 'catererIds'> & {
   items: Array<{
     mealId: string;
     mealName: string;
@@ -39,11 +38,15 @@ type PlaceOrderInput = Omit<Order, 'id' | 'orderDate' | 'deliveryDate' | 'status
  */
 export async function placeOrder(orderData: PlaceOrderInput): Promise<string> {
   try {
+    // Get unique caterer IDs from the items
+    const catererIds = [...new Set(orderData.items.map(item => item.catererId))];
+
     const orderWithTimestamp = {
       ...orderData,
       status: 'pending' as const,
       orderDate: serverTimestamp(),
       deliveryDate: serverTimestamp(), // Placeholder, can be updated later
+      catererIds: catererIds, // Add the array of caterer IDs
     };
 
     const docRef = await addDoc(collection(db, ORDERS_COLLECTION), orderWithTimestamp);
@@ -93,38 +96,26 @@ export async function getAllOrders(): Promise<Order[]> {
 export async function getOrdersByCaterer(catererUid: string): Promise<Order[]> {
     try {
         const ordersCollection = collection(db, ORDERS_COLLECTION);
-        // Query for orders where the 'items' array contains an object with the caterer's ID.
-        const q = query(ordersCollection, where("items", "array-contains-any", 
-            (await getDocs(query(collection(db, 'meals'), where('createdBy', '==', catererUid))))
-            .docs.map(doc => ({ mealId: doc.id }))
-        ));
+        // Query for orders where the 'catererIds' array contains the caterer's ID.
+        const q = query(
+            ordersCollection, 
+            where("catererIds", "array-contains", catererUid),
+            orderBy("orderDate", "desc")
+        );
         
-        // This is a simplified query. Firestore cannot query inside array objects deeply.
-        // The correct approach is to have a 'catererIds' field in the order document.
-        // Let's get all orders and filter them on the client-side as a workaround.
-        // This is NOT efficient for large datasets but works for this project's scale.
-
-        const querySnapshot = await getDocs(collection(db, ORDERS_COLLECTION));
+        const querySnapshot = await getDocs(q);
         
         const orders: Order[] = [];
         querySnapshot.forEach((docSnap) => {
             const data = docSnap.data();
-            const orderItems = data.items as PlaceOrderInput['items'];
-
-            // Check if any item in the order was created by this caterer
-            if (orderItems.some(item => item.catererId === catererUid)) {
-                 const order: Order = {
-                    id: docSnap.id,
-                    ...data,
-                    orderDate: data.orderDate instanceof Timestamp ? data.orderDate.toDate() : new Date(),
-                    deliveryDate: data.deliveryDate instanceof Timestamp ? data.deliveryDate.toDate() : new Date(),
-                } as Order;
-                orders.push(order);
-            }
+            const order: Order = {
+                id: docSnap.id,
+                ...data,
+                orderDate: data.orderDate instanceof Timestamp ? data.orderDate.toDate() : new Date(),
+                deliveryDate: data.deliveryDate instanceof Timestamp ? data.deliveryDate.toDate() : new Date(),
+            } as Order;
+            orders.push(order);
         });
-        
-        // Sort orders by date, newest first
-        orders.sort((a, b) => b.orderDate.getTime() - a.orderDate.getTime());
         
         return orders;
     } catch (error) {

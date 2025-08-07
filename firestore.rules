@@ -1,47 +1,70 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users Collection: Users can only manage their own profile.
-    match /users/{userId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.uid == userId;
+    // Helper functions
+    function isAuth() {
+      return request.auth != null;
     }
-    
-    // Roles collections: Read-only for authenticated users to check roles.
-    match /admin/{userId} {
-      allow get: if request.auth != null;
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
-    
-    match /traiteur/{catererId} {
-      allow get: if request.auth != null;
-      allow list: if request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    function isClient() {
+      return isAuth() && getUserRole() == 'client';
+    }
+    function isCaterer() {
+      return isAuth() && getUserRole() == 'caterer';
+    }
+     function isAdmin() {
+      return isAuth() && getUserRole() == 'admin';
     }
 
-    // Meals Collection:
-    // - Authenticated users can read meals.
-    // - Caterers can create meals and manage only their own.
+    // /users/{uid}
+    match /users/{uid} {
+      // Users can read their own data, Admins can read any user data
+      allow read: if isAuth() && (request.auth.uid == uid || isAdmin());
+      // Users can create and update their own profile
+      allow write: if isAuth() && request.auth.uid == uid;
+    }
+    
+    // /traiteur/{uid}
+    match /traiteur/{uid} {
+        allow read, write: if isAdmin();
+    }
+
+    // /meals/{mealId}
     match /meals/{mealId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'caterer';
-      allow update, delete: if request.auth.uid != null && resource.data.createdBy == request.auth.uid;
+      // Any authenticated user can read meals
+      allow read: if isAuth();
+      // Only caterers can create meals
+      allow create: if isCaterer();
+      // Only the caterer who created the meal or an admin can update/delete it
+      allow update, delete: if isAuth() && (isAdmin() || request.auth.uid == resource.data.createdBy);
     }
-    
-    // Orders Collection:
-    // - Clients can create orders for themselves.
-    // - Caterers and Admins can view orders.
-    // - Only Caterers can update the status of orders containing their meals.
+
+    // /orders/{orderId}
     match /orders/{orderId} {
-      allow read: if request.auth.uid != null && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'caterer']);
-      allow create: if request.auth.uid != null && request.resource.data.clientId == request.auth.uid;
-      allow update: if request.auth.uid != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'caterer';
+        // Clients can create their own orders
+        allow create: if isClient() && request.resource.data.clientId == request.auth.uid;
+        // Admins can read all orders
+        // Clients can read their own orders
+        // Caterers can read orders that include them
+        allow read: if isAdmin() || 
+                    (isClient() && resource.data.clientId == request.auth.uid) ||
+                    (isCaterer() && request.auth.uid in resource.data.catererIds);
+
+        // Caterers can update status, Admins can update anything
+        allow update: if (isCaterer() && request.resource.data.status != resource.data.status) || isAdmin();
     }
     
-    // Notifications Collection: Users can only read their own notifications.
+     // /notifications/{notificationId}
     match /notifications/{notificationId} {
-      allow read: if request.auth.uid != null && resource.data.userId == request.auth.uid;
-      allow create: if request.auth != null; // Allow server-side functions/other rules to create notifications
+        // Users can read their own notifications
+        allow read, update: if isAuth() && request.auth.uid == resource.data.userId;
+        // The system can create notifications (via backend/service functions)
+        allow create: if isAuth();
     }
   }
 }
