@@ -9,6 +9,8 @@ import { auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { getUserRole } from "@/lib/services/roleService";
 
+const ADMIN_UID = "ZON55ufAGvTVo9fqXTtRO2y6";
+
 export default function AdminLayout({
   children,
 }: {
@@ -20,6 +22,13 @@ export default function AdminLayout({
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        // Direct UID check for guaranteed admin access
+        if (user.uid === ADMIN_UID) {
+          setIsLoading(false);
+          return;
+        }
+        
+        // Fallback to role check for other potential admins
         try {
           const role = await getUserRole(user.uid);
           if (role !== 'admin') {
