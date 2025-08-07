@@ -15,7 +15,6 @@ export default function ClientLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
@@ -26,35 +25,28 @@ export default function ClientLayout({
           if (role === 'client') {
             setIsAuthorized(true);
           } else {
-            // User is an admin or caterer, redirect them away
-            router.replace('/login');
+            // User is logged in but not a client, boot them out
+            router.replace('/welcome'); 
           }
         } catch (error) {
            console.error("Error verifying client role:", error);
-           router.replace('/login');
+           router.replace('/welcome');
         }
       } else {
-        // No user is logged in, redirect
+        // No user is logged in, redirect to welcome
         router.replace('/welcome');
       }
-      setIsLoading(false);
     });
 
     return () => unsubscribe();
   }, [router]);
-
-  if (isLoading) {
+  
+  if (!isAuthorized) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
-  }
-
-  if (!isAuthorized) {
-    // This part is mainly for safety, as the redirect should have already happened.
-    // It prevents flashing the content if the redirect is slow.
-    return null;
   }
 
   return (
