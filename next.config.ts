@@ -29,7 +29,11 @@ const nextConfig: NextConfig = {
         hostname: 'unpkg.com',
         port: '',
         pathname: '/**',
-      }
+      },
+       {
+        protocol: "https",
+        hostname: "firebasestorage.googleapis.com",
+      },
     ],
   },
 };
