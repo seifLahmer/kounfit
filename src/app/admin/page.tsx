@@ -23,8 +23,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, ShieldAlert, Trash2, TrendingUp } from "lucide-react";
+import { Loader2, ShieldAlert, Trash2, TrendingUp, UserPlus } from "lucide-react";
 import { addCaterer, getAllCaterers, deleteCaterer } from "@/lib/services/catererService";
+import { addAdmin } from "@/lib/services/adminService";
 import { getAllOrders } from "@/lib/services/orderService";
 import type { Caterer, Order } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -38,18 +39,24 @@ export default function AdminPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingCaterers, setLoadingCaterers] = useState(true);
   const [loadingOrders, setLoadingOrders] = useState(true);
-  const [isAdding, setIsAdding] = useState(false);
   
+  // State for adding caterer
+  const [isAddingCaterer, setIsAddingCaterer] = useState(false);
   const [catererUid, setCatererUid] = useState("");
   const [catererName, setCatererName] = useState("");
   const [catererEmail, setCatererEmail] = useState("");
   const [catererRegion, setCatererRegion] = useState("");
 
+  // State for adding admin
+  const [isAddingAdmin, setIsAddingAdmin] = useState(false);
+  const [adminUid, setAdminUid] = useState("");
+  const [adminEmail, setAdminEmail] = useState("");
+
+
   const [regionFilter, setRegionFilter] = useState("all");
 
   const calculateTurnover = (allOrders: Order[], catererId: string): number => {
     return allOrders.reduce((total, order) => {
-      // Sum the prices of items belonging to this specific caterer in the order
       const catererTurnoverInOrder = order.items
         .filter(item => item.catererId === catererId)
         .reduce((itemSum, item) => itemSum + (item.unitPrice * item.quantity), 0);
@@ -92,10 +99,10 @@ export default function AdminPage() {
 
   const handleAddCaterer = async () => {
     if (!catererUid || !catererName || !catererEmail || !catererRegion) {
-      toast({ title: "Champs requis", description: "Veuillez remplir tous les champs.", variant: "destructive" });
+      toast({ title: "Champs requis", description: "Veuillez remplir tous les champs pour le traiteur.", variant: "destructive" });
       return;
     }
-    setIsAdding(true);
+    setIsAddingCaterer(true);
     try {
       await addCaterer({ uid: catererUid, name: catererName, email: catererEmail, region: catererRegion });
       toast({ title: "Succès", description: "Le traiteur a été ajouté." });
@@ -107,7 +114,25 @@ export default function AdminPage() {
     } catch (error) {
       toast({ title: "Erreur", description: "Impossible d'ajouter le traiteur.", variant: "destructive" });
     } finally {
-      setIsAdding(false);
+      setIsAddingCaterer(false);
+    }
+  };
+
+  const handleAddAdmin = async () => {
+    if (!adminUid || !adminEmail) {
+      toast({ title: "Champs requis", description: "Veuillez fournir l'UID et l'email pour l'administrateur.", variant: "destructive" });
+      return;
+    }
+    setIsAddingAdmin(true);
+    try {
+        await addAdmin({ uid: adminUid, email: adminEmail });
+        toast({ title: "Succès", description: "Le nouvel administrateur a été ajouté." });
+        setAdminUid("");
+        setAdminEmail("");
+    } catch (error) {
+        toast({ title: "Erreur", description: "Impossible d'ajouter l'administrateur.", variant: "destructive" });
+    } finally {
+        setIsAddingAdmin(false);
     }
   };
   
@@ -150,50 +175,76 @@ export default function AdminPage() {
 
       <Tabs defaultValue="traiteurs" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="traiteurs">Gestion des Traiteurs</TabsTrigger>
+          <TabsTrigger value="traiteurs">Gestion des Rôles</TabsTrigger>
           <TabsTrigger value="commandes">Suivi des Commandes</TabsTrigger>
         </TabsList>
         <TabsContent value="traiteurs">
            <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Ajouter un nouveau traiteur</CardTitle>
-                <CardDescription>
-                  Créez un profil pour un utilisateur traiteur.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <Alert>
-                  <ShieldAlert className="h-4 w-4" />
-                  <AlertTitle>Action Manuelle Requise</AlertTitle>
-                  <AlertDescription>
-                    Pour des raisons de sécurité, vous devez d'abord créer le compte du
-                    traiteur dans la console Firebase Authentication (avec un email/mot de
-                    passe), puis copier son UID et le coller dans le champ ci-dessous.
-                  </AlertDescription>
-                </Alert>
-                <div className="space-y-2">
-                  <Label htmlFor="caterer-uid">UID du Traiteur (Firebase Auth)</Label>
-                  <Input id="caterer-uid" placeholder="Copiez l'UID depuis la console Firebase" value={catererUid} onChange={e => setCatererUid(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="caterer-name">Nom Complet</Label>
-                  <Input id="caterer-name" placeholder="Ex: Jean Traiteur" value={catererName} onChange={e => setCatererName(e.target.value)} />
-                </div>
-                 <div className="space-y-2">
-                  <Label htmlFor="caterer-email">Email du Traiteur</Label>
-                  <Input id="caterer-email" placeholder="Ex: traiteur@exemple.com" value={catererEmail} onChange={e => setCatererEmail(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="caterer-region">Région</Label>
-                  <Input id="caterer-region" placeholder="Ex: Tunis" value={catererRegion} onChange={e => setCatererRegion(e.target.value)} />
-                </div>
-                <Button onClick={handleAddCaterer} disabled={isAdding} className="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white">
-                  {isAdding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Ajouter le Traiteur
-                </Button>
-              </CardContent>
-            </Card>
+            <Alert>
+                <ShieldAlert className="h-4 w-4" />
+                <AlertTitle>Action Manuelle Requise</AlertTitle>
+                <AlertDescription>
+                Pour des raisons de sécurité, vous devez d'abord créer le compte de
+                l'utilisateur dans la console Firebase Authentication (avec un email/mot de
+                passe), puis copier son UID et le coller dans le champ approprié ci-dessous pour lui assigner un rôle.
+                </AlertDescription>
+            </Alert>
+            <div className="grid md:grid-cols-2 gap-6">
+                <Card>
+                <CardHeader>
+                    <CardTitle>Ajouter un nouveau traiteur</CardTitle>
+                    <CardDescription>
+                    Créez un profil pour un utilisateur traiteur.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                    <Label htmlFor="caterer-uid">UID du Traiteur (Firebase Auth)</Label>
+                    <Input id="caterer-uid" placeholder="Copiez l'UID depuis la console Firebase" value={catererUid} onChange={e => setCatererUid(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                    <Label htmlFor="caterer-name">Nom Complet</Label>
+                    <Input id="caterer-name" placeholder="Ex: Jean Traiteur" value={catererName} onChange={e => setCatererName(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                    <Label htmlFor="caterer-email">Email du Traiteur</Label>
+                    <Input id="caterer-email" placeholder="Ex: traiteur@exemple.com" value={catererEmail} onChange={e => setCatererEmail(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                    <Label htmlFor="caterer-region">Région</Label>
+                    <Input id="caterer-region" placeholder="Ex: Tunis" value={catererRegion} onChange={e => setCatererRegion(e.target.value)} />
+                    </div>
+                    <Button onClick={handleAddCaterer} disabled={isAddingCaterer} className="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white">
+                    {isAddingCaterer && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    <UserPlus className="mr-2"/> Ajouter le Traiteur
+                    </Button>
+                </CardContent>
+                </Card>
+
+                 <Card>
+                <CardHeader>
+                    <CardTitle>Ajouter un nouvel administrateur</CardTitle>
+                    <CardDescription>
+                    Donner les privilèges d'administrateur à un utilisateur.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                    <Label htmlFor="admin-uid">UID de l'administrateur (Firebase Auth)</Label>
+                    <Input id="admin-uid" placeholder="Copiez l'UID depuis la console Firebase" value={adminUid} onChange={e => setAdminUid(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                    <Label htmlFor="admin-email">Email de l'administrateur</Label>
+                    <Input id="admin-email" placeholder="Ex: admin@exemple.com" type="email" value={adminEmail} onChange={e => setAdminEmail(e.target.value)} />
+                    </div>
+                    <Button onClick={handleAddAdmin} disabled={isAddingAdmin} className="w-full md:w-auto bg-destructive hover:bg-destructive/90 text-white">
+                        {isAddingAdmin && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        <ShieldAlert className="mr-2" /> Ajouter l'Administrateur
+                    </Button>
+                </CardContent>
+                </Card>
+            </div>
+
 
              <Card>
               <CardHeader>
