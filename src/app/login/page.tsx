@@ -45,6 +45,7 @@ export default function LoginPage() {
     // This effect handles user redirection if they are already logged in.
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        setIsSubmitting(true);
         // If a user is found, determine their role and redirect them.
         const role = await getUserRole(user.uid);
         if (role === 'admin') router.replace('/admin');
@@ -55,17 +56,9 @@ export default function LoginPage() {
         setIsCheckingAuth(false);
       }
     });
-
-    // Handle Google sign-in redirect result
-    getRedirectResult(auth)
-      .catch((error) => {
-        console.error("Error getting redirect result", error);
-        toast({ title: "Erreur de connexion Google", description: "Un problème est survenu lors de la connexion.", variant: "destructive" });
-        setIsCheckingAuth(false); // Stop loading on error
-      });
       
     return () => unsubscribe();
-  }, [router, toast]);
+  }, [router]);
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
