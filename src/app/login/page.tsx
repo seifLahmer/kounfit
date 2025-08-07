@@ -64,10 +64,10 @@ export default function LoginPage() {
       }
 
     } catch (error: any) {
-      console.error("Login Error:", error);
-      let description = "Une erreur s'est produite lors de la connexion.";
+      console.error("Login Error:", error.code);
+      let description = "Une erreur inconnue s'est produite. Veuillez réessayer.";
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        description = "Email ou mot de passe invalide. Veuillez réessayer.";
+        description = "L'adresse e-mail ou le mot de passe est incorrect. Veuillez vérifier vos informations.";
       }
       toast({
         title: "Échec de la connexion",
