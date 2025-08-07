@@ -56,12 +56,6 @@ export default function LoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
       const user = userCredential.user;
 
-      // Hardcoded check for the main admin account to ensure access
-      if (user.email === 'zakaria.benhajji@edu.isetcom.tn') {
-        router.replace('/admin');
-        return; // Stop execution here to prevent role check conflicts
-      }
-
       const role = await getUserRole(user.uid);
 
       if (role === 'admin') {
@@ -73,7 +67,7 @@ export default function LoginPage() {
       } else {
         toast({
           title: "Compte non trouvé",
-          description: "Ce compte n'est pas enregistré. Veuillez vous inscrire.",
+          description: "Le compte n'est pas enregistré. Veuillez vous inscrire.",
           variant: "destructive",
         });
         await auth.signOut();
@@ -81,7 +75,7 @@ export default function LoginPage() {
     } catch (error: any) {
       console.error("Login Error:", error.code, error.message);
       let description = "Une erreur inconnue s'est produite. Veuillez réessayer.";
-      if (error.code === 'auth/invalid-credential') {
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
         description = "L'adresse e-mail ou le mot de passe est incorrect. Veuillez vérifier vos informations.";
       }
       toast({
