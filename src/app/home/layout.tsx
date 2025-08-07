@@ -47,8 +47,10 @@ export default function ClientLayout({
       try {
         const result = await getRedirectResult(auth);
         if (result) {
+          // A redirect sign-in just happened.
+          setAuthStatus("loading"); // Stay in loading state while we process it.
           const isNew = await handleNewUserFromRedirect(result.user);
-          if (isNew) return; // Stop processing, redirection is happening
+          if (isNew) return; // Stop processing, redirection to onboarding is happening
         }
       } catch (error) {
         console.error("Error getting redirect result", error);
@@ -63,7 +65,12 @@ export default function ClientLayout({
           try {
             const role = await getUserRole(user.uid);
             if (role === 'client') {
-              setAuthStatus("authorized");
+              const profile = await getUserProfile(user.uid);
+              if (!profile?.age) { // Check if onboarding is complete
+                router.replace('/signup/step2');
+              } else {
+                setAuthStatus("authorized");
+              }
             } else {
               setAuthStatus("unauthorized");
               if (role === 'admin') router.replace('/admin');

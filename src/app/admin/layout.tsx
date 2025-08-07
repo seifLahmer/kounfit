@@ -26,6 +26,8 @@ export default function AdminLayout({
             setAuthStatus("authorized");
           } else {
             setAuthStatus("unauthorized");
+            // Instead of redirecting to a specific page, let the other layouts handle it
+            // or redirect to a generic welcome page.
             router.replace('/welcome');
           }
         } catch (error) {

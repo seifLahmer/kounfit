@@ -91,9 +91,8 @@ export default function SignupPage() {
   const handleGoogleSignIn = async () => {
     setIsSubmitting(true);
     try {
+      // The home layout will now handle the redirect result and user creation.
       await signInWithRedirect(auth, googleProvider);
-      // After redirect, the user will land on a page with a protected layout,
-      // which will handle the user creation and redirection to step2.
     } catch (error: any) {
        toast({
            title: "Erreur de connexion Google",
