@@ -59,14 +59,15 @@ export default function LoginPage() {
         router.replace('/admin');
       } else if (role === 'caterer') {
         router.replace('/caterer');
+      } else if (role === 'client') {
+        router.replace('/home');
       } else {
-        // For 'client' or 'unknown' roles, redirect to home.
-        // The home layout will handle profile completion if needed.
+        // Fallback for 'unknown' or new users without a role doc.
+        // Let the home layout handle profile completion.
         router.replace('/home');
       }
     } catch (error: any) {
       let description = "Une erreur s'est produite lors de la connexion.";
-      // This specifically checks for authentication errors from Firebase
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         description = "Email ou mot de passe invalide. Veuillez réessayer ou créer un compte.";
       }
@@ -75,7 +76,8 @@ export default function LoginPage() {
         description: description,
         variant: "destructive",
       });
-      setIsSubmitting(false);
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
