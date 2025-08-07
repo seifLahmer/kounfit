@@ -145,6 +145,8 @@ export default function AdminPage() {
       fetchAdminData(); // Refresh list
     } catch (error) {
       toast({ title: "Erreur", description: "Impossible de supprimer le traiteur.", variant: "destructive" });
+    } finally {
+      setIsAddingCaterer(false);
     }
   };
 
@@ -379,3 +381,4 @@ export default function AdminPage() {
     </div>
   );
 }
+ 
