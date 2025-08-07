@@ -22,8 +22,10 @@ export default function AdminLayout({
       if (user) {
         try {
           const role = await getUserRole(user.uid);
+          // This is the definitive check. If the user's role is not 'admin',
+          // they are redirected immediately.
           if (role !== 'admin') {
-            // If the user is not an admin, deny access and redirect.
+            console.warn(`Access denied. User role is '${role}', not 'admin'. Redirecting.`);
             router.replace('/welcome');
           } else {
             // User is an admin, allow access.

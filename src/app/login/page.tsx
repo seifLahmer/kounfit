@@ -17,8 +17,6 @@ import { signInWithEmailAndPassword, signInWithRedirect } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
-import { getUserRole } from "@/lib/services/roleService";
-import { getUserProfile } from "@/lib/services/userService";
 
 const loginSchema = z.object({
   email: z.string().email("Veuillez saisir une adresse e-mail valide."),
@@ -52,63 +50,31 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
     
-    // Hardcoded admin check
-    if (data.email === "zakaria.benhajji@edu.isetcom.tn" && data.password === "2004/09/03") {
-        try {
-            await signInWithEmailAndPassword(auth, data.email, data.password);
-            toast({ title: "Connexion administrateur réussie!" });
-            router.replace('/admin');
-            return; // Stop execution here
-        } catch (error: any) {
-            // This might happen if the admin account doesn't exist in Auth.
-            // We still show a generic error.
-             toast({
-                title: "Échec de la connexion",
-                description: "Les informations d'identification d'administrateur sont incorrectes.",
-                variant: "destructive",
-            });
-            setIsSubmitting(false);
-            return;
-        }
-    }
-
-    // Regular user login logic
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-      const user = userCredential.user;
-      
-      const role = await getUserRole(user.uid);
-
-      if (role === 'admin') {
-        router.replace('/admin');
-      } else if (role === 'caterer') {
-        router.replace('/caterer');
-      } else if (role === 'client') {
-        const profile = await getUserProfile(user.uid);
-        if (profile?.age && profile.mainGoal) {
-            router.replace('/home');
+        await signInWithEmailAndPassword(auth, data.email, data.password);
+        
+        // After any successful login, always go to '/home'.
+        // The layouts (admin, caterer, client) will handle the final redirection.
+        // This avoids redirection conflicts.
+        if (data.email === "zakaria.benhajji@edu.isetcom.tn") {
+            toast({ title: "Connexion administrateur réussie!" });
         } else {
-            router.replace('/signup/step2');
+            toast({ title: "Connexion réussie!" });
         }
-      } else {
-        toast({
-            title: "Finalisation requise",
-            description: "Votre compte existe mais votre profil est incomplet. Veuillez finaliser votre inscription.",
-            variant: "default"
-        });
-        router.replace('/signup/step2');
-      }
+
+        router.replace('/home');
+
     } catch (error: any) {
-      console.error("Login Error:", error.code, error.message);
-      let description = "Une erreur inconnue s'est produite. Veuillez réessayer.";
-      if (error.code === 'auth/invalid-credential') {
-        description = "L'adresse e-mail ou le mot de passe est incorrect. Veuillez vérifier vos informations.";
-      }
-      toast({
-        title: "Échec de la connexion",
-        description: description,
-        variant: "destructive",
-      });
+        console.error("Login Error:", error.code, error.message);
+        let description = "Une erreur inconnue s'est produite. Veuillez réessayer.";
+        if (error.code === 'auth/invalid-credential') {
+            description = "L'adresse e-mail ou le mot de passe est incorrect. Veuillez vérifier vos informations.";
+        }
+        toast({
+            title: "Échec de la connexion",
+            description: description,
+            variant: "destructive",
+        });
     } finally {
         setIsSubmitting(false);
     }

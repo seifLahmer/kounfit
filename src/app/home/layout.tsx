@@ -27,14 +27,8 @@ export default function ClientLayout({
         return false; // Not a new user
       }
 
-      await updateUserProfile(firebaseUser.uid, {
-          fullName: firebaseUser.displayName || 'New User',
-          email: firebaseUser.email!,
-          photoURL: firebaseUser.photoURL,
-          role: 'client'
-      });
-      
-      // New user from Google, needs to complete profile
+      // This is a new user from Google, they need to complete their profile.
+      // We don't create the profile here, we redirect to step 2 where it will be created.
       router.replace('/signup/step2');
       return true;
 
@@ -70,19 +64,20 @@ export default function ClientLayout({
           try {
             const role = await getUserRole(user.uid);
             
-            // This layout is for CLIENTS. Redirect other roles.
+            // This layout is for CLIENTS. Redirect other roles immediately.
             if (role === 'admin') {
                 router.replace('/admin');
-                return;
+                return; // Stop processing here
             }
             if (role === 'caterer') {
                 router.replace('/caterer');
-                return;
+                return; // Stop processing here
             }
+            
             // Now, we only handle 'client' and 'unknown' roles.
             // 'unknown' could be a new user who needs to complete their profile.
-            
             const profile = await getUserProfile(user.uid);
+            
             // If the user is missing core profile data, redirect to step 2
             if (!profile?.age || !profile.mainGoal) { 
               router.replace('/signup/step2');
