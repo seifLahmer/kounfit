@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createUserWithEmailAndPassword, signInWithRedirect, getRedirectResult, User as FirebaseUser } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
@@ -52,7 +52,7 @@ export default function SignupPage() {
     },
   });
 
-  const handleNewUser = async (firebaseUser: FirebaseUser, fullName?: string | null) => {
+  const handleNewUser = useCallback(async (firebaseUser: FirebaseUser, fullName?: string | null) => {
     try {
         const existingProfile = await getUserProfile(firebaseUser.uid);
         if (!existingProfile) {
@@ -68,15 +68,17 @@ export default function SignupPage() {
         toast({ title: "Erreur", description: "Impossible de finaliser votre inscription.", variant: "destructive" });
         throw error; 
     }
-  };
+  }, [toast]);
   
    useEffect(() => {
+    setLoading(true);
     getRedirectResult(auth)
       .then(async (result) => {
         if (result) {
-          setLoading(true);
           await handleNewUser(result.user);
           router.replace('/signup/step2');
+        } else {
+            setLoading(false);
         }
       })
       .catch((error) => {
@@ -84,7 +86,7 @@ export default function SignupPage() {
         toast({ title: "Erreur de connexion", description: "La connexion avec Google a échoué.", variant: "destructive" });
         setLoading(false);
       });
-  }, []);
+  }, [handleNewUser, router, toast]);
 
 
   const onSubmit = async (data: SignupFormValues) => {
@@ -132,7 +134,7 @@ export default function SignupPage() {
         <CardHeader className="text-center pt-6">
           <Link href="/welcome" className="flex justify-center items-center gap-2 mb-4">
             <Leaf className="w-8 h-8 text-destructive" />
-            <span className="text-2xl font-bold">NutriTrack</span>
+            <span className="text-2xl font-bold">FITHELATH</span>
           </Link>
           <CardTitle className="text-2xl">Créer votre compte</CardTitle>
           <CardDescription>

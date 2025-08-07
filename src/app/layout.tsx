@@ -7,13 +7,13 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 
 export const metadata: Metadata = {
-  title: 'NutriTrack',
+  title: 'FITHELATH',
   description: 'Track calories and get personalized meal plans.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'NutriTrack',
+    title: 'FITHELATH',
   },
 };
 

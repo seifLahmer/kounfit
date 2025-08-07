@@ -10,7 +10,7 @@ export default function WelcomePage() {
         <div>
           <Leaf className="w-24 h-24 text-primary mx-auto mb-4" />
           <h1 className="text-4xl md:text-5xl font-bold text-foreground">
-            Welcome to NutriTrack
+            Welcome to FITHELATH
           </h1>
           <p className="text-muted-foreground mt-2 text-lg">
             Your personal journey to fitness starts here.
@@ -26,7 +26,7 @@ export default function WelcomePage() {
         </div>
       </div>
       <footer className="absolute bottom-4 text-center text-sm text-muted-foreground">
-        <p>&copy; 2024 NutriTrack. All rights reserved.</p>
+        <p>&copy; 2024 FITHELATH. All rights reserved.</p>
       </footer>
     </div>
   );

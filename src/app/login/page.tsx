@@ -40,6 +40,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [isAuthCheckComplete, setIsAuthCheckComplete] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -64,48 +65,57 @@ export default function LoginPage() {
   }, []);
 
   const redirectToRole = useCallback(async (uid: string) => {
-      const role = await getUserRole(uid);
-      if (role === 'admin') router.replace('/admin');
-      else if (role === 'caterer') router.replace('/caterer');
-      else router.replace('/home');
+      try {
+        const role = await getUserRole(uid);
+        if (role === 'admin') router.replace('/admin');
+        else if (role === 'caterer') router.replace('/caterer');
+        else router.replace('/home');
+      } catch(e) {
+         console.error("Redirection error:", e)
+         // Fallback to home page if role check fails
+         router.replace('/home');
+      }
   }, [router]);
 
 
   useEffect(() => {
-    // This effect handles all authentication logic on page load.
+    // This one effect handles all auth scenarios on page load
     const processAuth = async () => {
       try {
-        // First, check if we're returning from a Google redirect
         const result = await getRedirectResult(auth);
         if (result) {
-          // User signed in via redirect.
+          // User just signed in via redirect.
           const isNewUser = await handleNewUser(result.user);
           if (isNewUser) {
             router.replace('/signup/step2');
           } else {
             await redirectToRole(result.user.uid);
           }
-          return; // Stop further processing, redirection is happening
+          return; // Stop processing, redirection is happening
         }
         
-        // If no redirect result, check if a user is already signed in
-        if (auth.currentUser) {
-           await redirectToRole(auth.currentUser.uid);
-           return; // Stop further processing
-        }
+        // If no redirect, check for an existing session
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+          if (user) {
+            await redirectToRole(user.uid);
+          } else {
+            // Only set loading to false if no user is found
+             setLoading(false);
+             setIsAuthCheckComplete(true);
+          }
+        });
+        return () => unsubscribe(); // Cleanup subscription
 
       } catch (error) {
         console.error("Authentication check failed:", error);
         toast({ title: "Erreur de connexion", description: "La vérification de la connexion a échoué.", variant: "destructive" });
+        setLoading(false);
+        setIsAuthCheckComplete(true);
       }
-
-      // If no user is found after all checks, stop loading
-      setLoading(false);
     };
 
     processAuth();
     
-    // We don't need onAuthStateChanged here as we handle all cases on mount.
   }, [handleNewUser, redirectToRole, toast, router]);
 
 
@@ -140,7 +150,7 @@ export default function LoginPage() {
     });
   };
   
-  if (loading) {
+  if (loading || !isAuthCheckComplete) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -157,7 +167,7 @@ export default function LoginPage() {
         <CardHeader className="text-center">
            <Link href="/welcome" className="flex justify-center items-center gap-2 mb-4">
             <Leaf className="w-8 h-8 text-destructive" />
-            <span className="text-2xl font-bold">NutriTrack</span>
+            <span className="text-2xl font-bold">FITHELATH</span>
           </Link>
           <CardTitle className="text-2xl">Content de vous revoir!</CardTitle>
           <CardDescription>Entrez vos identifiants pour accéder à votre compte.</CardDescription>
@@ -226,5 +236,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    

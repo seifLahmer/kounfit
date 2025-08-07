@@ -104,7 +104,7 @@ export default function SignupStep2Page() {
 
       toast({
         title: "Profil complété!",
-        description: "Bienvenue sur NutriTrack! Vous allez être redirigé.",
+        description: "Bienvenue sur FITHELATH! Vous allez être redirigé.",
       });
 
       router.push("/home");
@@ -139,7 +139,7 @@ export default function SignupStep2Page() {
         <CardHeader className="text-center pt-6">
           <Link href="/welcome" className="flex justify-center items-center gap-2 mb-4">
             <Leaf className="w-8 h-8 text-destructive" />
-            <span className="text-2xl font-bold">NutriTrack</span>
+            <span className="text-2xl font-bold">FITHELATH</span>
           </Link>
           <CardTitle className="text-2xl">Finalisez votre profil</CardTitle>
           
