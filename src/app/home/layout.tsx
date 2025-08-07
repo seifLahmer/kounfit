@@ -43,51 +43,47 @@ export default function ClientLayout({
   }, [router, toast]);
 
   useEffect(() => {
-    // First, check for a redirect result. This is crucial for Google Sign-In.
-    getRedirectResult(auth)
-      .then(async (result) => {
+    const processAuth = async () => {
+      try {
+        const result = await getRedirectResult(auth);
         if (result) {
-          // A user has successfully signed in via redirect.
           const isNew = await handleNewUserFromRedirect(result.user);
-          if (isNew) {
-            // New user was redirected to step2, stop processing here.
-            return;
-          }
+          if (isNew) return; // Stop processing, redirection is happening
         }
-        
-        // After handling a potential redirect, set up the regular auth state listener.
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-          if (user) {
-            try {
-              const role = await getUserRole(user.uid);
-              if (role === 'client') {
-                setAuthStatus("authorized");
-              } else {
-                setAuthStatus("unauthorized");
-                if (role === 'admin') router.replace('/admin');
-                else if (role === 'caterer') router.replace('/caterer');
-                else router.replace('/welcome'); 
-              }
-            } catch (error) {
-               console.error("Error verifying client role:", error);
-               setAuthStatus("unauthorized");
-               router.replace('/welcome');
-            }
-          } else {
-            // No user is signed in.
-            setAuthStatus("unauthorized");
-            router.replace('/welcome');
-          }
-        });
-        
-        return () => unsubscribe();
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error("Error getting redirect result", error);
         toast({ title: "Erreur d'authentification", description: "Un problème est survenu lors de la connexion.", variant: "destructive" });
         setAuthStatus("unauthorized");
         router.replace('/welcome');
+        return;
+      }
+      
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          try {
+            const role = await getUserRole(user.uid);
+            if (role === 'client') {
+              setAuthStatus("authorized");
+            } else {
+              setAuthStatus("unauthorized");
+              if (role === 'admin') router.replace('/admin');
+              else if (role === 'caterer') router.replace('/caterer');
+              else router.replace('/welcome');
+            }
+          } catch (error) {
+             console.error("Error verifying client role:", error);
+             setAuthStatus("unauthorized");
+             router.replace('/welcome');
+          }
+        } else {
+          setAuthStatus("unauthorized");
+          router.replace('/welcome');
+        }
       });
+      return () => unsubscribe();
+    };
+    
+    processAuth();
   }, [router, toast, handleNewUserFromRedirect]);
   
   if (authStatus !== "authorized") {
