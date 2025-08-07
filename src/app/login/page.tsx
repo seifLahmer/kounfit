@@ -40,7 +40,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isAuthProcessing, setIsAuthProcessing] = useState(true);
+  const [isProcessingRedirect, setIsProcessingRedirect] = useState(true);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -59,9 +59,7 @@ export default function LoginPage() {
         photoURL: firebaseUser.photoURL,
         role: 'client'
       });
-      return 'client'; 
     }
-    return existingProfile.role;
   }, []);
 
   const redirectToRole = useCallback((role: string) => {
@@ -73,37 +71,44 @@ export default function LoginPage() {
 
   useEffect(() => {
     const processAuth = async () => {
-        setIsAuthProcessing(true);
+        setIsProcessingRedirect(true);
         try {
             const result = await getRedirectResult(auth);
             if (result) {
-                // User has just returned from Google Sign-In
-                const role = await handleNewUser(result.user);
+                // User has just returned from Google Sign-In. Process them.
+                await handleNewUser(result.user);
+                const role = await getUserRole(result.user.uid);
                 redirectToRole(role);
-                return; // Stop further processing
+                // We don't need to do anything else, as the redirect will happen.
+                return;
             }
         } catch (error) {
             console.error("Google Redirect Auth Error:", error);
             toast({ title: "Erreur de connexion", description: "La connexion avec Google a échoué.", variant: "destructive" });
         }
-
-        // If no redirect result, check current auth state
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                const role = await getUserRole(user.uid);
-                redirectToRole(role);
-            } else {
-                // No user logged in, ready to show the form.
-                setIsAuthProcessing(false);
-            }
-        });
-
-        // Cleanup subscription on component unmount
-        return () => unsubscribe();
+        // If there was no redirect result, it means we are not coming back from Google.
+        // We can now safely check the normal auth state.
+        setIsProcessingRedirect(false);
     };
 
     processAuth();
-}, [handleNewUser, redirectToRole, toast]);
+  }, [handleNewUser, redirectToRole, toast]);
+
+
+  useEffect(() => {
+    // This runs only after the redirect check is complete.
+    if (isProcessingRedirect) return;
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            // A user is already signed in, find their role and redirect them.
+            const role = await getUserRole(user.uid);
+            redirectToRole(role);
+        }
+    });
+
+    return () => unsubscribe();
+  }, [isProcessingRedirect, redirectToRole]);
 
 
 
@@ -139,7 +144,7 @@ export default function LoginPage() {
     });
   };
   
-  if (isAuthProcessing) {
+  if (isProcessingRedirect) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-4">

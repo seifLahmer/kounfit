@@ -41,7 +41,7 @@ const GoogleIcon = () => (
 export default function SignupPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isAuthProcessing, setIsAuthProcessing] = useState(true);
+  const [isProcessingRedirect, setIsProcessingRedirect] = useState(true);
   const { toast } = useToast();
 
   const form = useForm<SignupFormValues>({
@@ -73,23 +73,21 @@ export default function SignupPage() {
   
    useEffect(() => {
     const processRedirect = async () => {
+        setIsProcessingRedirect(true);
         try {
             const result = await getRedirectResult(auth);
             if (result) {
                 // A user has just signed in via redirect.
-                // handleNewUser will create a profile if they are new.
                 await handleNewUser(result.user);
                 // Now force redirect to step 2, no turning back.
                 router.replace('/signup/step2');
-            } else {
-                // No redirect result, ok to show the form.
-                setIsAuthProcessing(false);
+                return;
             }
         } catch (error) {
             console.error("Redirect Error:", error);
             toast({ title: "Erreur de connexion", description: "La connexion avec Google a échoué.", variant: "destructive" });
-            setIsAuthProcessing(false);
         }
+        setIsProcessingRedirect(false);
     };
     processRedirect();
   }, [handleNewUser, router, toast]);
@@ -112,13 +110,13 @@ export default function SignupPage() {
          description: description,
          variant: "destructive",
        });
-       setIsSubmitting(false);
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
     setIsSubmitting(true);
-    setIsAuthProcessing(true);
     try {
       await signInWithRedirect(auth, googleProvider);
     } catch (error: any) {
@@ -128,11 +126,10 @@ export default function SignupPage() {
            variant: "destructive",
        });
        setIsSubmitting(false);
-       setIsAuthProcessing(false);
     }
   };
   
-  if (isAuthProcessing) {
+  if (isProcessingRedirect) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-4">

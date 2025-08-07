@@ -26,7 +26,10 @@ export default function ClientLayout({
             setAuthStatus("authorized");
           } else {
             setAuthStatus("unauthorized");
-            router.replace('/welcome'); 
+            // If user is admin or caterer, redirect them to their respective dashboards
+            if (role === 'admin') router.replace('/admin');
+            else if (role === 'caterer') router.replace('/caterer');
+            else router.replace('/welcome'); 
           }
         } catch (error) {
            console.error("Error verifying client role:", error);
@@ -42,7 +45,7 @@ export default function ClientLayout({
     return () => unsubscribe();
   }, [router]);
   
-  if (authStatus === "loading") {
+  if (authStatus !== "authorized") {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -50,19 +53,9 @@ export default function ClientLayout({
     );
   }
 
-  if (authStatus === "authorized") {
-      return (
-        <MainLayout>
-          {children}
-        </MainLayout>
-      );
-  }
-
-  // In the "unauthorized" state, the redirection has already been triggered.
-  // We can return a loading spinner or null to avoid rendering anything while redirecting.
   return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
+    <MainLayout>
+      {children}
+    </MainLayout>
   );
 }
