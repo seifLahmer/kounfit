@@ -26,6 +26,7 @@ export default function CatererLayout({
           if (role === 'caterer') {
             setIsAuthorized(true);
           } else {
+             // User is not a caterer, redirect to welcome page
              router.replace('/welcome');
           }
         } catch (error) {
@@ -33,6 +34,7 @@ export default function CatererLayout({
            router.replace('/welcome');
         }
       } else {
+        // No user logged in, redirect to welcome page
         router.replace('/welcome');
       }
     });

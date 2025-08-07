@@ -59,59 +59,52 @@ export default function LoginPage() {
         photoURL: firebaseUser.photoURL,
         role: 'client'
       });
-      return true; // New user, needs onboarding
+      return 'client'; 
     }
-    return false; // Existing user
+    return existingProfile.role;
   }, []);
 
-  const redirectToRole = useCallback(async (uid: string) => {
-      try {
-        const role = await getUserRole(uid);
-        if (role === 'admin') router.replace('/admin');
-        else if (role === 'caterer') router.replace('/caterer');
-        else router.replace('/home');
-      } catch(e) {
-         console.error("Redirection error:", e)
-         toast({ title: "Erreur de redirection", description: "Impossible de vous rediriger.", variant: "destructive" });
-         router.replace('/welcome');
-      }
-  }, [router, toast]);
+  const redirectToRole = useCallback((role: string) => {
+      if (role === 'admin') router.replace('/admin');
+      else if (role === 'caterer') router.replace('/caterer');
+      else router.replace('/home');
+  }, [router]);
 
 
   useEffect(() => {
-    const processRedirect = async () => {
+    const processAuth = async () => {
+        setIsAuthProcessing(true);
         try {
             const result = await getRedirectResult(auth);
             if (result) {
-                // A user has just signed in via redirect.
-                // handleNewUser will create a profile if they are new.
-                const isNewUser = await handleNewUser(result.user);
-                // The onAuthStateChanged listener below will handle the redirection.
-            } else {
-                // No redirect result, proceed with auth state check.
-                setIsAuthProcessing(false);
+                // User has just returned from Google Sign-In
+                const role = await handleNewUser(result.user);
+                redirectToRole(role);
+                return; // Stop further processing
             }
         } catch (error) {
             console.error("Google Redirect Auth Error:", error);
             toast({ title: "Erreur de connexion", description: "La connexion avec Google a échoué.", variant: "destructive" });
-            setIsAuthProcessing(false);
         }
+
+        // If no redirect result, check current auth state
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const role = await getUserRole(user.uid);
+                redirectToRole(role);
+            } else {
+                // No user logged in, ready to show the form.
+                setIsAuthProcessing(false);
+            }
+        });
+
+        // Cleanup subscription on component unmount
+        return () => unsubscribe();
     };
 
-    processRedirect();
-
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-        if (user) {
-            // User is logged in, redirect them.
-            redirectToRole(user.uid);
-        } else {
-            // No user, stop loading.
-            setIsAuthProcessing(false);
-        }
-    });
-
-    return () => unsubscribe();
+    processAuth();
 }, [handleNewUser, redirectToRole, toast]);
+
 
 
   const onSubmit = async (data: LoginFormValues) => {
@@ -129,13 +122,13 @@ export default function LoginPage() {
         description: description,
         variant: "destructive",
       });
-      setIsSubmitting(false);
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
   const handleGoogleSignIn = () => {
     setIsSubmitting(true);
-    setIsAuthProcessing(true);
     signInWithRedirect(auth, googleProvider).catch((error) => {
        toast({
           title: "Erreur de connexion Google",
@@ -143,7 +136,6 @@ export default function LoginPage() {
           variant: "destructive",
        });
        setIsSubmitting(false);
-       setIsAuthProcessing(false);
     });
   };
   
@@ -233,5 +225,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    

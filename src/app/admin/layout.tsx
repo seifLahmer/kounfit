@@ -25,7 +25,7 @@ export default function AdminLayout({
           if (role === 'admin') {
             setIsAuthorized(true);
           } else {
-            // User is logged in but not an admin, redirect
+            // User is logged in but not an admin, redirect to welcome page
             router.replace('/welcome');
           }
         } catch (error) {
@@ -33,7 +33,7 @@ export default function AdminLayout({
            router.replace('/welcome');
         }
       } else {
-        // No user is logged in, redirect
+        // No user is logged in, redirect to welcome page
         router.replace('/welcome');
       }
     });

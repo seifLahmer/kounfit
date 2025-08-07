@@ -22,10 +22,12 @@ export default function ClientLayout({
       if (user) {
         try {
           const role = await getUserRole(user.uid);
+          // Only clients are allowed in this section.
+          // Admins and Caterers should be redirected to their own dashboards.
           if (role === 'client') {
             setIsAuthorized(true);
           } else {
-            // User is logged in but not a client, boot them out
+            // User is logged in but not a client, boot them out to welcome.
             router.replace('/welcome'); 
           }
         } catch (error) {
@@ -33,7 +35,7 @@ export default function ClientLayout({
            router.replace('/welcome');
         }
       } else {
-        // No user is logged in, redirect to welcome
+        // No user is logged in, redirect to welcome page.
         router.replace('/welcome');
       }
     });
