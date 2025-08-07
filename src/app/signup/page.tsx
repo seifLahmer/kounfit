@@ -64,6 +64,7 @@ export default function SignupPage() {
             role: 'client'
         });
 
+      // On successful creation, directly navigate to step 2
       router.push('/signup/step2'); 
     } catch (error: any) {
        console.error("Signup Error:", error);
@@ -71,6 +72,7 @@ export default function SignupPage() {
        if (error.code === 'auth/email-already-in-use') {
          description = "Cette adresse e-mail est déjà utilisée. Veuillez essayer de vous connecter.";
          // Force sign out to clear any lingering auth state on the client
+         // in case this error state was reached.
          await auth.signOut();
        }
        toast({
@@ -85,6 +87,7 @@ export default function SignupPage() {
 
   const handleGoogleSignIn = async () => {
     setIsSubmitting(true);
+    // After redirect, the logic in home/layout.tsx will handle user creation/redirection.
     await signInWithRedirect(auth, googleProvider).catch((error) => {
         toast({
            title: "Erreur de connexion Google",
@@ -99,7 +102,8 @@ export default function SignupPage() {
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
       <Card className="w-full max-w-md overflow-hidden">
          <div className="flex w-full">
-            <div className="w-full h-1.5 bg-gray-200"><div className="w-1/2 h-full bg-destructive"></div></div>
+            <div className="w-1/2 h-1.5 bg-destructive"></div>
+            <div className="w-1/2 h-1.5 bg-gray-200"></div>
         </div>
         <CardHeader className="text-center pt-6">
           <Link href="/welcome" className="flex justify-center items-center gap-2 mb-4">

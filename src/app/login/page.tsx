@@ -18,6 +18,7 @@ import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { getUserRole } from "@/lib/services/roleService";
+import { getUserProfile } from "@/lib/services/userService";
 
 const loginSchema = z.object({
   email: z.string().email("Veuillez saisir une adresse e-mail valide."),
@@ -61,14 +62,27 @@ export default function LoginPage() {
       } else if (role === 'caterer') {
         router.replace('/caterer');
       } else if (role === 'client') {
-        router.replace('/home');
-      } else {
+         // Even if the role is client, check if profile is complete
+        const profile = await getUserProfile(user.uid);
+        if (!profile?.age || !profile.mainGoal) {
+          toast({
+            title: "Profil incomplet",
+            description: "Veuillez finaliser votre profil.",
+            variant: "default",
+          });
+          router.replace('/signup/step2');
+        } else {
+          router.replace('/home');
+        }
+      } else { // Role is 'unknown'
         toast({
-          title: "Compte non trouvé",
-          description: "Votre compte existe mais aucun rôle ne lui est assigné. Veuillez contacter le support ou vous réinscrire.",
+          title: "Compte non finalisé",
+          description: "Votre compte existe mais n'est pas complètement configuré. Veuillez finaliser votre inscription.",
           variant: "destructive",
         });
-        await auth.signOut();
+        // We can't know which role they should be, so sending to step 2 is a safe fallback
+        // for potential clients.
+        router.replace('/signup/step2');
       }
     } catch (error: any) {
       console.error("Login Error:", error.code, error.message);
