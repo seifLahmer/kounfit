@@ -32,10 +32,6 @@ const nextConfig: NextConfig = {
       }
     ],
   },
-  // Add this to fix the build issue with Genkit
-  serverComponentsExternalPackages: [
-    '@genkit-ai/googleai',
-  ],
 };
 
 export default nextConfig;
