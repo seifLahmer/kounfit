@@ -12,15 +12,16 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
-import { useState } from "react";
-import { signInWithEmailAndPassword, signInWithRedirect } from "firebase/auth";
+import { useState, useEffect } from "react";
+import { signInWithEmailAndPassword, signInWithRedirect, onAuthStateChanged } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
+import { getUserRole } from "@/lib/services/roleService";
 
 const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address."),
-  password: z.string().min(1, "Password cannot be empty."),
+  email: z.string().email("Veuillez saisir une adresse e-mail valide."),
+  password: z.string().min(1, "Le mot de passe ne peut pas être vide."),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -38,6 +39,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -47,15 +49,50 @@ export default function LoginPage() {
     },
   });
 
+  // Redirect user if already logged in
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // User is already signed in, find their role and redirect
+        setIsSubmitting(true);
+        const role = await getUserRole(user.uid);
+        if (role === 'admin') router.replace('/admin');
+        else if (role === 'caterer') router.replace('/caterer');
+        else router.replace('/home'); // client or new user
+      } else {
+        // No user is signed in.
+        setIsAuthLoading(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
+
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
     try {
-      await signInWithEmailAndPassword(auth, data.email, data.password);
-      // On success, redirect to the central /home route.
-      // The home layout will handle role-based redirection from there.
-      router.replace('/home');
+      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+      const user = userCredential.user;
+      const role = await getUserRole(user.uid);
+
+      if (role === 'admin') {
+        router.replace('/admin');
+      } else if (role === 'caterer') {
+        router.replace('/caterer');
+      } else if (role === 'client') {
+        router.replace('/home');
+      } else {
+        // Role is 'unknown'
+        toast({
+          title: "Compte non trouvé",
+          description: "Votre compte existe mais n'a pas de rôle défini. Veuillez contacter le support ou vous inscrire.",
+          variant: "destructive",
+        });
+        await auth.signOut(); // Sign out the user
+        setIsSubmitting(false);
+      }
     } catch (error: any) {
-      let description = "An error occurred during login.";
+      let description = "Une erreur s'est produite lors de la connexion.";
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         description = "Email ou mot de passe invalide. Veuillez réessayer ou créer un compte.";
       }
@@ -70,7 +107,7 @@ export default function LoginPage() {
 
   const handleGoogleSignIn = () => {
     setIsSubmitting(true);
-    // Redirect to home after Google sign-in. The home layout will handle the rest.
+    // Redirect to home after Google sign-in. The home layout will handle the rest for new/existing Google users.
     signInWithRedirect(auth, googleProvider).catch((error) => {
        toast({
           title: "Erreur de connexion Google",
@@ -80,6 +117,14 @@ export default function LoginPage() {
        setIsSubmitting(false);
     });
   };
+
+  if (isAuthLoading) {
+    return (
+       <div className="flex items-center justify-center min-h-screen bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-destructive" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">

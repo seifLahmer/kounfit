@@ -6,35 +6,31 @@ export async function getUserRole(uid: string): Promise<'admin' | 'caterer' | 'c
   if (!uid) return 'unknown';
   
   try {
-    // 1. Check if the user is in the 'users' collection. This is the primary source of truth for clients.
-    const userRef = doc(db, "users", uid);
-    const userSnap = await getDoc(userRef);
-    if (userSnap.exists()) {
-      const userData = userSnap.data();
-      // Return the role if it's explicitly defined, otherwise default to client.
-      if (userData.role && ['admin', 'caterer', 'client'].includes(userData.role)) {
-        return userData.role;
-      }
-      return 'client';
-    }
-
-    // 2. Check for admin role as a fallback.
+    // Check collections in order of privilege: admin -> caterer -> client
+    
+    // 1. Check for admin role.
     const adminRef = doc(db, "admin", uid);
     const adminSnap = await getDoc(adminRef);
     if (adminSnap.exists()) {
       return 'admin';
     }
 
-    // 3. Check for caterer role as a fallback.
+    // 2. Check for caterer role.
     const catererRef = doc(db, "traiteur", uid);
     const catererSnap = await getDoc(catererRef);
     if (catererSnap.exists()) {
       return 'caterer';
     }
+    
+    // 3. Check if the user is in the 'users' collection (clients).
+    const userRef = doc(db, "users", uid);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+      return 'client';
+    }
 
-    // 4. If a user exists in Auth but has no document anywhere,
-    // this could be a new sign-up. The layouts will handle redirection to onboarding.
-    // We can return 'unknown' to let the layouts decide.
+    // 4. If a user exists in Auth but has no document anywhere, they are considered 'unknown'.
+    // This could be a new sign-up or an improperly configured user.
     return 'unknown';
   } catch (error) {
       console.error("Error getting user role: ", error);
