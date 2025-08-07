@@ -53,6 +53,8 @@ export default function LoginPage() {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
       const user = userCredential.user;
+      
+      // getUserRole checks the collections in the correct order: admin, traiteur, then users.
       const role = await getUserRole(user.uid);
 
       if (role === 'admin') {
