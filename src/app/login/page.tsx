@@ -55,10 +55,31 @@ export default function LoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
       const user = userCredential.user;
       
-      // The layouts will handle the role-based redirection.
-      // We just need to send the user to a neutral, authenticated page.
-      router.replace('/home');
+      const role = await getUserRole(user.uid);
 
+      if (role === 'admin') {
+        router.replace('/admin');
+      } else if (role === 'caterer') {
+        router.replace('/caterer');
+      } else if (role === 'client') {
+        // For clients, we also check if their profile is complete
+        const profile = await getUserProfile(user.uid);
+        if (profile?.age && profile.mainGoal) {
+            router.replace('/home');
+        } else {
+            // Profile is incomplete, send to step 2
+            router.replace('/signup/step2');
+        }
+      } else {
+        // Role is 'unknown' or something else went wrong.
+        // This can happen if a user is in Auth but not in any role collection.
+        toast({
+            title: "Finalisation requise",
+            description: "Votre compte existe mais votre profil est incomplet. Veuillez finaliser votre inscription.",
+            variant: "default"
+        });
+        router.replace('/signup/step2');
+      }
     } catch (error: any) {
       console.error("Login Error:", error.code, error.message);
       let description = "Une erreur inconnue s'est produite. Veuillez réessayer.";

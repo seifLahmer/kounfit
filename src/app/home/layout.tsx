@@ -84,7 +84,7 @@ export default function ClientLayout({
             
             const profile = await getUserProfile(user.uid);
             // If the user is missing core profile data, redirect to step 2
-            if (role === 'unknown' || !profile?.age || !profile.mainGoal) { 
+            if (!profile?.age || !profile.mainGoal) { 
               router.replace('/signup/step2');
             } else {
               // User is a client with a complete profile, show the page.

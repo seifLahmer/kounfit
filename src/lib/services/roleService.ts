@@ -11,7 +11,7 @@ export async function getUserRole(uid: string): Promise<'admin' | 'caterer' | 'c
   if (!uid) return 'unknown';
 
   try {
-    // 1. Check for admin role in 'admin' collection (singular)
+    // 1. Check for admin role in 'admin' collection (singular as requested)
     const adminRef = doc(db, "admin", uid);
     const adminSnap = await getDoc(adminRef);
     if (adminSnap.exists()) {

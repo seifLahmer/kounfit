@@ -71,9 +71,6 @@ export default function SignupPage() {
        let description = "Une erreur s'est produite lors de l'inscription.";
        if (error.code === 'auth/email-already-in-use') {
          description = "Cette adresse e-mail est déjà utilisée. Veuillez essayer de vous connecter.";
-         // Force sign out to clear any lingering auth state on the client
-         // in case this error state was reached.
-         await auth.signOut();
        }
        toast({
          title: "Erreur d'inscription",
@@ -102,15 +99,14 @@ export default function SignupPage() {
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
       <Card className="w-full max-w-md overflow-hidden">
          <div className="flex w-full">
-            <div className="w-1/2 h-1.5 bg-destructive"></div>
-            <div className="w-1/2 h-1.5 bg-gray-200"></div>
+            <div className="w-full h-1.5 bg-destructive"></div>
         </div>
         <CardHeader className="text-center pt-6">
           <Link href="/welcome" className="flex justify-center items-center gap-2 mb-4">
             <Leaf className="w-8 h-8 text-destructive" />
             <span className="text-2xl font-bold">FITHELATH</span>
           </Link>
-          <CardTitle className="text-2xl">Créer votre compte (1/2)</CardTitle>
+          <CardTitle className="text-2xl">Créer votre compte</CardTitle>
           <CardDescription>
             Commencez votre parcours fitness avec nous.
           </CardDescription>
