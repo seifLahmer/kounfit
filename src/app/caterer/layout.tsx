@@ -27,7 +27,7 @@ export default function CatererLayout({
           if (role === 'caterer') {
             setIsAuthorized(true);
           } else {
-             // If the wrong role is logged in, send them away
+             // If any other role is logged in, send them away
              router.replace('/welcome');
           }
         } catch (error) {
@@ -35,7 +35,7 @@ export default function CatererLayout({
            router.replace('/welcome');
         }
       } else {
-        // No user found, redirect
+        // No user found, redirect to welcome
         router.replace('/welcome');
       }
       setIsLoading(false);

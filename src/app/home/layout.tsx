@@ -25,17 +25,17 @@ export default function ClientLayout({
   const handleNewUserFromRedirect = useCallback(async (firebaseUser: FirebaseUser) => {
     try {
       const existingProfile = await getUserProfile(firebaseUser.uid);
+      // Only create a new profile if one doesn't exist.
       if (!existingProfile) {
-        // Create a new profile for the user from Google
         await updateUserProfile(firebaseUser.uid, {
             fullName: firebaseUser.displayName || 'New User',
             email: firebaseUser.email!,
             photoURL: firebaseUser.photoURL,
             role: 'client'
         });
-        // This is a new user, they need to complete onboarding
+        // This is a new user, they must complete onboarding.
         router.replace('/signup/step2');
-        return true; // Indicates a redirect happened
+        return true; // Indicates a redirect to onboarding happened
       }
       return false; // Not a new user
     } catch (error) {
@@ -47,17 +47,16 @@ export default function ClientLayout({
 
   useEffect(() => {
     const processAuth = async () => {
-      // First, check for a redirect result from Google sign-in
+      // First, check if a redirect from Google sign-in just happened
       try {
         const result = await getRedirectResult(auth);
         if (result) {
+          // If it's a new user, they will be redirected to onboarding.
+          // We can stop processing here to avoid conflicts.
           const isNew = await handleNewUserFromRedirect(result.user);
-          if (isNew) {
-            // A new user was created and redirected to onboarding, so we can stop processing here.
-            return;
-          }
+          if (isNew) return;
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error getting redirect result", error);
         toast({ title: "Erreur d'authentification", description: "Un problème est survenu lors de la connexion.", variant: "destructive" });
         setIsLoading(false);
@@ -65,7 +64,7 @@ export default function ClientLayout({
         return;
       }
       
-      // If there was no redirect, or the user from redirect was not new, listen for auth state changes.
+      // If there was no redirect, or the user was not new, set up the standard auth state listener.
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
           try {
@@ -75,7 +74,7 @@ export default function ClientLayout({
               if (!profile?.age) { // Check if onboarding (step 2) is complete
                 router.replace('/signup/step2');
               } else {
-                setIsAuthorized(true);
+                setIsAuthorized(true); // Authorize and show content
               }
             } else {
               // User has the wrong role, send them away
@@ -91,6 +90,7 @@ export default function ClientLayout({
         }
         setIsLoading(false);
       });
+
       return () => unsubscribe();
     };
     

@@ -52,9 +52,7 @@ export default function AdminLayout({
   }
 
   if (!isAuthorized) {
-    // This part will briefly show while redirecting, or if something goes wrong.
-    // The main loading is handled by isLoading state.
-    return null; 
+    return null; // Render nothing while redirects are happening
   }
 
 
