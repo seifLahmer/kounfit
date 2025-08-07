@@ -55,7 +55,7 @@ export default function LoginPage() {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
       const user = userCredential.user;
-
+      
       const role = await getUserRole(user.uid);
 
       if (role === 'admin') {
@@ -66,17 +66,19 @@ export default function LoginPage() {
         router.replace('/home');
       } else {
         // This case handles users that exist in Auth but not in any role collection.
+        // They are likely new users who haven't completed signup.
         toast({
           title: "Compte non finalisé",
           description: "Votre compte existe mais n'est pas complètement configuré. Veuillez vous inscrire pour finaliser le processus.",
           variant: "destructive",
         });
         await auth.signOut();
+        router.replace('/signup'); 
       }
     } catch (error: any) {
       console.error("Login Error:", error.code, error.message);
       let description = "Une erreur inconnue s'est produite. Veuillez réessayer.";
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
+      if (error.code === 'auth/invalid-credential') {
         description = "L'adresse e-mail ou le mot de passe est incorrect. Veuillez vérifier vos informations.";
       }
       toast({
