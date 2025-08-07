@@ -39,8 +39,7 @@ const GoogleIcon = () => (
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
-  const [isAuthChecked, setIsAuthChecked] = useState(false);
+  const [loading, setLoading] = useState(true); // Start with loading true
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -72,11 +71,13 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    // This effect handles the result from Google's redirect
-    getRedirectResult(auth)
-      .then(async (result) => {
-        if (result) {
-          setLoading(true);
+    let isMounted = true;
+
+    const handleAuth = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result && isMounted) {
+          // User has just signed in via redirect.
           const user = result.user;
           const isNewUser = await handleNewUser(user);
           if (isNewUser) {
@@ -84,27 +85,41 @@ export default function LoginPage() {
           } else {
             await redirectToRole(user.uid);
           }
-        } else {
-           setIsAuthChecked(true);
+          // setLoading will remain true until redirection completes
+          return;
         }
-      })
-      .catch((error) => {
-        console.error("Redirect Error:", error);
-        toast({ title: "Erreur de connexion", description: "La connexion avec Google a échoué.", variant: "destructive" });
-        setLoading(false);
-        setIsAuthChecked(true);
-      });
-
-    // This effect handles users who are already logged in
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user && isAuthChecked) {
-        setLoading(true);
-        await redirectToRole(user.uid);
+      } catch (error) {
+        if (isMounted) {
+            console.error("Redirect Error:", error);
+            toast({ title: "Erreur de connexion", description: "La connexion avec Google a échoué.", variant: "destructive" });
+            setLoading(false);
+        }
       }
-    });
+      
+      // If no redirect result, check current auth state
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (isMounted) {
+            if (user) {
+                // User is already logged in
+                await redirectToRole(user.uid);
+            } else {
+                // No user, stop loading
+                setLoading(false);
+            }
+        }
+      });
+      
+      return () => {
+          if (unsubscribe) unsubscribe();
+      };
+    };
 
-    return () => unsubscribe();
-  }, [isAuthChecked]);
+    handleAuth();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
 
   const onSubmit = async (data: LoginFormValues) => {
@@ -140,7 +155,7 @@ export default function LoginPage() {
     }
   };
   
-  if (!isAuthChecked || loading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-4">

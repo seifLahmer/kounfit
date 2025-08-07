@@ -84,7 +84,7 @@ export default function SignupPage() {
         toast({ title: "Erreur de connexion", description: "La connexion avec Google a échoué.", variant: "destructive" });
         setLoading(false);
       });
-  }, [router, toast]);
+  }, []);
 
 
   const onSubmit = async (data: SignupFormValues) => {
@@ -135,7 +135,8 @@ export default function SignupPage() {
             <span className="text-2xl font-bold">NutriTrack</span>
           </Link>
           <CardTitle className="text-2xl">Créer votre compte</CardTitle>
-          
+          <CardDescription>
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
