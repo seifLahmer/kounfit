@@ -25,19 +25,19 @@ export default function CatererLayout({
         try {
           const role = await getUserRole(user.uid);
           if (role !== 'caterer') {
-             router.replace('/welcome');
-             return; // Stop execution if not caterer
+             router.replace('/login');
+             return; 
           } else {
             setIsAuthorized(true);
           }
         } catch (error) {
            console.error("Error verifying caterer role:", error);
-           router.replace('/welcome');
+           router.replace('/login');
         } finally {
             setIsLoading(false);
         }
       } else {
-        router.replace('/welcome');
+        router.replace('/login');
       }
     });
 
@@ -53,14 +53,7 @@ export default function CatererLayout({
   }
 
   if (!isAuthorized) {
-    // This can be a fallback, but the main logic should prevent reaching here.
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-        <h1 className="text-2xl font-bold text-red-600 mb-4">Accès non autorisé</h1>
-        <p className="text-muted-foreground mb-4">Vous n'avez pas les permissions pour voir cette page.</p>
-        <Link href="/welcome" className="text-blue-500 hover:underline">Retour à l'accueil</Link>
-      </div>
-    );
+    return null;
   }
 
   return (

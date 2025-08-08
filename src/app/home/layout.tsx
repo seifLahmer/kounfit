@@ -22,21 +22,20 @@ export default function ClientLayout({
 
   const handleNewUserFromRedirect = useCallback(async (firebaseUser: FirebaseUser) => {
     try {
-      const role = await getUserRole(firebaseUser.uid);
-      if (role === 'client' || role === 'unknown') {
-        const existingProfile = await getUserProfile(firebaseUser.uid);
-        if (!existingProfile) {
-          router.replace('/signup/step2');
-          return true; // Is a new user, stop processing
-        }
+      // For Google sign-in, we assume the role is client
+      const existingProfile = await getUserProfile(firebaseUser.uid);
+      if (!existingProfile) {
+        // If profile doesn't exist, they need to complete it
+        router.replace('/signup/step2');
+        return true; 
       }
-      return false; // Not a new user needing profile completion
+      return false; 
     } catch (error) {
       console.error("New user handling error:", error);
       toast({ title: "Erreur", description: "Impossible de finaliser votre inscription.", variant: "destructive" });
       await auth.signOut();
       router.replace('/welcome');
-      return true; // Stop processing
+      return true;
     }
   }, [router, toast]);
 
@@ -46,6 +45,7 @@ export default function ClientLayout({
       try {
         const result = await getRedirectResult(auth);
         if (result) {
+          // This handles users signing in with Google
           const isNew = await handleNewUserFromRedirect(result.user);
           if (isNew) return; 
         }
@@ -61,17 +61,18 @@ export default function ClientLayout({
           try {
             const role = await getUserRole(user.uid);
             
+            // This is now handled by the login page, but as a safeguard:
             if (role === 'admin') {
                 router.replace('/admin');
-                return; 
+                return;
             }
             if (role === 'caterer') {
                 router.replace('/caterer');
                 return;
             }
             
+            // For client users, check if their profile is complete
             const profile = await getUserProfile(user.uid);
-            
             if (!profile?.age || !profile.mainGoal) { 
               router.replace('/signup/step2');
             } else {

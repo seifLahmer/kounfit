@@ -24,18 +24,19 @@ export default function AdminLayout({
         try {
           const role = await getUserRole(user.uid);
           if (role !== 'admin') {
-            router.replace('/welcome');
-            return; // Stop execution if not admin
+            router.replace('/login');
+            return;
           } else {
             setIsAuthorized(true);
-            setIsLoading(false);
           }
         } catch (error) {
            console.error("Error verifying admin role:", error);
-           router.replace('/welcome');
+           router.replace('/login');
+        } finally {
+          setIsLoading(false);
         }
       } else {
-        router.replace('/welcome');
+        router.replace('/login');
       }
     });
 
@@ -51,15 +52,7 @@ export default function AdminLayout({
   }
   
   if (!isAuthorized) {
-     // This part should theoretically not be reached if the redirection logic works,
-     // but it's a good fallback.
-     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-        <h1 className="text-2xl font-bold text-red-600 mb-4">Accès non autorisé</h1>
-        <p className="text-muted-foreground mb-4">Vous n'avez pas les permissions pour voir cette page.</p>
-        <Link href="/welcome" className="text-blue-500 hover:underline">Retour à l'accueil</Link>
-      </div>
-    );
+     return null;
   }
 
   return (
