@@ -27,9 +27,8 @@ export default function CatererLayout({
           if (role !== 'caterer') {
              router.replace('/login');
              return;
-          } else {
-            setIsAuthorized(true);
           }
+          setIsAuthorized(true);
         } catch (error) {
            console.error("Error verifying caterer role:", error);
            router.replace('/login');

@@ -63,11 +63,11 @@ export default function ClientLayout({
             
             if (role === 'admin') {
                 router.replace('/admin');
-                return; // <-- Exit early
+                return;
             }
             if (role === 'caterer') {
                 router.replace('/caterer');
-                return; // <-- Exit early
+                return;
             }
             
             // For client users, check if their profile is complete

@@ -26,9 +26,8 @@ export default function AdminLayout({
           if (role !== 'admin') {
             router.replace('/login');
             return;
-          } else {
-            setIsAuthorized(true);
           }
+          setIsAuthorized(true);
         } catch (error) {
            console.error("Error verifying admin role:", error);
            router.replace('/login');
