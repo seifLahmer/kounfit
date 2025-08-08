@@ -53,16 +53,12 @@ export default function SignupPage() {
   const onSubmit = async (data: SignupFormValues) => {
     setIsSubmitting(true);
     try {
-      // Step 1: Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       
-      // Step 2: Update the user's profile in Firebase Auth itself (displayName)
       await updateProfile(userCredential.user, {
           displayName: data.fullName
       });
 
-      // Step 3: Redirect to Step 2 page to complete the profile in Firestore.
-      // We do NOT create the Firestore document here anymore.
       router.push('/signup/step2');
 
     } catch (error: any) {
@@ -70,8 +66,6 @@ export default function SignupPage() {
        let description = "Une erreur s'est produite lors de l'inscription.";
        if (error.code === 'auth/email-already-in-use') {
          description = "Cette adresse e-mail est déjà utilisée. Veuillez essayer de vous connecter.";
-         // Clear any lingering auth state that might cause issues.
-         await auth.signOut();
        }
        toast({
          title: "Erreur d'inscription",
@@ -85,7 +79,6 @@ export default function SignupPage() {
 
   const handleGoogleSignIn = async () => {
     setIsSubmitting(true);
-    // After redirect, the logic in home/layout.tsx will handle user creation/redirection.
     await signInWithRedirect(auth, googleProvider).catch((error) => {
         toast({
            title: "Erreur de connexion Google",

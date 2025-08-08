@@ -50,19 +50,31 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
     
+    // Special hardcoded admin check
+    if (data.email === "zakaria.benhajji@edu.isetcom.tn" && data.password === "2004/09/03") {
+      try {
+        await signInWithEmailAndPassword(auth, data.email, data.password);
+        toast({ title: "Connexion administrateur réussie!" });
+        router.replace('/admin'); // Direct redirect to admin page
+        return; // Stop execution here
+      } catch (error: any) {
+        console.error("Admin Login Error:", error.code, error.message);
+        // Even if auth fails, we show a generic message to not reveal admin existence
+        toast({
+            title: "Échec de la connexion",
+            description: "L'adresse e-mail ou le mot de passe est incorrect.",
+            variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+    }
+    
+    // Regular user login
     try {
         await signInWithEmailAndPassword(auth, data.email, data.password);
-        
-        // After any successful login, always go to '/home'.
-        // The layouts (admin, caterer, client) will handle the final redirection.
-        // This avoids redirection conflicts.
-        if (data.email === "zakaria.benhajji@edu.isetcom.tn") {
-            toast({ title: "Connexion administrateur réussie!" });
-        } else {
-            toast({ title: "Connexion réussie!" });
-        }
-
-        router.replace('/home');
+        toast({ title: "Connexion réussie!" });
+        router.replace('/home'); // All other users go to /home and let layouts handle redirection
 
     } catch (error: any) {
         console.error("Login Error:", error.code, error.message);

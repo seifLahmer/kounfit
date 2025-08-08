@@ -6,7 +6,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, getRedirectResult, User as FirebaseUser } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { getUserProfile, updateUserProfile } from "@/lib/services/userService";
+import { getUserProfile } from "@/lib/services/userService";
 import { getUserRole } from "@/lib/services/roleService";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -28,7 +28,6 @@ export default function ClientLayout({
       }
 
       // This is a new user from Google, they need to complete their profile.
-      // We don't create the profile here, we redirect to step 2 where it will be created.
       router.replace('/signup/step2');
       return true;
 
@@ -44,7 +43,7 @@ export default function ClientLayout({
 
   useEffect(() => {
     const processAuth = async () => {
-      // First, handle potential Google sign-in redirect
+      // Handle potential Google sign-in redirect first
       try {
         const result = await getRedirectResult(auth);
         if (result) {
@@ -58,31 +57,25 @@ export default function ClientLayout({
         return;
       }
       
-      // Then, set up the listener for ongoing auth state
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (user) {
           try {
             const role = await getUserRole(user.uid);
             
-            // This layout is for CLIENTS. Redirect other roles immediately.
             if (role === 'admin') {
                 router.replace('/admin');
-                return; // Stop processing here
+                return;
             }
             if (role === 'caterer') {
                 router.replace('/caterer');
-                return; // Stop processing here
+                return;
             }
             
-            // Now, we only handle 'client' and 'unknown' roles.
-            // 'unknown' could be a new user who needs to complete their profile.
             const profile = await getUserProfile(user.uid);
             
-            // If the user is missing core profile data, redirect to step 2
             if (!profile?.age || !profile.mainGoal) { 
               router.replace('/signup/step2');
             } else {
-              // User is a client with a complete profile, show the page.
               setIsLoading(false);
             }
           } catch (error) {
@@ -92,7 +85,6 @@ export default function ClientLayout({
              router.replace('/welcome');
           }
         } else {
-          // No user logged in, send to welcome page.
           router.replace('/welcome');
         }
       });
