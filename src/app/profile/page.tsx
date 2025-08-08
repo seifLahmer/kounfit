@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { Camera, Loader2, CheckCircle, LogOut } from "lucide-react"
+import { Camera, Loader2, CheckCircle } from "lucide-react"
 import Image from "next/image"
 import * as React from "react"
 import { useEffect, useState, useRef } from "react"
@@ -35,7 +35,6 @@ import { auth } from "@/lib/firebase"
 import { uploadProfileImage } from "@/lib/services/storageService"
 import { calculateNutritionalNeeds } from "@/lib/services/nutritionService"
 import type { User } from "@/lib/types"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 
 const profileFormSchema = z.object({
   fullName: z.string().min(2, "Le nom doit contenir au moins 2 caractères."),
@@ -188,16 +187,6 @@ export default function ProfilePage() {
         toast({ title: "Erreur de téléversement", description: "L'image n'a pas pu être sauvegardée.", variant: "destructive" });
         setSaveStatus("idle");
       }
-    }
-  };
-  
-  const handleLogout = async () => {
-    try {
-      await auth.signOut();
-      router.push('/welcome');
-      toast({ title: 'Déconnexion réussie' });
-    } catch (error) {
-      toast({ title: 'Erreur de déconnexion', variant: 'destructive' });
     }
   };
   
@@ -428,31 +417,7 @@ export default function ProfilePage() {
             />
           </form>
         </Form>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="outline" className="w-full mt-8">
-              <LogOut className="mr-2 h-4 w-4" />
-              Déconnexion
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Êtes-vous sûr de vouloir vous déconnecter ?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Vous devrez vous reconnecter pour accéder à nouveau à votre compte.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Annuler</AlertDialogCancel>
-              <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">
-                Déconnexion
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
     </MainLayout>
   )
 }
-
-    
