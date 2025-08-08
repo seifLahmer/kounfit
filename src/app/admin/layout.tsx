@@ -16,24 +16,24 @@ export default function AdminLayout({
 }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
           const role = await getUserRole(user.uid);
-          // This is the definitive check. If the user's role is not 'admin',
-          // they are redirected immediately.
           if (role !== 'admin') {
-            console.warn(`Access denied. User role is '${role}', not 'admin'. Redirecting.`);
+            console.warn(`Access denied for UID: ${user.uid}. Role is '${role}', not 'admin'. Redirecting.`);
             router.replace('/welcome');
           } else {
-            // User is an admin, allow access.
-            setIsLoading(false);
+            setIsAuthorized(true);
           }
         } catch (error) {
            console.error("Error verifying admin role:", error);
            router.replace('/welcome');
+        } finally {
+            setIsLoading(false);
         }
       } else {
         // No user is logged in, redirect to welcome page.
@@ -48,6 +48,16 @@ export default function AdminLayout({
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <Loader2 className="h-12 w-12 animate-spin text-red-500" />
+      </div>
+    );
+  }
+  
+  if (!isAuthorized) {
+     return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <h1 className="text-2xl font-bold text-red-600 mb-4">Accès non autorisé</h1>
+        <p className="text-muted-foreground mb-4">Vous n'avez pas les permissions pour voir cette page.</p>
+        <Link href="/welcome" className="text-blue-500 hover:underline">Retour à l'accueil</Link>
       </div>
     );
   }

@@ -17,6 +17,9 @@ import { signInWithEmailAndPassword, signInWithRedirect } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
+import { getUserRole } from "@/lib/services/roleService";
+import { addAdmin } from "@/lib/services/adminService";
+import { getUserProfile } from "@/lib/services/userService";
 
 const loginSchema = z.object({
   email: z.string().email("Veuillez saisir une adresse e-mail valide."),
@@ -50,11 +53,40 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
     try {
-        await signInWithEmailAndPassword(auth, data.email, data.password);
-        toast({ title: "Connexion réussie!", description: "Vous allez être redirigé..." });
-        // The ONLY job of the login page is to authenticate.
-        // It redirects EVERYONE to /home. The /home layout is responsible for routing to the correct dashboard.
-        router.replace('/home'); 
+        const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+        const user = userCredential.user;
+        let role = await getUserRole(user.uid);
+
+        // Self-healing mechanism for the main admin account.
+        if (data.email === 'zakaria.benhajji@edu.isetcom.tn' && role !== 'admin') {
+            await addAdmin({ uid: user.uid, email: user.email! });
+            role = 'admin'; // Force role update
+            toast({ title: "Accès admin restauré", description: "Le compte administrateur a été reconfiguré."});
+        }
+        
+        toast({ title: "Connexion réussie!", description: "Redirection en cours..." });
+
+        // Authoritative redirection based on role
+        if (role === 'admin') {
+            router.replace('/admin');
+        } else if (role === 'caterer') {
+            router.replace('/caterer');
+        } else if (role === 'client') {
+            const profile = await getUserProfile(user.uid);
+            if (!profile?.age || !profile.mainGoal) {
+                router.replace('/signup/step2');
+            } else {
+                router.replace('/home');
+            }
+        } else {
+            // Role is 'unknown', likely a new user from Google Sign-In or incomplete signup
+            const profile = await getUserProfile(user.uid);
+            if (!profile) {
+                router.replace('/signup/step2'); // Send to complete profile
+            } else {
+                router.replace('/home'); // Default to home if profile exists but role is weird
+            }
+        }
 
     } catch (error: any) {
         console.error("Login Error:", error.code, error.message);
