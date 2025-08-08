@@ -1,45 +1,55 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
+    
     function isAdmin(userId) {
       return exists(/databases/$(database)/documents/admins/$(userId));
     }
-    
-    match /users/{userId} {
-      allow read: if request.auth.uid == userId || isAdmin(request.auth.uid);
-      allow write: if request.auth.uid == userId;
-      allow create: if request.auth.uid == userId;
+
+    match /admins/{userId} {
+      allow read, write: if request.auth.uid == userId || isAdmin(request.auth.uid);
     }
 
     match /caterers/{userId} {
-      allow read: if request.auth.uid == userId || isAdmin(request.auth.uid);
-      allow write: if isAdmin(request.auth.uid);
-      allow create: if isAdmin(request.auth.uid);
+      // Admins can manage all caterers.
+      // A caterer can read their own document.
+      allow get: if request.auth.uid == userId || isAdmin(request.auth.uid);
+      allow list, write: if isAdmin(request.auth.uid);
     }
-
-    match /admins/{userId} {
-      allow read, write: if isAdmin(request.auth.uid);
-      allow create: if isAdmin(request.auth.uid);
+    
+    match /users/{userId} {
+      // A user can read/write their own data.
+      // An admin can read any user's data.
+      allow read, write: if request.auth.uid == userId;
+      allow get: if isAdmin(request.auth.uid);
     }
     
     match /meals/{mealId} {
-      allow read: if true;
-      allow create: if request.auth.uid == request.resource.data.createdBy;
-      allow update, delete: if request.auth.uid == resource.data.createdBy || isAdmin(request.auth.uid);
+        // Anyone can read meals
+        allow get, list;
+        // Only the caterer who created it or an admin can create, update, or delete it
+        allow write: if request.auth.uid == request.resource.data.createdBy || isAdmin(request.auth.uid);
     }
 
     match /orders/{orderId} {
-      allow read: if request.auth.uid == resource.data.clientId || request.auth.uid in resource.data.catererIds || isAdmin(request.auth.uid);
-      allow create: if request.auth.uid == request.resource.data.clientId;
-      allow update: if request.auth.uid in resource.data.catererIds || isAdmin(request.auth.uid);
+        // The client who created it, an admin, or an involved caterer can read it
+        allow get: if request.auth.uid == resource.data.clientId 
+                    || isAdmin(request.auth.uid) 
+                    || request.auth.uid in resource.data.catererIds;
+        
+        // Any authenticated user can create an order (place order)
+        allow create: if request.auth.uid != null;
+        
+        // Only admins or involved caterers can update the order (e.g., status)
+        allow update: if isAdmin(request.auth.uid) || request.auth.uid in resource.data.catererIds;
     }
-    
+
     match /notifications/{notificationId} {
+      // A user can read and update (mark as read) their own notifications
       allow read, update: if request.auth.uid == resource.data.userId;
-      // Notifications are created server-side (or via trusted client actions like placing an order), so no direct create rule.
+      // Notifications are created server-side (by other rules/functions), not directly by clients
+      allow create: if false; 
     }
   }
 }
