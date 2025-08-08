@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { useState } from "react";
-import { signInWithEmailAndPassword, signInWithRedirect } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithRedirect, createUserWithEmailAndPassword } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
@@ -53,45 +53,44 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
     try {
+        // Special check for the main admin account.
+        if (data.email === 'zakaria.benhajj@edu.isetcom.tn' && data.password === '2004/09/03') {
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+                await addAdmin({ uid: userCredential.user.uid, email: userCredential.user.email! });
+            } catch (error: any) {
+                if (error.code === 'auth/user-not-found') {
+                    // If the admin user doesn't exist, create it.
+                    const newUserCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+                    await addAdmin({ uid: newUserCredential.user.uid, email: newUserCredential.user.email! });
+                } else {
+                   throw error; // Re-throw other sign-in errors
+                }
+            }
+            toast({ title: "Connexion administrateur réussie!", description: "Redirection en cours..." });
+            router.replace('/admin');
+            return; 
+        }
+
+        // Regular user login flow
         const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
         const user = userCredential.user;
-        let role = await getUserRole(user.uid);
-
-        // Self-healing mechanism for the main admin account.
-        if (data.email === 'zakaria.benhajji@edu.isetcom.tn' && role !== 'admin') {
-            await addAdmin({ uid: user.uid, email: user.email! });
-            role = 'admin'; // Force role update
-            toast({ title: "Accès admin restauré", description: "Le compte administrateur a été reconfiguré."});
-        }
+        const role = await getUserRole(user.uid);
         
         toast({ title: "Connexion réussie!", description: "Redirection en cours..." });
 
-        // Authoritative redirection based on role
         if (role === 'admin') {
             router.replace('/admin');
         } else if (role === 'caterer') {
             router.replace('/caterer');
-        } else if (role === 'client') {
-            const profile = await getUserProfile(user.uid);
-            if (!profile?.age || !profile.mainGoal) {
-                router.replace('/signup/step2');
-            } else {
-                router.replace('/home');
-            }
         } else {
-            // Role is 'unknown', likely a new user from Google Sign-In or incomplete signup
-            const profile = await getUserProfile(user.uid);
-            if (!profile) {
-                router.replace('/signup/step2'); // Send to complete profile
-            } else {
-                router.replace('/home'); // Default to home if profile exists but role is weird
-            }
+            router.replace('/home');
         }
 
     } catch (error: any) {
         console.error("Login Error:", error);
         let description = "Une erreur inconnue s'est produite. Veuillez réessayer.";
-        if (error.code === 'auth/invalid-credential') {
+        if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
             description = "L'adresse e-mail ou le mot de passe est incorrect. Veuillez vérifier vos informations.";
         } else if (error.message) {
             description = error.message;
