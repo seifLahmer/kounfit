@@ -49,32 +49,12 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
-    
-    // Special hardcoded admin check
-    if (data.email === "zakaria.benhajji@edu.isetcom.tn" && data.password === "2004/09/03") {
-      try {
-        await signInWithEmailAndPassword(auth, data.email, data.password);
-        toast({ title: "Connexion administrateur réussie!" });
-        router.replace('/admin'); // Direct redirect to admin page
-        return; // Stop execution here
-      } catch (error: any) {
-        console.error("Admin Login Error:", error.code, error.message);
-        // Even if auth fails, we show a generic message to not reveal admin existence
-        toast({
-            title: "Échec de la connexion",
-            description: "L'adresse e-mail ou le mot de passe est incorrect.",
-            variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
-      }
-    }
-    
-    // Regular user login
     try {
         await signInWithEmailAndPassword(auth, data.email, data.password);
-        toast({ title: "Connexion réussie!" });
-        router.replace('/home'); // All other users go to /home and let layouts handle redirection
+        toast({ title: "Connexion réussie!", description: "Vous allez être redirigé..." });
+        // The ONLY job of the login page is to authenticate.
+        // It redirects EVERYONE to /home. The /home layout is responsible for routing to the correct dashboard.
+        router.replace('/home'); 
 
     } catch (error: any) {
         console.error("Login Error:", error.code, error.message);
