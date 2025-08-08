@@ -61,14 +61,13 @@ export default function ClientLayout({
           try {
             const role = await getUserRole(user.uid);
             
-            // This is now handled by the login page, but as a safeguard:
             if (role === 'admin') {
                 router.replace('/admin');
-                return;
+                return; // <-- Exit early
             }
             if (role === 'caterer') {
                 router.replace('/caterer');
-                return;
+                return; // <-- Exit early
             }
             
             // For client users, check if their profile is complete
