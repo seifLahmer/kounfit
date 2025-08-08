@@ -17,6 +17,7 @@ export default function CatererLayout({
 }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -25,12 +26,15 @@ export default function CatererLayout({
           const role = await getUserRole(user.uid);
           if (role !== 'caterer') {
              router.replace('/welcome');
+             return; // Stop execution if not caterer
           } else {
-            setIsLoading(false);
+            setIsAuthorized(true);
           }
         } catch (error) {
            console.error("Error verifying caterer role:", error);
            router.replace('/welcome');
+        } finally {
+            setIsLoading(false);
         }
       } else {
         router.replace('/welcome');
@@ -44,6 +48,17 @@ export default function CatererLayout({
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <Loader2 className="h-12 w-12 animate-spin text-red-500" />
+      </div>
+    );
+  }
+
+  if (!isAuthorized) {
+    // This can be a fallback, but the main logic should prevent reaching here.
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <h1 className="text-2xl font-bold text-red-600 mb-4">Accès non autorisé</h1>
+        <p className="text-muted-foreground mb-4">Vous n'avez pas les permissions pour voir cette page.</p>
+        <Link href="/welcome" className="text-blue-500 hover:underline">Retour à l'accueil</Link>
       </div>
     );
   }
