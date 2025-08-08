@@ -99,8 +99,7 @@ export async function getOrdersByCaterer(catererUid: string): Promise<Order[]> {
         // Query for orders where the 'catererIds' array contains the caterer's ID.
         const q = query(
             ordersCollection, 
-            where("catererIds", "array-contains", catererUid),
-            orderBy("orderDate", "desc")
+            where("catererIds", "array-contains", catererUid)
         );
         
         const querySnapshot = await getDocs(q);
@@ -117,6 +116,9 @@ export async function getOrdersByCaterer(catererUid: string): Promise<Order[]> {
             orders.push(order);
         });
         
+        // Sort manually after fetching to avoid needing a composite index
+        orders.sort((a, b) => b.orderDate.getTime() - a.orderDate.getTime());
+
         return orders;
     } catch (error) {
         console.error("Error fetching orders by caterer: ", error);
