@@ -3,63 +3,40 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions to check user roles.
-    function isAuth() {
-      return request.auth != null;
-    }
-
-    function isUser(userId) {
-      return isAuth() && request.auth.uid == userId;
-    }
-    
     function isAdmin(userId) {
-      return isAuth() && exists(/databases/$(database)/documents/admins/$(userId));
+      return exists(/databases/$(database)/documents/admins/$(userId));
     }
 
-    function isCaterer(userId) {
-       return isAuth() && exists(/databases/$(database)/documents/caterers/$(userId));
-    }
-    
-    // Admins can manage other admins.
-    match /admins/{adminId} {
-        allow read, write: if isAdmin(request.auth.uid);
-    }
-    
-    // Caterers can read their own data. Admins can manage all caterers.
-    match /caterers/{catererId} {
-        allow get: if isUser(catererId);
-        allow list, write: if isAdmin(request.auth.uid);
+    match /admins/{userId} {
+      allow get: if request.auth.uid != null;
+      allow list, write: if isAdmin(request.auth.uid);
     }
 
-    // Users can read and write their own data.
+    match /caterers/{userId} {
+      allow get: if request.auth.uid != null;
+      allow list, write: if isAdmin(request.auth.uid);
+    }
+
     match /users/{userId} {
-      allow read, write: if isUser(userId);
+      allow read, write: if request.auth.uid == userId;
+      allow list: if isAdmin(request.auth.uid);
     }
 
-    // Meals can be created by caterers, read by anyone, and updated/deleted
-    // only by the creator or an admin.
     match /meals/{mealId} {
-      allow read: if isAuth();
-      allow create: if isCaterer(request.auth.uid) && request.resource.data.createdBy == request.auth.uid;
-      allow update, delete: if isCaterer(request.auth.uid) && resource.data.createdBy == request.auth.uid || isAdmin(request.auth.uid);
-    }
-
-    // Orders can be created by clients. They can be read by the client who
-    // placed them, the caterers assigned, or any admin. They can be updated
-    // by the caterers or admins.
-    match /orders/{orderId} {
-      allow create: if isUser(request.resource.data.clientId);
-      allow read: if isUser(resource.data.clientId) || request.auth.uid in resource.data.catererIds || isAdmin(request.auth.uid);
-      allow update: if request.auth.uid in resource.data.catererIds || isAdmin(request.auth.uid);
-      allow delete: if isAdmin(request.auth.uid);
+      allow read: if true;
+      allow create: if request.auth.uid == request.resource.data.createdBy && exists(/databases/$(database)/documents/caterers/$(request.auth.uid));
+      allow update, delete: if (resource.data.createdBy == request.auth.uid) || isAdmin(request.auth.uid);
     }
     
-    // Notifications can be created by the system (server-side logic implies this),
-    // and read/updated by the target user.
+    match /orders/{orderId} {
+      allow create: if request.auth.uid == request.resource.data.clientId;
+      allow read: if request.auth.uid == resource.data.clientId || isAdmin(request.auth.uid) || request.auth.uid in resource.data.catererIds;
+      allow update: if isAdmin(request.auth.uid) || request.auth.uid in resource.data.catererIds;
+      allow list: if isAdmin(request.auth.uid);
+    }
+
     match /notifications/{notificationId} {
-        allow read, write: if isUser(resource.data.userId);
-        // Create should ideally be done server-side, but allow if needed.
-        allow create: if isAuth();
+        allow read, write: if request.auth.uid == resource.data.userId;
     }
   }
 }

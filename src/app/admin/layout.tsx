@@ -25,12 +25,14 @@ export default function AdminLayout({
           const role = await getUserRole(user.uid);
           if (role !== 'admin') {
             router.replace('/login');
+            return;
           } else {
             setIsAuthorized(true);
           }
         } catch (error) {
            console.error("Error verifying admin role:", error);
            router.replace('/login');
+           return;
         } finally {
           setIsLoading(false);
         }
