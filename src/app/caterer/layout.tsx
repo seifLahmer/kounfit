@@ -26,7 +26,7 @@ export default function CatererLayout({
           const role = await getUserRole(user.uid);
           if (role !== 'caterer') {
              router.replace('/login');
-             return; // <-- Exit early
+             return;
           } else {
             setIsAuthorized(true);
           }
