@@ -89,10 +89,12 @@ export default function LoginPage() {
         }
 
     } catch (error: any) {
-        console.error("Login Error:", error.code, error.message);
+        console.error("Login Error:", error);
         let description = "Une erreur inconnue s'est produite. Veuillez réessayer.";
         if (error.code === 'auth/invalid-credential') {
             description = "L'adresse e-mail ou le mot de passe est incorrect. Veuillez vérifier vos informations.";
+        } else if (error.message) {
+            description = error.message;
         }
         toast({
             title: "Échec de la connexion",
