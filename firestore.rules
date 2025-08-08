@@ -3,62 +3,66 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper function to check for role
-    function isRole(role) {
-      return exists(/databases/$(database)/documents/$(role)s/$(request.auth.uid));
+  
+    // Admins Collection: Only allow authenticated users to read their own role document.
+    // Allow users to create their own admin document for self-healing purposes.
+    match /admins/{userId} {
+      allow get: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if false; // Deny all other reads and writes
     }
     
-    function isClient() {
-      return isRole('user');
-    }
-
-    function isAdmin() {
-      // Note: singular 'admin' as per user request for this specific collection
-      return exists(/databases/$(database)/documents/admin/$(request.auth.uid));
-    }
-
-    function isCaterer() {
-      return isRole('caterer');
-    }
-
-    // Users can read/update their own profile, but not others'.
-    // A user can create their own document.
-    match /users/{userId} {
-      allow read, update: if request.auth.uid == userId;
-      allow create: if request.auth.uid == userId;
-    }
-    
-    // Admins have their own collection. Only they can read their own document.
-    match /admin/{userId} {
-       allow get: if request.auth.uid == userId; // Allow self-check for role
-    }
-    
-    // Caterers have their own collection. Only they can read their own document.
+    // Caterers Collection: Only allow authenticated users to read their own role document.
     match /caterers/{userId} {
-       allow get: if request.auth.uid == userId; // Allow self-check for role
+       allow get: if request.auth != null && request.auth.uid == userId;
+       allow read, write: if false; // Deny all other reads and writes
     }
 
-    // Any authenticated user can read meal data.
-    // Only caterers can create, update, or delete their own meals.
+    // Users Collection
+    match /users/{userId} {
+      // Any authenticated user can create their own profile.
+      allow create: if request.auth != null && request.auth.uid == userId;
+      // Only the user themselves can read or update their own profile.
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      // No one can delete a user profile for now.
+      allow delete: if false;
+    }
+
+    // Meals Collection
     match /meals/{mealId} {
-      allow read: if request.auth.uid != null;
-      allow create: if isCaterer();
-      allow update, delete: if isCaterer() && resource.data.createdBy == request.auth.uid;
+        // Any authenticated user can read meal data.
+        allow read: if request.auth != null;
+        // Only caterers (by checking their existence in the caterers collection) can create meals.
+        allow create: if request.auth != null && exists(/databases/$(database)/documents/caterers/$(request.auth.uid));
+        // Only the caterer who created the meal can update or delete it.
+        allow update, delete: if request.auth != null && request.auth.uid == resource.data.createdBy;
     }
     
-    // Clients can create their own orders.
-    // Caterers can view/update orders that contain their meals.
-    // Admins can read all orders.
+    // Orders Collection
     match /orders/{orderId} {
-      allow read: if isAdmin() || (isCaterer() && request.auth.uid in resource.data.catererIds) || request.auth.uid == resource.data.clientId;
-      allow create: if isClient() && request.auth.uid == request.resource.data.clientId;
-      allow update: if isCaterer() && request.auth.uid in resource.data.catererIds;
+        // Only the user who placed the order can read it.
+        // Caterers involved in the order can also read it.
+        allow read: if request.auth != null && 
+                    (request.auth.uid == resource.data.clientId || request.auth.uid in resource.data.catererIds);
+        // Only authenticated clients can create an order.
+        allow create: if request.auth != null && request.auth.uid == request.resource.data.clientId;
+        // Caterers can update the status of an order they are involved in.
+        // The client who placed the order cannot update it after creation.
+        allow update: if request.auth != null && 
+                      request.auth.uid in resource.data.catererIds &&
+                      request.resource.data.keys().hasOnly(['status']);
+        // No one can delete an order for now to preserve history.
+        allow delete: if false;
     }
     
-    // Notifications can be read by the user they are intended for.
+     // Notifications Collection
     match /notifications/{notificationId} {
-      allow read, update: if request.auth.uid == resource.data.userId;
+      // Only the recipient user can read their notifications.
+      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+      // Allow caterers/admins to create notifications (checked in backend logic), and users to update the 'isRead' status.
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow delete: if false;
     }
   }
 }
