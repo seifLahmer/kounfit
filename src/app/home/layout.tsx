@@ -43,15 +43,11 @@ export default function ClientLayout({
 
   useEffect(() => {
     const processAuth = async () => {
-      // This function handles the logic for ANY authenticated user who hits this layout.
-      // It has become the central authority for redirection.
-
       try {
-        // Handle Google sign-in redirect first
         const result = await getRedirectResult(auth);
         if (result) {
           const isNew = await handleNewUserFromRedirect(result.user);
-          if (isNew) return; // Stop processing to allow redirect to step2
+          if (isNew) return; 
         }
       } catch (error: any) {
         console.error("Error processing redirect result:", error);
@@ -65,24 +61,20 @@ export default function ClientLayout({
           try {
             const role = await getUserRole(user.uid);
             
-            // **AUTHORITATIVE REDIRECTION**
             if (role === 'admin') {
                 router.replace('/admin');
-                return; // Stop processing, user is an admin
+                return; 
             }
             if (role === 'caterer') {
                 router.replace('/caterer');
-                return; // Stop processing, user is a caterer
+                return;
             }
             
-            // At this point, user MUST be a client or unknown
             const profile = await getUserProfile(user.uid);
             
             if (!profile?.age || !profile.mainGoal) { 
-              // Profile is incomplete, force to step2
               router.replace('/signup/step2');
             } else {
-              // User is a valid, fully registered client. Allow access.
               setIsLoading(false);
             }
           } catch (error) {
@@ -92,7 +84,6 @@ export default function ClientLayout({
              router.replace('/welcome');
           }
         } else {
-          // No user logged in.
           router.replace('/welcome');
         }
       });

@@ -24,19 +24,17 @@ export default function AdminLayout({
         try {
           const role = await getUserRole(user.uid);
           if (role !== 'admin') {
-            console.warn(`Access denied for UID: ${user.uid}. Role is '${role}', not 'admin'. Redirecting.`);
             router.replace('/welcome');
+            return; // Stop execution if not admin
           } else {
             setIsAuthorized(true);
+            setIsLoading(false);
           }
         } catch (error) {
            console.error("Error verifying admin role:", error);
            router.replace('/welcome');
-        } finally {
-            setIsLoading(false);
         }
       } else {
-        // No user is logged in, redirect to welcome page.
         router.replace('/welcome');
       }
     });
@@ -53,6 +51,8 @@ export default function AdminLayout({
   }
   
   if (!isAuthorized) {
+     // This part should theoretically not be reached if the redirection logic works,
+     // but it's a good fallback.
      return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
         <h1 className="text-2xl font-bold text-red-600 mb-4">Accès non autorisé</h1>
