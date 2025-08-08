@@ -13,13 +13,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { useState } from "react";
-import { signInWithEmailAndPassword, signInWithRedirect, createUserWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithRedirect } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { getUserRole } from "@/lib/services/roleService";
-import { addAdmin } from "@/lib/services/adminService";
-import { getUserProfile } from "@/lib/services/userService";
 
 const loginSchema = z.object({
   email: z.string().email("Veuillez saisir une adresse e-mail valide."),
@@ -53,26 +51,6 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
     try {
-        // Special check for the main admin account.
-        if (data.email === 'zakaria.benhajj@edu.isetcom.tn' && data.password === '2004/09/03') {
-            try {
-                const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-                await addAdmin({ uid: userCredential.user.uid, email: userCredential.user.email! });
-            } catch (error: any) {
-                if (error.code === 'auth/user-not-found') {
-                    // If the admin user doesn't exist, create it.
-                    const newUserCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-                    await addAdmin({ uid: newUserCredential.user.uid, email: newUserCredential.user.email! });
-                } else {
-                   throw error; // Re-throw other sign-in errors
-                }
-            }
-            toast({ title: "Connexion administrateur réussie!", description: "Redirection en cours..." });
-            router.replace('/admin');
-            return; 
-        }
-
-        // Regular user login flow
         const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
         const user = userCredential.user;
         const role = await getUserRole(user.uid);
