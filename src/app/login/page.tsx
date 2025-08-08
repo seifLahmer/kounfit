@@ -58,11 +58,11 @@ export default function LoginPage() {
         toast({ title: "Connexion réussie!", description: "Redirection en cours..." });
 
         if (role === 'admin') {
-            router.replace('/admin');
+            router.push('/admin');
         } else if (role === 'caterer') {
-            router.replace('/caterer');
+            router.push('/caterer');
         } else {
-            router.replace('/home');
+            router.push('/home');
         }
 
     } catch (error: any) {
