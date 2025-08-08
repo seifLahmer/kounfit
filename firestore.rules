@@ -1,49 +1,55 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isAdmin() {
-      return get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
-    }
     
-    function isCaterer() {
-       return get(/databases/$(database)/documents/caterers/$(request.auth.uid)).data.role == 'caterer';
+    match /users/{userId} {
+      // Allow users to create their own profile
+      allow create: if request.auth.uid == userId;
+      
+      // Allow users to read their own profile, and admins to read any profile
+      allow read: if request.auth.uid == userId || exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+
+      // Allow users to update and delete their own profile
+      allow update, delete: if request.auth.uid == userId;
     }
 
     match /admins/{userId} {
-      allow get: if request.auth.uid != null;
-      // Allow creation if the user is an admin, or if a new user is creating their own record (self-heal on login)
-      allow create: if isAdmin() || request.auth.uid == userId;
-      allow read, write: if isAdmin();
+        // Allow authenticated users to check if they are an admin
+        allow get: if request.auth.uid == userId;
+        
+        // Allow admins to create other admins
+        allow create: if exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+
+        // Allow admins to read/write any admin document
+        allow read, write: if exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    match /caterers/{catererId} {
-       // Allow admins to create, read, update, and delete caterers.
-      allow read, write: if isAdmin();
-    }
-
-    match /users/{userId} {
-      // A user can read/update their own profile
-      allow read, update: if request.auth.uid == userId;
-      // A user can create their own profile document
-      allow create: if request.auth.uid == userId;
+    match /caterers/{userId} {
+        // Allow admins to manage caterers
+        allow read, write, create: if exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
     match /meals/{mealId} {
-      // Any authenticated user can read meals
-      allow read: if request.auth.uid != null;
-      // Only caterers can manage their meals
-      allow create, update, delete: if isCaterer();
+      // Allow any authenticated user to read meals
+      allow read: if request.auth != null;
+      
+      // Allow caterers to create meals
+      allow create: if request.auth.uid == request.resource.data.createdBy;
+      
+      // Allow caterers to update/delete their own meals
+      allow update, delete: if request.auth.uid == resource.data.createdBy;
     }
 
     match /orders/{orderId} {
-       // The client who owns the order can create and read it
+      // Allow clients to create their own orders
       allow create: if request.auth.uid == request.resource.data.clientId;
-      allow read: if request.auth.uid == request.resource.data.clientId || isAdmin();
-      // The caterer assigned to the order can update it
-      allow update: if isCaterer() || isAdmin();
+      
+      // Allow clients to read their own orders
+      allow read: if request.auth.uid == resource.data.clientId;
+      
+      // Allow caterers to update orders they are a part of
+      allow update: if request.auth.uid in resource.data.catererIds;
     }
   }
 }
