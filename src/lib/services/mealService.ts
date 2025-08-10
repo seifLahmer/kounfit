@@ -113,8 +113,7 @@ export async function getAvailableMealsByCategory(category: Meal['category']): P
         const q = query(
             mealsCollection,
             where("availability", "==", true),
-            where("category", "==", category),
-            orderBy("createdAt", "desc")
+            where("category", "==", category)
         );
 
         const querySnapshot = await getDocs(q);
@@ -129,6 +128,9 @@ export async function getAvailableMealsByCategory(category: Meal['category']): P
             } as Meal;
             meals.push(meal);
         });
+        
+        // Sort in code to avoid composite index
+        meals.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
         return meals;
     } catch (error) {
