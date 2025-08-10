@@ -1,16 +1,12 @@
 
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Leaf, Loader2 } from "lucide-react";
 import { Form, FormField, FormItem, FormControl, FormMessage, FormLabel } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,6 +16,8 @@ import { calculateNutritionalNeeds } from "@/lib/services/nutritionService";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { onAuthStateChanged } from "firebase/auth";
+import { Loader2 } from "lucide-react";
+import { LeafPattern } from "@/components/icons";
 
 
 const step2Schema = z.object({
@@ -48,11 +46,11 @@ export default function SignupStep2Page() {
   const form = useForm<Step2FormValues>({
     resolver: zodResolver(step2Schema),
     defaultValues: {
-      age: 0,
+      age: 18,
       biologicalSex: "male",
-      weight: 0,
-      height: 0,
-      activityLevel: "sedentary",
+      weight: 70,
+      height: 175,
+      activityLevel: "lightly_active",
       mainGoal: "maintain",
     },
   });
@@ -89,7 +87,6 @@ export default function SignupStep2Page() {
           goal: data.mainGoal
       });
       
-      // This is where the full user profile is created in Firestore for the first time.
       const userProfileData = {
           fullName: currentUser.displayName || 'Utilisateur',
           email: currentUser.email,
@@ -109,7 +106,7 @@ export default function SignupStep2Page() {
 
       toast({
         title: "Profil complété!",
-        description: "Bienvenue sur FITHELATH! Vous allez être redirigé.",
+        description: "Bienvenue sur Kounfit! Vous allez être redirigé.",
       });
 
       router.push("/home");
@@ -135,151 +132,154 @@ export default function SignupStep2Page() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background p-4">
-      <Card className="w-full max-w-lg overflow-hidden">
-        <div className="flex w-full">
-            <div className="w-1/2 h-1.5 bg-destructive"></div>
-            <div className="w-1/2 h-1.5 bg-gray-200"></div>
-        </div>
-        <CardHeader className="text-center pt-6">
-          <Link href="/welcome" className="flex justify-center items-center gap-2 mb-4">
-            <Leaf className="w-8 h-8 text-destructive" />
-            <span className="text-2xl font-bold">FITHELATH</span>
-          </Link>
-          <CardTitle className="text-2xl">Finalisez votre profil</CardTitle>
+    <div className="flex flex-col min-h-screen bg-brand-teal">
+        <LeafPattern className="absolute bottom-0 left-0 w-full h-auto text-black/5 z-10" />
+        <header className="flex-shrink-0 h-48 flex items-center justify-center">
+            <h1 className="text-5xl font-bold text-white">Kounfit</h1>
+        </header>
+
+        <main className="flex-1 flex flex-col bg-white rounded-t-3xl z-20 p-8">
+            <h2 className="text-3xl font-bold text-center text-brand-teal">Inscription - Étape 2/2</h2>
+            <div className="w-16 h-1 bg-brand-teal/20 rounded-full mx-auto my-4 relative">
+                <div className="absolute left-0 top-0 h-full w-full bg-brand-teal rounded-full"></div>
+            </div>
           
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="age"
-                  render={({ field }) => (
-                    <FormItem>
-                      <Label>Âge</Label>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="biologicalSex"
-                  render={({ field }) => (
-                    <FormItem className="space-y-3 pt-2">
-                      <FormLabel>Sexe Biologique</FormLabel>
-                      <FormControl>
-                        <RadioGroup
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          className="flex items-center space-x-6"
-                        >
-                          <FormItem className="flex items-center space-x-2 space-y-0">
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    <FormField
+                      control={form.control}
+                      name="biologicalSex"
+                      render={({ field }) => (
+                        <FormItem className="space-y-3 pt-2">
+                          <FormLabel>Vous êtes ?</FormLabel>
+                          <FormControl>
+                            <RadioGroup
+                              onValueChange={field.onChange}
+                              value={field.value}
+                              className="grid grid-cols-2 gap-4"
+                            >
+                              <FormItem>
+                                <FormControl>
+                                  <RadioGroupItem value="male" id="male" className="sr-only peer" />
+                                </FormControl>
+                                <FormLabel htmlFor="male" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                                    Homme
+                                </FormLabel>
+                              </FormItem>
+                              <FormItem>
+                                <FormControl>
+                                  <RadioGroupItem value="female" id="female" className="sr-only peer" />
+                                </FormControl>
+                                <FormLabel htmlFor="female" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                                    Femme
+                                </FormLabel>
+                              </FormItem>
+                            </RadioGroup>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <div className="grid grid-cols-3 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="age"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Âge</FormLabel>
+                              <FormControl>
+                                <Input type="number" {...field} className="h-12 rounded-xl text-center" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="height"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Taille (cm)</FormLabel>
+                              <FormControl>
+                                <Input type="number" {...field} className="h-12 rounded-xl text-center"/>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                         <FormField
+                          control={form.control}
+                          name="weight"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Poids (kg)</FormLabel>
+                              <FormControl>
+                                <Input type="number" {...field} className="h-12 rounded-xl text-center"/>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                    </div>
+
+
+                    <FormField
+                        control={form.control}
+                        name="mainGoal"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Quel est votre objectif principal ?</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                              <RadioGroupItem value="male" />
+                                <SelectTrigger className="h-14 rounded-xl">
+                                <SelectValue placeholder="Sélectionnez votre objectif" />
+                                </SelectTrigger>
                             </FormControl>
-                            <FormLabel className="font-normal">Homme</FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-2 space-y-0">
+                            <SelectContent>
+                                <SelectItem value="lose_weight">Perdre du poids</SelectItem>
+                                <SelectItem value="maintain">Maintien du poids</SelectItem>
+                                <SelectItem value="gain_muscle">Prendre du muscle</SelectItem>
+                            </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    
+                     <FormField
+                        control={form.control}
+                        name="activityLevel"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Votre niveau d'activité quotidien</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                              <RadioGroupItem value="female" />
+                                <SelectTrigger className="h-14 rounded-xl">
+                                <SelectValue placeholder="Sélectionnez votre niveau d'activité" />
+                                </SelectTrigger>
                             </FormControl>
-                            <FormLabel className="font-normal">Femme</FormLabel>
-                          </FormItem>
-                        </RadioGroup>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="weight"
-                  render={({ field }) => (
-                    <FormItem>
-                      <Label>Poids (kg)</Label>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="height"
-                  render={({ field }) => (
-                    <FormItem>
-                      <Label>Taille (cm)</Label>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                            <SelectContent>
+                                <SelectItem value="sedentary">Sédentaire (peu/pas d'exercice)</SelectItem>
+                                <SelectItem value="lightly_active">Léger (1-2 jours/semaine)</SelectItem>
+                                <SelectItem value="moderately_active">Modéré (3-5 jours/semaine)</SelectItem>
+                                <SelectItem value="very_active">Actif (6-7 jours/semaine)</SelectItem>
+                                <SelectItem value="extremely_active">Très actif (travail physique/2x par jour)</SelectItem>
+                            </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
 
-              <FormField
-                control={form.control}
-                name="activityLevel"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Niveau d'Activité Physique</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionnez votre niveau d'activité" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="sedentary">Sédentaire (peu ou pas d'exercice)</SelectItem>
-                        <SelectItem value="lightly_active">Légèrement actif (exercice léger 1-3j/semaine)</SelectItem>
-                        <SelectItem value="moderately_active">Modérément actif (exercice modéré 3-5j/semaine)</SelectItem>
-                        <SelectItem value="very_active">Très actif (exercice intense 6-7j/semaine)</SelectItem>
-                        <SelectItem value="extremely_active">Extrêmement actif (exercice très intense)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
-              <FormField
-                control={form.control}
-                name="mainGoal"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Objectif Principal</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionnez votre objectif" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="lose_weight">Perdre du poids (Sèche)</SelectItem>
-                        <SelectItem value="maintain">Maintien du poids</SelectItem>
-                        <SelectItem value="gain_muscle">Prendre du muscle (Prise de masse)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button type="submit" className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={loading}>
-                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {loading ? "Sauvegarde..." : "Terminer et commencer"}
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+                    <Button type="submit" className="w-full h-14 text-lg rounded-xl bg-brand-teal hover:bg-brand-teal/90" disabled={loading}>
+                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Terminer l'inscription
+                    </Button>
+                </form>
+            </Form>
+        </main>
     </div>
   );
 }
