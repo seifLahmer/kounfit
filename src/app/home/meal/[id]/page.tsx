@@ -20,6 +20,7 @@ type DailyPlan = {
 };
 
 export default function MealDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const [mealData, setMealData] = useState<Meal | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -28,10 +29,10 @@ export default function MealDetailPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     const fetchMeal = async () => {
-      if (params.id) {
+      if (id) {
         try {
           setLoading(true);
-          const meal = await getMealById(params.id as string);
+          const meal = await getMealById(id);
           if (meal) {
             setMealData(meal);
           } else {
@@ -46,7 +47,7 @@ export default function MealDetailPage({ params }: { params: { id: string } }) {
       }
     };
     fetchMeal();
-  }, [params.id, router, toast]);
+  }, [id, router, toast]);
 
   const handleQuantityChange = (amount: number) => {
     setQuantity(prev => Math.max(1, prev + amount));
