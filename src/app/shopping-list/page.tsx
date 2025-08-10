@@ -6,7 +6,7 @@ import { MainLayout } from "@/components/main-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { ShoppingCart, Loader2, Frown, CheckCircle } from "lucide-react"
+import { ShoppingCart, Loader2, Frown, CheckCircle, Trash2 } from "lucide-react"
 import { auth } from "@/lib/firebase"
 import { useRouter } from "next/navigation"
 import type { Meal, User } from "@/lib/types"
@@ -30,26 +30,17 @@ export default function ShoppingCartPage() {
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (!user) {
-        router.replace("/welcome");
-      } else {
-        loadCartFromStorage();
-        setLoading(false);
-      }
-    });
-
-    return () => {
-        unsubscribe();
-    };
-  }, [router]);
-
   const loadCartFromStorage = () => {
     try {
         const savedData = localStorage.getItem("dailyPlanData");
         if (savedData) {
-            const { plan }: { plan: DailyPlan } = JSON.parse(savedData);
+            const { date, plan } = JSON.parse(savedData);
+            if (date !== new Date().toISOString().split('T')[0]) {
+                localStorage.removeItem("dailyPlanData");
+                setCartItems([]);
+                return;
+            }
+            
             const mealsFromPlan = Object.values(plan).filter((meal): meal is Meal => meal !== null);
             
             const items: { [id: string]: CartItem } = {};
@@ -70,6 +61,50 @@ export default function ShoppingCartPage() {
         setCartItems([]);
     }
   }
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        router.replace("/welcome");
+      } else {
+        loadCartFromStorage();
+        setLoading(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
+  
+  const handleRemoveItem = (mealId: string) => {
+    try {
+        const savedData = localStorage.getItem("dailyPlanData");
+        if (savedData) {
+            const { date, plan } = JSON.parse(savedData);
+            
+            let itemRemoved = false;
+            const newPlan = { ...plan };
+
+            // Find and remove the first occurrence of the meal
+            for (const key in newPlan) {
+                const mealType = key as keyof DailyPlan;
+                if (newPlan[mealType] && newPlan[mealType]?.id === mealId) {
+                    newPlan[mealType] = null;
+                    itemRemoved = true;
+                    break;
+                }
+            }
+            
+            if(itemRemoved) {
+                localStorage.setItem("dailyPlanData", JSON.stringify({ date, plan: newPlan }));
+                loadCartFromStorage(); // Reload the cart to reflect the change
+            }
+        }
+    } catch (e) {
+        console.error("Error removing item", e);
+        toast({ title: "Erreur", description: "Impossible de retirer l'article."})
+    }
+  };
+
 
   const handlePlaceOrder = async () => {
       const user = auth.currentUser;
@@ -113,6 +148,7 @@ export default function ShoppingCartPage() {
               action: <CheckCircle className="text-green-500" />,
           });
           
+          localStorage.removeItem("dailyPlanData");
           setCartItems([]);
           
       } catch (error) {
@@ -129,49 +165,56 @@ export default function ShoppingCartPage() {
 
 
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const tax = subtotal * 0.08;
-  const total = subtotal + tax;
+  const deliveryFee = 2.00;
+  const total = subtotal + deliveryFee;
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
+     <MainLayout>
+        <div className="flex justify-center items-center h-full">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+     </MainLayout>
     );
   }
 
   return (
     <MainLayout>
-      <div className="flex flex-col h-full">
-        <header className="p-4 flex items-center gap-3">
-          <ShoppingCart className="w-8 h-8 text-destructive" />
-          <h1 className="text-2xl font-bold text-destructive">Votre Panier</h1>
+      <div className="flex flex-col h-full bg-brand-teal text-white">
+        <header className="p-4 flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Kounfit</h1>
+          <Button variant="ghost" size="icon">
+             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 12H19" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </Button>
         </header>
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        <div className="flex-1 overflow-y-auto bg-white text-black rounded-t-3xl p-6 space-y-4">
           {cartItems.length > 0 ? (
             cartItems.map(item => (
-                <Card key={item.id}>
-                    <CardContent className="p-4 flex gap-4 items-center">
+                <div key={item.id} className="flex gap-4 items-center">
                     <Image
                         src={item.imageUrl}
                         alt={item.name}
-                        width={100}
-                        height={100}
-                        className="rounded-lg object-cover w-24 h-24"
+                        width={64}
+                        height={64}
+                        className="rounded-lg object-cover w-16 h-16"
                         data-ai-hint="healthy food"
                     />
-                    <div className="flex-1 flex flex-col justify-between">
-                        <div>
-                            <h2 className="text-lg font-semibold">{item.name}</h2>
-                            <p className="text-muted-foreground text-sm">Quantité : {item.quantity}</p>
-                        </div>
-                        <p className="text-destructive font-bold mt-2">{item.price.toFixed(2)} DT</p>
+                    <div className="flex-1">
+                        <h2 className="font-semibold">{item.name}</h2>
+                        <p className="text-destructive font-bold">{item.price.toFixed(2)} DT</p>
                     </div>
-                    </CardContent>
-                </Card>
+                    <div className="flex items-center gap-3">
+                       <span className="font-bold">{item.quantity}</span>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.id)}>
+                        <Trash2 className="w-5 h-5 text-destructive"/>
+                    </Button>
+                </div>
             ))
           ) : (
-             <Card className="text-center p-8 text-muted-foreground">
+             <Card className="text-center p-8 text-muted-foreground border-none shadow-none">
                  <Frown className="mx-auto w-12 h-12 mb-4" />
                 <h2 className="text-xl font-semibold">Votre panier est vide</h2>
                 <p>Ajoutez des repas depuis la page d'accueil pour commencer.</p>
@@ -179,36 +222,46 @@ export default function ShoppingCartPage() {
           )}
 
           {cartItems.length > 0 && (
-              <Card>
-                <CardContent className="p-4 space-y-4">
-                  <h2 className="text-lg font-bold">Résumé de la commande</h2>
-                  <div className="space-y-2 text-muted-foreground">
+              <div className="pt-6">
+                <div className="space-y-2 text-muted-foreground">
                     <div className="flex justify-between">
-                      <span>Sous-total</span>
-                      <span>{subtotal.toFixed(2)} DT</span>
+                        <span>Sous-total</span>
+                        <span>{subtotal.toFixed(2)} DT</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Taxe estimée (8%)</span>
-                      <span>{tax.toFixed(2)} DT</span>
+                        <span>Frais de livraison</span>
+                        <span>{deliveryFee.toFixed(2)} DT</span>
                     </div>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between font-bold text-xl pt-2">
+                </div>
+                <Separator className="my-4"/>
+                <div className="flex justify-between font-bold text-xl pt-2">
                     <span>Total</span>
                     <span>{total.toFixed(2)} DT</span>
-                  </div>
+                </div>
+                
+                 {/* This part will be dynamic in the future */}
+                <div className="flex items-center justify-center gap-2 text-muted-foreground bg-gray-100 rounded-full p-2 mt-4 max-w-xs mx-auto">
+                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span>30-35 min</span>
+                </div>
+              </div>
+          )}
+        </div>
+        {cartItems.length > 0 && (
+             <footer className="p-4 bg-white border-t rounded-t-3xl">
                   <Button 
-                    className="w-full bg-destructive hover:bg-destructive/90 text-white font-bold text-lg h-12"
+                    className="w-full bg-destructive hover:bg-destructive/90 text-white font-bold text-lg h-14 rounded-full"
                     onClick={handlePlaceOrder}
                     disabled={isPlacingOrder}
                   >
                     {isPlacingOrder && <Loader2 className="mr-2 h-6 w-6 animate-spin" />}
-                    {isPlacingOrder ? "Envoi en cours..." : "Passer la commande"}
+                    {isPlacingOrder ? "Envoi en cours..." : "Confirmer la commande"}
                   </Button>
-                </CardContent>
-              </Card>
-          )}
-        </div>
+             </footer>
+         )}
       </div>
     </MainLayout>
   )

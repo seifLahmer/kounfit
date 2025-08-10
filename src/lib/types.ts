@@ -86,6 +86,7 @@ export type Order = {
   status: "pending" | "in_preparation" | "delivered" | "cancelled";
   orderDate: any;
   deliveryDate: any;
+  deliveryTime?: number; // Estimated delivery time in minutes
   deliveryAddress: string;
 };
 

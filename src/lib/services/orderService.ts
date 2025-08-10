@@ -46,10 +46,19 @@ export async function placeOrder(orderData: PlaceOrderInput): Promise<string> {
       status: 'pending' as const,
       orderDate: serverTimestamp(),
       deliveryDate: serverTimestamp(), // Placeholder, can be updated later
+      deliveryTime: 35, // Default delivery time, can be updated by caterer
       catererIds: catererIds, // Add the array of caterer IDs
     };
 
     const docRef = await addDoc(collection(db, ORDERS_COLLECTION), orderWithTimestamp);
+    
+    const notificationMessage = `Vous avez une nouvelle commande #${docRef.id.substring(0,5)} de ${orderData.clientName}.`;
+    
+    // Notify each caterer involved in the order
+    for (const catererId of catererIds) {
+        await createNotification(catererId, notificationMessage);
+    }
+
     return docRef.id;
   } catch (error) {
     console.error("Error placing order: ", error);
