@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Loader2, Plus } from "lucide-react"
+import { Loader2, Plus, Bell } from "lucide-react"
 import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -13,6 +13,8 @@ import { getUserProfile } from "@/lib/services/userService"
 import type { User, Meal } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
 
 type DailyPlan = {
     breakfast: Meal | null;
@@ -196,10 +198,19 @@ export default function HomePage() {
   return (
       <div className="p-4 space-y-6">
         <header className="flex items-center justify-between">
-            <div>
-                <h1 className="text-2xl font-bold">Aujourd'hui</h1>
-                <p className="text-muted-foreground capitalize">{format(new Date(), "eeee, d MMMM", { locale: fr })}</p>
+            <div className="flex items-center gap-3">
+                <Avatar className="h-11 w-11">
+                    <AvatarImage src={user?.photoURL || ''} alt={user?.fullName} />
+                    <AvatarFallback>{user?.fullName?.[0]}</AvatarFallback>
+                </Avatar>
+                 <div>
+                    <h1 className="text-2xl font-bold">Aujourd'hui</h1>
+                    <p className="text-muted-foreground capitalize">{format(new Date(), "eeee, d MMMM", { locale: fr })}</p>
+                </div>
             </div>
+            <Button variant="ghost" size="icon">
+                <Bell />
+            </Button>
         </header>
 
         <Card>
