@@ -8,10 +8,10 @@ import { ChevronLeft, Loader2, Plus, Search, Leaf } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { getAvailableMealsByCategory, getAvailableMeals } from "@/lib/services/mealService";
+import { getAvailableMealsByCategory } from "@/lib/services/mealService";
 import type { Meal } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 type DailyPlan = {
     breakfast: Meal | null;
@@ -20,37 +20,31 @@ type DailyPlan = {
     dinner: Meal | null;
 };
 
-type MealCategory = Meal['category'] | 'all';
-
 const mealTypeTranslations: { [key: string]: string } = {
-  all: 'Tous',
   breakfast: 'Petit déjeuner',
   lunch: 'Déjeuner',
   dinner: 'Dîner',
   snack: 'Collation'
 };
 
-const mealCategories: MealCategory[] = ['all', 'breakfast', 'lunch', 'dinner', 'snack'];
-
-
 export default function AddMealPage() {
   const router = useRouter();
   const params = useParams();
-  // The initial meal type from the URL, used for the initial filter
-  const initialMealType = (Array.isArray(params.mealType) ? params.mealType[0] : params.mealType) as keyof DailyPlan;
+  const mealType = (Array.isArray(params.mealType) ? params.mealType[0] : params.mealType) as keyof DailyPlan;
 
-  const [allMeals, setAllMeals] = useState<Meal[]>([]);
+  const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeCategory, setActiveCategory] = useState<MealCategory>(initialMealType || 'all');
   const { toast } = useToast();
 
   useEffect(() => {
+    if (!mealType) return;
+    
     const fetchMeals = async () => {
       try {
         setLoading(true);
-        const fetchedMeals = await getAvailableMeals();
-        setAllMeals(fetchedMeals);
+        const fetchedMeals = await getAvailableMealsByCategory(mealType);
+        setMeals(fetchedMeals);
       } catch (error) {
         toast({
           title: "Erreur",
@@ -62,7 +56,7 @@ export default function AddMealPage() {
       }
     };
     fetchMeals();
-  }, [toast]);
+  }, [mealType, toast]);
   
   const handleAddMeal = (meal: Meal) => {
     try {
@@ -81,7 +75,8 @@ export default function AddMealPage() {
         currentPlan = { breakfast: null, lunch: null, snack: null, dinner: null };
       }
       
-      const targetMealType = meal.category as keyof DailyPlan;
+      // Use the category from the meal object, or the mealType from the URL as a fallback.
+      const targetMealType = meal.category as keyof DailyPlan || mealType;
       
       if(currentPlan[targetMealType] === null) {
         currentPlan[targetMealType] = meal;
@@ -108,10 +103,10 @@ export default function AddMealPage() {
   };
 
   const filteredMeals = useMemo(() => {
-    return allMeals
-      .filter(meal => activeCategory === 'all' || meal.category === activeCategory)
-      .filter(meal => meal.name.toLowerCase().includes(searchTerm.toLowerCase()));
-  }, [allMeals, activeCategory, searchTerm]);
+    return meals.filter(meal => 
+      meal.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [meals, searchTerm]);
 
 
   return (
@@ -125,27 +120,12 @@ export default function AddMealPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                     type="text"
-                    placeholder="Rechercher"
+                    placeholder={`Rechercher un ${mealTypeTranslations[mealType] || 'repas'}...`}
                     className="pl-10 h-12 rounded-full bg-muted border-transparent focus-visible:ring-primary"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
-        </div>
-        <div className="flex gap-2 overflow-x-auto pb-2 -mb-2">
-          {mealCategories.map(category => (
-            <Button 
-              key={category} 
-              variant={activeCategory === category ? "default" : "secondary"}
-              onClick={() => setActiveCategory(category)}
-              className={cn(
-                "rounded-full whitespace-nowrap",
-                activeCategory === category ? "bg-brand-teal hover:bg-brand-teal/90 text-white" : "bg-gray-200 text-gray-800"
-              )}
-            >
-              {mealTypeTranslations[category]}
-            </Button>
-          ))}
         </div>
       </header>
 
@@ -158,7 +138,7 @@ export default function AddMealPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {filteredMeals.map((meal) => (
                     <Card key={meal.id} className="overflow-hidden rounded-2xl border shadow-sm flex flex-col">
-                        <div className="relative h-40">
+                        <Link href={`/home/meal/${meal.id}`} className="block relative h-40">
                            <Image
                                 src={meal.imageUrl}
                                 alt={meal.name}
@@ -167,7 +147,7 @@ export default function AddMealPage() {
                                 className="w-full h-full"
                                 data-ai-hint="healthy food"
                             />
-                        </div>
+                        </Link>
                         <CardContent className="p-4 bg-brand-teal text-white flex-1 flex flex-col justify-between">
                             <div>
                                 <h3 className="font-bold text-xl truncate">{meal.name}</h3>
@@ -200,4 +180,3 @@ export default function AddMealPage() {
     </div>
   );
 }
-

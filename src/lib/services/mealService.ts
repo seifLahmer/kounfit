@@ -103,41 +103,7 @@ export async function getMealsByCaterer(catererUid: string): Promise<Meal[]> {
 }
 
 /**
- * Retrieves all available meals, regardless of category.
- * @returns A promise that resolves to an array of all available meals.
- */
-export async function getAvailableMeals(): Promise<Meal[]> {
-    try {
-        const mealsCollection = collection(db, MEALS_COLLECTION);
-        const q = query(
-            mealsCollection,
-            where("availability", "==", true),
-            orderBy("createdAt", "desc")
-        );
-
-        const querySnapshot = await getDocs(q);
-
-        const meals: Meal[] = [];
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            const meal: Meal = {
-                id: doc.id,
-                ...data,
-                createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
-            } as Meal;
-            meals.push(meal);
-        });
-
-        return meals;
-    } catch (error) {
-        console.error("Error fetching all available meals: ", error);
-        throw new Error("Could not fetch available meals.");
-    }
-}
-
-
-/**
- * Retrieves all available meals for a specific category.
+ * Retrieves all available meals for a specific category, ordered by creation date.
  * @param category The meal category ('breakfast', 'lunch', etc.).
  * @returns A promise that resolves to an array of meals.
  */
@@ -147,7 +113,8 @@ export async function getAvailableMealsByCategory(category: Meal['category']): P
         const q = query(
             mealsCollection,
             where("availability", "==", true),
-            where("category", "==", category)
+            where("category", "==", category),
+            orderBy("createdAt", "desc")
         );
 
         const querySnapshot = await getDocs(q);
@@ -169,6 +136,7 @@ export async function getAvailableMealsByCategory(category: Meal['category']): P
         throw new Error("Could not fetch available meals.");
     }
 }
+
 
 /**
  * Retrieves a single meal by its document ID.

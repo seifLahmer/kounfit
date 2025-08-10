@@ -12,7 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { BookCopy, PlusCircle, Heart, Loader2, Frown } from "lucide-react"
+import { BookCopy, PlusCircle, Heart, Loader2, Frown, Leaf, Plus } from "lucide-react"
 import { auth } from "@/lib/firebase"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -69,34 +69,52 @@ export default function MealPlansPage() {
           <div>
             <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
               <Heart />
-              Favourites
+              Vos Favoris
             </h2>
             <p className="text-muted-foreground">
-              Your collection of favorite meals.
+              Votre collection de repas préférés.
             </p>
           </div>
         </div>
         {favoriteMeals.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {favoriteMeals.map((meal) => (
-                <Card key={meal.id} className="flex flex-col">
-                    <Link href={`/home/meal/${meal.id}`} className="block">
-                        <CardHeader className="p-0">
-                            <Image src={meal.imageUrl} alt={meal.name} width={400} height={200} className="rounded-t-lg object-cover w-full h-48" />
-                        </CardHeader>
-                        <CardContent className="flex-grow p-4 space-y-1">
-                            <CardTitle className="text-lg">{meal.name}</CardTitle>
-                            <CardDescription>{meal.calories} kcal &middot; {meal.price.toFixed(2)} DT</CardDescription>
-                        </CardContent>
+                <Card key={meal.id} className="overflow-hidden rounded-2xl border shadow-sm flex flex-col">
+                    <Link href={`/home/meal/${meal.id}`} className="block relative h-40">
+                        <Image
+                            src={meal.imageUrl}
+                            alt={meal.name}
+                            layout="fill"
+                            objectFit="cover"
+                            className="w-full h-full"
+                            data-ai-hint="healthy food"
+                        />
                     </Link>
+                    <CardContent className="p-4 bg-brand-teal text-white flex-1 flex flex-col justify-between">
+                        <div>
+                            <h3 className="font-bold text-xl truncate">{meal.name}</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                                <Leaf className="w-4 h-4 text-green-300" />
+                                <span className="font-medium">{meal.calories} kcal</span>
+                            </div>
+                              <div className="flex items-center gap-4 text-sm mt-2 text-green-200">
+                                <span>P {meal.macros.protein}g</span>
+                                <span>C {meal.macros.carbs}g</span>
+                                <span>L {meal.macros.fat}g</span>
+                            </div>
+                        </div>
+                    </CardContent>
                 </Card>
             ))}
             </div>
         ) : (
              <div className="pt-8 text-center text-muted-foreground border-2 border-dashed rounded-lg p-12">
                 <Frown className="w-12 h-12 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold">No favorite meals yet.</h3>
-                <p className="text-sm">Click the heart icon on a meal to add it here.</p>
+                <h3 className="text-lg font-semibold">Aucun repas favori pour l'instant.</h3>
+                <p className="text-sm">Cliquez sur le cœur d'un repas pour l'ajouter ici.</p>
+                 <Button className="mt-4" onClick={() => router.push('/home/add-meal/lunch')}>
+                    Découvrir des repas
+                </Button>
             </div>
         )}
       </div>
