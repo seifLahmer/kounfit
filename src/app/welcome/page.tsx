@@ -1,33 +1,51 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Leaf } from "lucide-react";
+import Image from "next/image";
 
 export default function WelcomePage() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
-      <div className="text-center space-y-8">
-        <div>
-          <Leaf className="w-24 h-24 text-primary mx-auto mb-4" />
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground">
-            Welcome to FITHELATH
-          </h1>
-          <p className="text-muted-foreground mt-2 text-lg">
-            Your personal journey to fitness starts here.
-          </p>
+    <div className="relative flex flex-col items-center justify-center min-h-screen bg-background text-white">
+      <Image
+        src="https://placehold.co/1080x1920.png"
+        alt="Healthy food background"
+        layout="fill"
+        objectFit="cover"
+        className="z-0"
+        data-ai-hint="healthy food background"
+      />
+      <div className="absolute inset-0 bg-black/50 z-10"></div>
+      
+      <div className="relative z-20 flex flex-col h-full w-full max-w-md p-8">
+        <div className="flex-1 flex flex-col justify-center text-center space-y-6">
+            <h1 className="text-6xl font-extrabold" style={{ color: '#006A5D' }}>
+                Kounfit
+            </h1>
+            <div className="space-y-2">
+                <p className="text-4xl font-bold">
+                    Mangez sain,
+                </p>
+                <p className="text-4xl font-bold">
+                    vivez mieux
+                </p>
+            </div>
+            <p className="text-lg text-white/90">
+                Votre partenaire nutrition personnalisé pour des repas sains livrés chez vous.
+            </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
-            <Link href="/login">Login</Link>
+        
+        <div className="space-y-4">
+          <Button asChild size="lg" className="w-full h-14 text-lg font-semibold" style={{ backgroundColor: '#006A5D', color: 'white' }}>
+            <Link href="/login">Se connecter</Link>
           </Button>
-          <Button asChild size="lg" variant="outline">
-            <Link href="/signup">Sign Up</Link>
+          <Button asChild size="lg" className="w-full h-14 text-lg font-semibold" style={{ backgroundColor: '#F47C6A', color: 'white' }}>
+            <Link href="/signup">S'inscrire</Link>
+          </Button>
+           <Button asChild variant="link" className="w-full text-white/80">
+                <Link href="#">En savoir plus</Link>
           </Button>
         </div>
       </div>
-      <footer className="absolute bottom-4 text-center text-sm text-muted-foreground">
-        <p>&copy; 2024 FITHELATH. All rights reserved.</p>
-      </footer>
     </div>
   );
 }
