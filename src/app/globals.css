@@ -9,14 +9,14 @@ body {
 
 @layer base {
   :root {
-    --background: 60 4.8% 95.9%; /* Light Beige */
+    --background: 220 20% 97%; /* Light grayish blue */
     --foreground: 224 71.4% 4.1%;
-    --card: 48 33% 99%;
+    --card: 0 0% 100%;
     --card-foreground: 224 71.4% 4.1%;
     --popover: 0 0% 100%;
     --popover-foreground: 224 71.4% 4.1%;
-    --primary: 120 100% 70%; /* Fresh Mint */
-    --primary-foreground: 224 71.4% 4.1%;
+    --primary: 160 80% 45%; /* Teal color from new design */
+    --primary-foreground: 0 0% 98%;
     --secondary: 220 13% 91%;
     --secondary-foreground: 220.9 39.3% 11%;
     --muted: 220 13% 91%;
@@ -25,17 +25,23 @@ body {
     --accent-foreground: 24 9.8% 10%;
     --destructive: 6 92% 64%; /* Coral color from new design */
     --destructive-foreground: 0 0% 98%;
-    --brand-teal: 170 100% 21%; /* Teal color from new design */
+    --brand-teal: 170 100% 21%;
     --brand-teal-foreground: 0 0% 98%;
     --border: 220 13% 89%;
     --input: 220 13% 89%;
     --ring: 224 71.4% 4.1%;
+    --radius: 0.75rem; 
+
+    /* New macro colors */
+    --protein: 220 80% 60%; /* Blue */
+    --carbs: 40 90% 60%; /* Orange */
+    --fat: 0 80% 65%; /* Red/Pink */
+
     --chart-1: 220 70% 50%;
     --chart-2: 33 100% 65%;
     --chart-3: 160 60% 45%;
     --chart-4: 45 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.75rem; /* Increased radius for rounded corners */
     --sidebar-background: 220 15% 96%;
     --sidebar-foreground: 224 71.4% 4.1%;
     --sidebar-primary: 120 100% 70%;
@@ -52,7 +58,7 @@ body {
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 120 100% 70%;
+    --primary: 160 80% 45%;
     --primary-foreground: 210 40% 98%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -62,11 +68,16 @@ body {
     --accent-foreground: 210 40% 98%;
     --destructive: 6 92% 64%;
     --destructive-foreground: 210 40% 98%;
-    --brand-teal: 170 100% 21%; /* Teal color from new design */
+    --brand-teal: 170 100% 21%;
     --brand-teal-foreground: 0 0% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 210 40% 98%;
+    
+    --protein: 220 80% 60%;
+    --carbs: 40 90% 60%;
+    --fat: 0 80% 65%;
+
     --chart-1: 220 70% 50%;
     --chart-2: 33 100% 65%;
     --chart-3: 160 60% 45%;

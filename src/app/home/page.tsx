@@ -2,131 +2,17 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Bell, PlusCircle, Sun, Sunrise, Sunset, Heart, Loader2, Apple } from "lucide-react"
+import { Loader2, Plus } from "lucide-react"
 import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
-import { cn } from "@/lib/utils"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { auth } from "@/lib/firebase"
-import { getUserProfile, toggleFavoriteMeal } from "@/lib/services/userService"
-import { getNotifications, markNotificationAsRead } from "@/lib/services/notificationService"
-import type { User, Meal, Notification } from "@/lib/types"
+import { getUserProfile } from "@/lib/services/userService"
+import type { User, Meal } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
-import Link from 'next/link';
 import { useRouter } from "next/navigation"
-
-const CalorieCircle = ({ value, goal, size = "large" }: { value: number, goal: number, size?: "small" | "large" }) => {
-  const radius = size === 'large' ? 56 : 28;
-  const strokeWidth = size === 'large' ? 8 : 4;
-  const width = size === 'large' ? 120 : 60;
-  const height = size === 'large' ? 120 : 60;
-  
-  const percentage = goal > 0 ? (value / goal) * 100 : 0
-  const circumference = 2 * Math.PI * radius
-  const strokeDashoffset = circumference - (percentage / 100) * circumference
-
-  return (
-    <div className={`relative ${size === 'large' ? 'w-40 h-40' : 'w-20 h-20'} mx-auto`}>
-      <svg className="w-full h-full" viewBox={`0 0 ${width + strokeWidth * 2} ${height + strokeWidth * 2}`}>
-        <circle
-          className="stroke-current text-gray-200 dark:text-gray-700"
-          strokeWidth={strokeWidth}
-          fill="none"
-          cx={width/2 + strokeWidth}
-          cy={height/2 + strokeWidth}
-          r={radius}
-        />
-        <circle
-          className="stroke-current text-primary"
-          strokeWidth={strokeWidth}
-          fill="none"
-          cx={width/2 + strokeWidth}
-          cy={height/2 + strokeWidth}
-          r={radius}
-          strokeLinecap="round"
-          transform={`rotate(-90 ${width/2 + strokeWidth} ${height/2 + strokeWidth})`}
-          style={{ strokeDasharray: circumference, strokeDashoffset, transition: "stroke-dashoffset 0.5s ease-in-out" }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-         <p className={`${size === 'large' ? 'text-3xl' : 'text-xl'} font-bold`}>{value}</p>
-        <p className={`text-sm text-muted-foreground ${size === 'large' ? '' : 'text-xs'}`}>/ {goal} kcal</p>
-      </div>
-    </div>
-  )
-}
-
-const NutrientCircle = ({ name, value, goal, colorClass }: { name: string, value: number, goal: number, colorClass: string }) => {
-    const percentage = goal > 0 ? (value / goal) * 100 : 0;
-    const circumference = 2 * Math.PI * 20; // radius = 20
-    const strokeDashoffset = circumference - (percentage / 100) * circumference;
-
-    return (
-        <div className="flex flex-col items-center gap-1">
-            <div className="relative w-12 h-12">
-                <svg className="w-full h-full" viewBox="0 0 48 48">
-                    <circle className="stroke-current text-gray-200" strokeWidth="4" fill="none" cx="24" cy="24" r="20" />
-                    <circle
-                        className={`stroke-current ${colorClass}`}
-                        strokeWidth="4"
-                        strokeLinecap="round"
-                        fill="none"
-                        cx="24"
-                        cy="24"
-                        r="20"
-                        transform="rotate(-90 24 24)"
-                        style={{ strokeDasharray: circumference, strokeDashoffset, transition: 'stroke-dashoffset 0.3s' }}
-                    />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center text-xs font-bold">{Math.round(goal)}g</div>
-            </div>
-            <p className="text-xs text-muted-foreground uppercase">{name}</p>
-        </div>
-    );
-};
-
-const MealIconProgress = ({ icon, calories, calorieGoal }: { icon: React.ReactNode, calories: number, calorieGoal: number }) => {
-  const radius = 22;
-  const strokeWidth = 4;
-  const circumference = 2 * Math.PI * radius;
-  const percentage = calorieGoal > 0 ? (calories / calorieGoal) * 100 : 0;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
-
-  return (
-    <div className="relative w-12 h-12 flex items-center justify-center">
-       <svg className="absolute w-full h-full" viewBox="0 0 52 52">
-         <circle
-          className="stroke-current text-gray-200"
-          strokeWidth={strokeWidth}
-          fill="none"
-          cx="26"
-          cy="26"
-          r={radius}
-        />
-        <circle
-          className="stroke-current text-primary"
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeLinecap="round"
-          cx="26"
-          cy="26"
-          r={radius}
-          transform="rotate(-90 26 26)"
-          style={{
-            strokeDasharray: circumference,
-            strokeDashoffset,
-            transition: "stroke-dashoffset 0.3s"
-          }}
-        />
-      </svg>
-      <div className="z-10">{icon}</div>
-    </div>
-  )
-}
 
 type DailyPlan = {
     breakfast: Meal | null;
@@ -137,86 +23,120 @@ type DailyPlan = {
 
 const emptyPlan: DailyPlan = { breakfast: null, lunch: null, snack: null, dinner: null };
 
-const MealCard = ({ icon, title, meal, onAdd, onToggleFavorite, isFavorite, calorieGoal, macroGoals }: { icon: React.ReactNode, title: string, meal: Meal | null, onAdd: () => void, onToggleFavorite: (mealId: string) => void, isFavorite: boolean, calorieGoal: number, macroGoals: {protein: number, carbs: number, fat: number} }) => {
-  const consumedCalories = meal?.calories || 0;
-  const consumedMacros = meal?.macros || { protein: 0, carbs: 0, fat: 0 };
-  
+
+const CalorieCircle = ({ consumed, goal }: { consumed: number; goal: number }) => {
+  const percentage = goal > 0 ? (consumed / goal) * 100 : 0;
+  const circumference = 2 * Math.PI * 56; // radius = 56
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
   return (
-    <Card className="bg-card shadow-sm">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <div className="flex items-center gap-3">
-          <MealIconProgress icon={icon} calories={consumedCalories} calorieGoal={calorieGoal} />
-          <div>
-            <CardTitle className="text-base font-bold text-foreground">{title}</CardTitle>
-            <CardDescription>{consumedCalories} / {calorieGoal} Kcal</CardDescription>
-          </div>
+    <div className="flex items-center gap-6">
+        <div className="relative w-32 h-32">
+            <svg className="w-full h-full" viewBox="0 0 120 120">
+                <circle
+                className="stroke-current text-gray-200"
+                strokeWidth="8"
+                fill="none"
+                cx="60"
+                cy="60"
+                r="56"
+                />
+                <circle
+                className="stroke-current text-primary"
+                strokeWidth="8"
+                fill="none"
+                cx="60"
+                cy="60"
+                r="56"
+                strokeLinecap="round"
+                transform="rotate(-90 60 60)"
+                style={{ strokeDasharray: circumference, strokeDashoffset, transition: "stroke-dashoffset 0.5s" }}
+                />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-3xl font-bold">{consumed}</span>
+                <span className="text-sm text-muted-foreground">dans la cible</span>
+            </div>
         </div>
-        <Button size="icon" variant="ghost" className="rounded-full w-12 h-12" onClick={onAdd}>
-          <PlusCircle className="w-8 h-8 text-destructive" />
-        </Button>
-      </CardHeader>
-      {meal ? (
-        <CardContent>
-            <div className="flex items-center gap-4">
-                <Link href={`/home/meal/${meal.id}`} className="flex items-center gap-4 flex-1">
-                    <Image src={meal.imageUrl} alt={meal.name} width={80} height={80} className="rounded-lg" data-ai-hint="healthy food"/>
-                    <div className="flex-1">
-                        <h4 className="font-semibold">{meal.name}</h4>
-                        <p className="text-sm text-muted-foreground">{meal.calories} Kcal</p>
-                    </div>
-                </Link>
-                <Button variant="ghost" size="icon" onClick={() => onToggleFavorite(meal.id)}>
-                    <Heart className={cn("w-5 h-5", isFavorite ? "text-red-500 fill-current" : "text-gray-400")} />
-                </Button>
-            </div>
-        </CardContent>
-      ) : (
-         <CardContent>
-            <div className="text-center text-muted-foreground py-4">
-                <p>Aucun repas ajouté</p>
-            </div>
-        </CardContent>
-      )}
-       <CardFooter className="flex justify-around">
-            <NutrientCircle name="Prot" value={consumedMacros.protein} goal={macroGoals.protein} colorClass="text-red-500" />
-            <NutrientCircle name="Carbs" value={consumedMacros.carbs} goal={macroGoals.carbs} colorClass="text-green-500" />
-            <NutrientCircle name="Fat" value={consumedMacros.fat} goal={macroGoals.fat} colorClass="text-yellow-500" />
-        </CardFooter>
+        <div className="flex flex-col">
+            <span className="text-xs text-muted-foreground">Restant / consommées</span>
+            <span className="text-4xl font-bold">{Math.max(0, goal - consumed)} kcal</span>
+            <span className="text-lg text-muted-foreground">restantes</span>
+             <svg width="100" height="20" viewBox="0 0 100 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="mt-2">
+                <path d="M2 10C12.0667 2.33333 24.4 -1.4 34 5C45 12.5 56.6667 15.1667 66.5 12C76.3333 8.83333 86.5 7.5 98 14" stroke="#A1A1AA" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+        </div>
+    </div>
+  );
+};
+
+const MacroCard = ({ name, consumed, goal, color }: { name: string; consumed: number; goal: number; color: string }) => {
+  const percentage = goal > 0 ? (consumed / goal) * 100 : 0;
+  return (
+    <Card className="flex-1">
+      <CardContent className="p-4">
+        <p className="text-sm text-muted-foreground">{name}</p>
+        <p className="text-2xl font-bold">{consumed} g</p>
+        <p className="text-xs text-muted-foreground">sur {goal} g</p>
+        <Progress value={percentage} indicatorClassName={color} className="h-2 mt-2" />
+         <p className="text-right text-xs mt-1 text-muted-foreground">{Math.round(percentage)}%</p>
+      </CardContent>
     </Card>
-  )
-}
+  );
+};
+
+
+const MealGridCard = ({ title, meal, onAdd }: { title: string; meal: Meal | null; onAdd: () => void }) => {
+  return (
+    <div className="relative rounded-xl overflow-hidden shadow-lg h-48 flex flex-col justify-end p-4 text-white" onClick={onAdd}>
+      <Image
+        src={meal?.imageUrl || `https://placehold.co/400x400.png`}
+        alt={title}
+        layout="fill"
+        objectFit="cover"
+        className="z-0"
+        data-ai-hint="healthy food"
+      />
+      <div className="absolute inset-0 bg-black/30 z-10"></div>
+      <div className="relative z-20">
+         {meal ? (
+            <div>
+                <h3 className="font-bold text-lg">{meal.name}</h3>
+                <p className="text-sm">{meal.calories} kcal</p>
+            </div>
+         ) : (
+            <h3 className="font-bold text-lg">{title}</h3>
+         )}
+      </div>
+      <button className="absolute top-3 right-3 bg-primary/80 hover:bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center z-20">
+        <Plus className="w-5 h-5" />
+      </button>
+    </div>
+  );
+};
 
 
 export default function HomePage() {
   const [user, setUser] = useState<User | null>(null)
   const { toast } = useToast()
-  const today = new Date()
   const [loading, setLoading] = useState(true)
   const router = useRouter()
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [hasUnread, setHasUnread] = useState(false);
   
   const getInitialDailyPlan = useCallback((): DailyPlan => {
-    if (typeof window === "undefined") {
-      return emptyPlan;
-    }
+    if (typeof window === "undefined") return emptyPlan;
     try {
       const savedData = localStorage.getItem("dailyPlanData");
       if (savedData) {
         const { date, plan } = JSON.parse(savedData);
-        const todayStr = new Date().toISOString().split('T')[0];
-        if (date !== todayStr) {
-          localStorage.setItem("dailyPlanData", JSON.stringify({ date: todayStr, plan: emptyPlan }));
+        if (date !== new Date().toISOString().split('T')[0]) {
+          localStorage.removeItem("dailyPlanData");
           return emptyPlan;
         }
         return plan;
       }
     } catch (error) {
-      console.error("Failed to parse daily plan from localStorage", error);
-      localStorage.removeItem("dailyPlanData");
+      console.error("Failed to parse daily plan", error);
     }
-    const todayStr = new Date().toISOString().split('T')[0];
-    localStorage.setItem("dailyPlanData", JSON.stringify({ date: todayStr, plan: emptyPlan }));
     return emptyPlan;
   }, []);
   
@@ -229,18 +149,10 @@ export default function HomePage() {
       if (firebaseUser) {
         try {
             const userProfile = await getUserProfile(firebaseUser.uid)
-            const userNotifications = await getNotifications(firebaseUser.uid);
-            
+            if (!userProfile) throw new Error("User profile not found");
             setUser(userProfile);
-            setNotifications(userNotifications);
-            setHasUnread(userNotifications.some(n => !n.isRead));
-
         } catch(e) {
-            toast({
-                title: "Error fetching user",
-                description: "There was an error fetching your user data.",
-                variant: "destructive",
-            });
+            toast({ title: "Error fetching user", variant: "destructive" });
             setUser(null);
             router.replace('/welcome');
         } finally {
@@ -256,43 +168,11 @@ export default function HomePage() {
     return () => unsubscribe()
   }, [toast, router, getInitialDailyPlan])
 
-
-  
-  const handleAddMeal = (mealType: string) => {
+  const handleAddMeal = (mealType: keyof DailyPlan) => {
     router.push(`/home/add-meal/${mealType}`);
   };
 
-  const handleToggleFavorite = async (mealId: string) => {
-    if (!user) {
-        toast({ title: "Vous devez être connecté", variant: "destructive"});
-        return;
-    }
-    try {
-        const updatedFavorites = await toggleFavoriteMeal(user.uid, mealId);
-        setUser(prevUser => prevUser ? { ...prevUser, favoriteMealIds: updatedFavorites } : null);
-    } catch (error) {
-        toast({ title: "Erreur", description: "Impossible de mettre à jour les favoris.", variant: "destructive" });
-    }
-  };
-  
-  const handleNotificationClick = async (notificationId: string) => {
-    try {
-      await markNotificationAsRead(notificationId);
-      const updatedNotifications = notifications.map(n => 
-        n.id === notificationId ? { ...n, isRead: true } : n
-      );
-      setNotifications(updatedNotifications);
-      setHasUnread(updatedNotifications.some(n => !n.isRead));
-    } catch (error) {
-        toast({ title: "Erreur", description: "Impossible de marquer la notification comme lue.", variant: "destructive" });
-    }
-  };
-
-
-  const consumedCalories = Object.values(dailyPlan)
-    .filter(Boolean)
-    .reduce((acc, meal) => acc + (meal?.calories || 0), 0);
-  
+  const consumedCalories = Object.values(dailyPlan).filter(Boolean).reduce((acc, meal) => acc + (meal?.calories || 0), 0);
   const consumedMacros = {
     protein: Object.values(dailyPlan).filter(Boolean).reduce((acc, meal) => acc + (meal?.macros.protein || 0), 0),
     carbs: Object.values(dailyPlan).filter(Boolean).reduce((acc, meal) => acc + (meal?.macros.carbs || 0), 0),
@@ -302,48 +182,12 @@ export default function HomePage() {
   const calorieGoal = user?.calorieGoal || 2000;
   const macroGoals = user?.macroRatio || { protein: 150, carbs: 250, fat: 70 };
 
-  const mealGoals = {
-      breakfast: {
-          calories: Math.round(calorieGoal * 0.25),
-          macros: {
-              protein: Math.round(macroGoals.protein * 0.25),
-              carbs: Math.round(macroGoals.carbs * 0.25),
-              fat: Math.round(macroGoals.fat * 0.25),
-          }
-      },
-      lunch: {
-          calories: Math.round(calorieGoal * 0.35),
-          macros: {
-              protein: Math.round(macroGoals.protein * 0.35),
-              carbs: Math.round(macroGoals.carbs * 0.35),
-              fat: Math.round(macroGoals.fat * 0.35),
-          }
-      },
-      snack: {
-          calories: Math.round(calorieGoal * 0.15),
-          macros: {
-              protein: Math.round(macroGoals.protein * 0.15),
-              carbs: Math.round(macroGoals.carbs * 0.15),
-              fat: Math.round(macroGoals.fat * 0.15),
-          }
-      },
-      dinner: {
-          calories: Math.round(calorieGoal * 0.25),
-           macros: {
-              protein: Math.round(macroGoals.protein * 0.25),
-              carbs: Math.round(macroGoals.carbs * 0.25),
-              fat: Math.round(macroGoals.fat * 0.25),
-          }
-      },
-  };
-
-
   if (loading) {
       return (
           <div className="flex justify-center items-center h-screen bg-background">
              <div className="flex flex-col items-center gap-4">
-                <Loader2 className="h-12 w-12 animate-spin text-destructive" />
-                <p className="text-muted-foreground">Chargement...</p>
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <p className="text-muted-foreground">Chargement de votre plan...</p>
              </div>
           </div>
       )
@@ -352,83 +196,31 @@ export default function HomePage() {
   return (
       <div className="p-4 space-y-6">
         <header className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-                 <Avatar className="h-14 w-14">
-                    <AvatarImage src={user?.photoURL || ''} alt="User avatar" data-ai-hint="user avatar" />
-                    <AvatarFallback>{user?.fullName?.[0]}</AvatarFallback>
-                </Avatar>
-                <div>
-                    <h1 className="text-2xl font-bold">Welcome back, {user?.fullName?.split(' ')[0] || 'User'}!</h1>
-                    <p className="text-muted-foreground text-sm">
-                    Today is {format(today, "eeee, MMMM d'th", { locale: fr })}. Let's track your progress!
-                    </p>
-                </div>
+            <div>
+                <h1 className="text-2xl font-bold">Aujourd'hui</h1>
+                <p className="text-muted-foreground capitalize">{format(new Date(), "eeee, d MMMM", { locale: fr })}</p>
             </div>
-          <Popover>
-            <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full flex-shrink-0 relative">
-                    <Bell />
-                    {hasUnread && <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-background" />}
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80">
-                <div className="grid gap-4">
-                    <div className="space-y-2">
-                        <h4 className="font-medium leading-none">Notifications</h4>
-                    </div>
-                    <div className="grid gap-2">
-                        {notifications.length > 0 ? notifications.map((notification) => (
-                             <div
-                                key={notification.id}
-                                className={cn(
-                                    "text-sm p-2 rounded-md transition-colors",
-                                    !notification.isRead ? "bg-primary/10 cursor-pointer hover:bg-primary/20" : "text-muted-foreground"
-                                )}
-                                onClick={() => !notification.isRead && handleNotificationClick(notification.id)}
-                            >
-                                <p>{notification.message}</p>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    {format(notification.createdAt, "d MMM 'à' HH:mm", { locale: fr })}
-                                </p>
-                            </div>
-                        )) : (
-                            <p className="text-sm text-muted-foreground text-center p-4">Aucune notification</p>
-                        )}
-                    </div>
-                </div>
-            </PopoverContent>
-        </Popover>
         </header>
 
-        <Card className="shadow-md">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold text-foreground text-center">
-              Statistiques du Jour
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <CalorieCircle value={consumedCalories} goal={calorieGoal} />
-             <div className="flex justify-around pt-4">
-                <NutrientCircle name="Prot" value={consumedMacros.protein} goal={macroGoals.protein} colorClass="text-red-500" />
-                <NutrientCircle name="Carbs" value={consumedMacros.carbs} goal={macroGoals.carbs} colorClass="text-green-500" />
-                <NutrientCircle name="Fat" value={consumedMacros.fat} goal={macroGoals.fat} colorClass="text-yellow-500" />
-            </div>
-          </CardContent>
+        <Card>
+            <CardContent className="p-6">
+                 <CalorieCircle consumed={consumedCalories} goal={calorieGoal} />
+            </CardContent>
         </Card>
+        
+        <div className="flex gap-4">
+            <MacroCard name="Protéines" consumed={consumedMacros.protein} goal={macroGoals.protein} color="bg-[--protein]" />
+            <MacroCard name="Glucides" consumed={consumedMacros.carbs} goal={macroGoals.carbs} color="bg-[--carbs]" />
+            <MacroCard name="Lipides" consumed={consumedMacros.fat} goal={macroGoals.fat} color="bg-[--fat]" />
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4">
+            <MealGridCard title="Petit déjeuner" meal={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} />
+            <MealGridCard title="Déjeuner" meal={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} />
+            <MealGridCard title="Dîner" meal={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} />
+            <MealGridCard title="Collation" meal={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} />
+        </div>
 
-         <Card className="shadow-md">
-          <CardHeader>
-            <CardTitle className="text-lg font-bold text-foreground text-center">
-              Repas du Jour
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-             <MealCard icon={<Sunrise className="text-yellow-500" />} title="Petit-déjeuner" calorieGoal={mealGoals.breakfast.calories} macroGoals={mealGoals.breakfast.macros} meal={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} onToggleFavorite={handleToggleFavorite} isFavorite={!!user?.favoriteMealIds?.includes(dailyPlan.breakfast?.id || '')} />
-            <MealCard icon={<Sun className="text-orange-500" />} title="Déjeuner" calorieGoal={mealGoals.lunch.calories} macroGoals={mealGoals.lunch.macros} meal={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} onToggleFavorite={handleToggleFavorite} isFavorite={!!user?.favoriteMealIds?.includes(dailyPlan.lunch?.id || '')}/>
-            <MealCard icon={<Apple className="text-green-500" />} title="Collation" calorieGoal={mealGoals.snack.calories} macroGoals={mealGoals.snack.macros} meal={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} onToggleFavorite={handleToggleFavorite} isFavorite={!!user?.favoriteMealIds?.includes(dailyPlan.snack?.id || '')}/>
-            <MealCard icon={<Sunset className="text-purple-500" />} title="Dîner" calorieGoal={mealGoals.dinner.calories} macroGoals={mealGoals.dinner.macros} meal={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} onToggleFavorite={handleToggleFavorite} isFavorite={!!user?.favoriteMealIds?.includes(dailyPlan.dinner?.id || '')}/>
-          </CardContent>
-        </Card>
       </div>
   )
 }

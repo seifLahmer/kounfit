@@ -4,7 +4,6 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
-import Link from "next/link";
 import { ChevronLeft, Loader2, PlusCircle, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +17,13 @@ type DailyPlan = {
     lunch: Meal | null;
     snack: Meal | null;
     dinner: Meal | null;
+};
+
+const mealTypeTranslations: { [key: string]: string } = {
+  breakfast: 'un petit-déjeuner',
+  lunch: 'un déjeuner',
+  dinner: 'un dîner',
+  snack: 'une collation'
 };
 
 export default function AddMealPage() {
@@ -59,21 +65,17 @@ export default function AddMealPage() {
       let currentPlan: DailyPlan;
       if (savedData) {
         const parsedData = JSON.parse(savedData);
-        // Check if the saved data is for today
         if (parsedData.date === todayStr) {
           currentPlan = parsedData.plan;
         } else {
-          // It's a new day, so start with a fresh plan
           currentPlan = { breakfast: null, lunch: null, snack: null, dinner: null };
         }
       } else {
-        // No data exists, start fresh
         currentPlan = { breakfast: null, lunch: null, snack: null, dinner: null };
       }
       
       currentPlan[mealType] = meal;
       
-      // Save the updated plan with today's date
       localStorage.setItem("dailyPlanData", JSON.stringify({ date: todayStr, plan: currentPlan }));
       
       router.push('/home');
@@ -98,7 +100,7 @@ export default function AddMealPage() {
           <ChevronLeft />
         </Button>
         <h1 className="text-xl font-bold capitalize">
-            Ajouter {mealType === 'snack' ? 'une Collation' : `un ${mealType}`}
+            Ajouter {mealTypeTranslations[mealType] || 'un repas'}
         </h1>
       </header>
 
@@ -119,29 +121,26 @@ export default function AddMealPage() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         ) : filteredMeals.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {filteredMeals.map((meal) => (
-                    <Card key={meal.id} className="overflow-hidden">
-                        <div className="flex">
+                    <Card key={meal.id} className="overflow-hidden group">
+                         <div className="relative">
                             <Image
                                 src={meal.imageUrl}
                                 alt={meal.name}
-                                width={120}
-                                height={120}
-                                className="object-cover"
+                                width={400}
+                                height={200}
+                                className="object-cover w-full h-40"
                                 data-ai-hint="healthy food"
                             />
-                            <div className="flex flex-col p-4 flex-1">
-                                <CardTitle className="text-lg">{meal.name}</CardTitle>
-                                <CardDescription>{meal.calories} kcal</CardDescription>
-                                <CardFooter className="p-0 mt-auto flex justify-end">
-                                     <Button size="sm" className="bg-destructive hover:bg-destructive/90" onClick={() => handleAddMeal(meal)}>
-                                         <PlusCircle className="w-4 h-4 mr-2"/>
-                                         Ajouter
-                                     </Button>
-                                </CardFooter>
-                            </div>
+                             <Button size="icon" className="absolute top-2 right-2 bg-primary/80 hover:bg-primary rounded-full h-9 w-9" onClick={() => handleAddMeal(meal)}>
+                                <PlusCircle className="w-5 h-5"/>
+                             </Button>
                         </div>
+                        <CardHeader>
+                            <CardTitle className="text-base truncate">{meal.name}</CardTitle>
+                            <CardDescription>{meal.calories} kcal</CardDescription>
+                        </CardHeader>
                     </Card>
                 ))}
             </div>
