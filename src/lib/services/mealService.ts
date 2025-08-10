@@ -11,6 +11,7 @@ import {
   doc,
   documentId,
   getDoc,
+  orderBy,
 } from "firebase/firestore";
 import { db, storage } from "@/lib/firebase";
 import type { Meal } from "@/lib/types";
@@ -98,6 +99,39 @@ export async function getMealsByCaterer(catererUid: string): Promise<Meal[]> {
     } catch (error) {
         console.error("Error fetching meals by caterer: ", error);
         throw new Error("Could not fetch meals.");
+    }
+}
+
+/**
+ * Retrieves all available meals, regardless of category.
+ * @returns A promise that resolves to an array of all available meals.
+ */
+export async function getAvailableMeals(): Promise<Meal[]> {
+    try {
+        const mealsCollection = collection(db, MEALS_COLLECTION);
+        const q = query(
+            mealsCollection,
+            where("availability", "==", true),
+            orderBy("createdAt", "desc")
+        );
+
+        const querySnapshot = await getDocs(q);
+
+        const meals: Meal[] = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const meal: Meal = {
+                id: doc.id,
+                ...data,
+                createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
+            } as Meal;
+            meals.push(meal);
+        });
+
+        return meals;
+    } catch (error) {
+        console.error("Error fetching all available meals: ", error);
+        throw new Error("Could not fetch available meals.");
     }
 }
 

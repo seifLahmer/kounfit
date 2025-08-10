@@ -1,16 +1,17 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
-import { ChevronLeft, Loader2, PlusCircle, Search } from "lucide-react";
+import { ChevronLeft, Loader2, Plus, Search, Leaf } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { getAvailableMealsByCategory } from "@/lib/services/mealService";
+import { getAvailableMealsByCategory, getAvailableMeals } from "@/lib/services/mealService";
 import type { Meal } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 type DailyPlan = {
     breakfast: Meal | null;
@@ -19,43 +20,49 @@ type DailyPlan = {
     dinner: Meal | null;
 };
 
+type MealCategory = Meal['category'] | 'all';
+
 const mealTypeTranslations: { [key: string]: string } = {
-  breakfast: 'un petit-déjeuner',
-  lunch: 'un déjeuner',
-  dinner: 'un dîner',
-  snack: 'une collation'
+  all: 'Tous',
+  breakfast: 'Petit déjeuner',
+  lunch: 'Déjeuner',
+  dinner: 'Dîner',
+  snack: 'Collation'
 };
+
+const mealCategories: MealCategory[] = ['all', 'breakfast', 'lunch', 'dinner', 'snack'];
+
 
 export default function AddMealPage() {
   const router = useRouter();
   const params = useParams();
-  const mealType = (Array.isArray(params.mealType) ? params.mealType[0] : params.mealType) as keyof DailyPlan;
+  // The initial meal type from the URL, used for the initial filter
+  const initialMealType = (Array.isArray(params.mealType) ? params.mealType[0] : params.mealType) as keyof DailyPlan;
 
-  const [meals, setMeals] = useState<Meal[]>([]);
+  const [allMeals, setAllMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeCategory, setActiveCategory] = useState<MealCategory>(initialMealType || 'all');
   const { toast } = useToast();
 
   useEffect(() => {
-    if (mealType) {
-      const fetchMeals = async () => {
-        try {
-          setLoading(true);
-          const fetchedMeals = await getAvailableMealsByCategory(mealType as Meal['category']);
-          setMeals(fetchedMeals);
-        } catch (error) {
-          toast({
-            title: "Erreur",
-            description: "Impossible de charger les repas disponibles.",
-            variant: "destructive",
-          });
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchMeals();
-    }
-  }, [mealType, toast]);
+    const fetchMeals = async () => {
+      try {
+        setLoading(true);
+        const fetchedMeals = await getAvailableMeals();
+        setAllMeals(fetchedMeals);
+      } catch (error) {
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger les repas disponibles.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMeals();
+  }, [toast]);
   
   const handleAddMeal = (meal: Meal) => {
     try {
@@ -74,7 +81,18 @@ export default function AddMealPage() {
         currentPlan = { breakfast: null, lunch: null, snack: null, dinner: null };
       }
       
-      currentPlan[mealType] = meal;
+      const targetMealType = meal.category as keyof DailyPlan;
+      
+      if(currentPlan[targetMealType] === null) {
+        currentPlan[targetMealType] = meal;
+      } else {
+        toast({
+          title: "Attention",
+          description: `Vous avez déjà un ${mealTypeTranslations[targetMealType]} prévu.`,
+          variant: "default"
+        });
+        return;
+      }
       
       localStorage.setItem("dailyPlanData", JSON.stringify({ date: todayStr, plan: currentPlan }));
       
@@ -89,33 +107,49 @@ export default function AddMealPage() {
     }
   };
 
-  const filteredMeals = meals.filter((meal) =>
-    meal.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredMeals = useMemo(() => {
+    return allMeals
+      .filter(meal => activeCategory === 'all' || meal.category === activeCategory)
+      .filter(meal => meal.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  }, [allMeals, activeCategory, searchTerm]);
+
 
   return (
     <div className="flex flex-col h-screen bg-background">
-      <header className="p-4 flex items-center gap-4 sticky top-0 bg-background z-10 border-b">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
-          <ChevronLeft />
-        </Button>
-        <h1 className="text-xl font-bold capitalize">
-            Ajouter {mealTypeTranslations[mealType] || 'un repas'}
-        </h1>
+      <header className="p-4 space-y-4 sticky top-0 bg-background z-10 border-b">
+         <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" onClick={() => router.back()} className="shrink-0">
+                <ChevronLeft />
+            </Button>
+            <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                    type="text"
+                    placeholder="Rechercher"
+                    className="pl-10 h-12 rounded-full bg-muted border-transparent focus-visible:ring-primary"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-2 -mb-2">
+          {mealCategories.map(category => (
+            <Button 
+              key={category} 
+              variant={activeCategory === category ? "default" : "secondary"}
+              onClick={() => setActiveCategory(category)}
+              className={cn(
+                "rounded-full whitespace-nowrap",
+                activeCategory === category ? "bg-brand-teal hover:bg-brand-teal/90 text-white" : "bg-gray-200 text-gray-800"
+              )}
+            >
+              {mealTypeTranslations[category]}
+            </Button>
+          ))}
+        </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-4 space-y-4">
-        <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-                type="text"
-                placeholder="Rechercher un plat..."
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-            />
-        </div>
-        
+      <main className="flex-1 overflow-y-auto p-4">
         {loading ? (
             <div className="flex justify-center items-center h-64">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -123,24 +157,36 @@ export default function AddMealPage() {
         ) : filteredMeals.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {filteredMeals.map((meal) => (
-                    <Card key={meal.id} className="overflow-hidden group">
-                         <div className="relative">
-                            <Image
+                    <Card key={meal.id} className="overflow-hidden rounded-2xl border shadow-sm flex flex-col">
+                        <div className="relative h-40">
+                           <Image
                                 src={meal.imageUrl}
                                 alt={meal.name}
-                                width={400}
-                                height={200}
-                                className="object-cover w-full h-40"
+                                layout="fill"
+                                objectFit="cover"
+                                className="w-full h-full"
                                 data-ai-hint="healthy food"
                             />
-                             <Button size="icon" className="absolute top-2 right-2 bg-primary/80 hover:bg-primary rounded-full h-9 w-9" onClick={() => handleAddMeal(meal)}>
-                                <PlusCircle className="w-5 h-5"/>
-                             </Button>
                         </div>
-                        <CardHeader>
-                            <CardTitle className="text-base truncate">{meal.name}</CardTitle>
-                            <CardDescription>{meal.calories} kcal</CardDescription>
-                        </CardHeader>
+                        <CardContent className="p-4 bg-brand-teal text-white flex-1 flex flex-col justify-between">
+                            <div>
+                                <h3 className="font-bold text-xl truncate">{meal.name}</h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <Leaf className="w-4 h-4 text-green-300" />
+                                    <span className="font-medium">{meal.calories} kcal</span>
+                                </div>
+                                 <div className="flex items-center gap-4 text-sm mt-2 text-green-200">
+                                    <span>P {meal.macros.protein}g</span>
+                                    <span>C {meal.macros.carbs}g</span>
+                                    <span>L {meal.macros.fat}g</span>
+                                </div>
+                            </div>
+                            <div className="flex justify-end mt-2">
+                                <Button size="icon" className="bg-destructive hover:bg-destructive/80 rounded-full h-10 w-10 shrink-0" onClick={() => handleAddMeal(meal)}>
+                                    <Plus className="w-6 h-6"/>
+                                </Button>
+                            </div>
+                        </CardContent>
                     </Card>
                 ))}
             </div>
@@ -154,3 +200,4 @@ export default function AddMealPage() {
     </div>
   );
 }
+
