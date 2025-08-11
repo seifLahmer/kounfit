@@ -126,22 +126,22 @@ export default function SignupStep2Page() {
   if (!isAuthCheckComplete) {
      return (
       <div className="flex items-center justify-center min-h-screen bg-background">
-        <Loader2 className="h-12 w-12 animate-spin text-destructive" />
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-brand-teal">
+    <div className="flex flex-col min-h-screen bg-tertiary">
         <LeafPattern className="absolute bottom-0 left-0 w-full h-auto text-black/5 z-10" />
         <header className="flex-shrink-0 h-48 flex items-center justify-center">
-            <h1 className="text-5xl font-bold text-white">Kounfit</h1>
+            <h1 className="text-5xl font-bold text-white font-heading">Kounfit</h1>
         </header>
 
         <main className="flex-1 flex flex-col bg-white rounded-t-3xl z-20 p-8">
-            <h2 className="text-3xl font-bold text-center text-brand-teal">Inscription - Étape 2/2</h2>
-            <div className="w-16 h-1 bg-brand-teal/20 rounded-full mx-auto my-4 relative">
-                <div className="absolute left-0 top-0 h-full w-full bg-brand-teal rounded-full"></div>
+            <h2 className="text-3xl font-bold text-center text-tertiary font-heading">Inscription - Étape 2/2</h2>
+            <div className="w-16 h-1 bg-gray-200 rounded-full mx-auto my-4 relative">
+                <div className="absolute left-0 top-0 h-full w-full bg-primary rounded-full"></div>
             </div>
           
             <Form {...form}>
@@ -162,7 +162,7 @@ export default function SignupStep2Page() {
                                 <FormControl>
                                   <RadioGroupItem value="male" id="male" className="sr-only peer" />
                                 </FormControl>
-                                <FormLabel htmlFor="male" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                                <FormLabel htmlFor="male" className="flex flex-col items-center justify-between rounded-button border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
                                     Homme
                                 </FormLabel>
                               </FormItem>
@@ -170,7 +170,7 @@ export default function SignupStep2Page() {
                                 <FormControl>
                                   <RadioGroupItem value="female" id="female" className="sr-only peer" />
                                 </FormControl>
-                                <FormLabel htmlFor="female" className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                                <FormLabel htmlFor="female" className="flex flex-col items-center justify-between rounded-button border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
                                     Femme
                                 </FormLabel>
                               </FormItem>
@@ -189,7 +189,7 @@ export default function SignupStep2Page() {
                             <FormItem>
                               <FormLabel>Âge</FormLabel>
                               <FormControl>
-                                <Input type="number" {...field} className="h-12 rounded-xl text-center" />
+                                <Input type="number" {...field} className="h-12 rounded-button text-center" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -202,7 +202,7 @@ export default function SignupStep2Page() {
                             <FormItem>
                               <FormLabel>Taille (cm)</FormLabel>
                               <FormControl>
-                                <Input type="number" {...field} className="h-12 rounded-xl text-center"/>
+                                <Input type="number" {...field} className="h-12 rounded-button text-center"/>
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -215,7 +215,7 @@ export default function SignupStep2Page() {
                             <FormItem>
                               <FormLabel>Poids (kg)</FormLabel>
                               <FormControl>
-                                <Input type="number" {...field} className="h-12 rounded-xl text-center"/>
+                                <Input type="number" {...field} className="h-12 rounded-button text-center"/>
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -232,7 +232,7 @@ export default function SignupStep2Page() {
                             <FormLabel>Quel est votre objectif principal ?</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                                <SelectTrigger className="h-14 rounded-xl">
+                                <SelectTrigger className="h-14 rounded-button">
                                 <SelectValue placeholder="Sélectionnez votre objectif" />
                                 </SelectTrigger>
                             </FormControl>
@@ -255,7 +255,7 @@ export default function SignupStep2Page() {
                             <FormLabel>Votre niveau d'activité quotidien</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
-                                <SelectTrigger className="h-14 rounded-xl">
+                                <SelectTrigger className="h-14 rounded-button">
                                 <SelectValue placeholder="Sélectionnez votre niveau d'activité" />
                                 </SelectTrigger>
                             </FormControl>
@@ -273,7 +273,7 @@ export default function SignupStep2Page() {
                     />
 
 
-                    <Button type="submit" className="w-full h-14 text-lg rounded-xl bg-brand-teal hover:bg-brand-teal/90" disabled={loading}>
+                    <Button type="submit" className="w-full h-14 text-lg rounded-button bg-primary hover:bg-primary/90" disabled={loading}>
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Terminer l'inscription
                     </Button>

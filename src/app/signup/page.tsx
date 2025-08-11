@@ -86,16 +86,16 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-brand-teal">
+    <div className="flex flex-col min-h-screen bg-tertiary">
         <LeafPattern className="absolute bottom-0 left-0 w-full h-auto text-black/5 z-10" />
         <header className="flex-shrink-0 h-48 flex items-center justify-center">
-            <h1 className="text-5xl font-bold text-white">Kounfit</h1>
+            <h1 className="text-5xl font-bold text-white font-heading">Kounfit</h1>
         </header>
 
         <main className="flex-1 flex flex-col bg-white rounded-t-3xl z-20 p-8">
-            <h2 className="text-3xl font-bold text-center text-brand-teal">Inscription - Étape 1/2</h2>
-             <div className="w-16 h-1 bg-brand-teal/20 rounded-full mx-auto my-4 relative">
-                <div className="absolute left-0 top-0 h-full w-1/2 bg-brand-teal rounded-full"></div>
+            <h2 className="text-3xl font-bold text-center text-tertiary font-heading">Inscription - Étape 1/2</h2>
+             <div className="w-16 h-1 bg-gray-200 rounded-full mx-auto my-4 relative">
+                <div className="absolute left-0 top-0 h-full w-1/2 bg-primary rounded-full"></div>
             </div>
             
              <Form {...form}>
@@ -110,7 +110,7 @@ export default function SignupPage() {
                             <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                             <Input 
                                 placeholder="Nom complet" 
-                                className="pl-12 h-14 rounded-xl bg-gray-50 border-gray-200 focus:bg-white"
+                                className="pl-12 h-14 rounded-button bg-gray-50 border-gray-200 focus:bg-white"
                                 {...field} 
                              />
                           </div>
@@ -130,7 +130,7 @@ export default function SignupPage() {
                             <Input 
                                 type="email"
                                 placeholder="Email"
-                                className="pl-12 h-14 rounded-xl bg-gray-50 border-gray-200 focus:bg-white"
+                                className="pl-12 h-14 rounded-button bg-gray-50 border-gray-200 focus:bg-white"
                                 {...field}
                              />
                           </div>
@@ -150,7 +150,7 @@ export default function SignupPage() {
                             <Input 
                                 type={showPassword ? "text" : "password"}
                                 placeholder="Mot de passe"
-                                className="pl-12 pr-12 h-14 rounded-xl bg-gray-50 border-gray-200 focus:bg-white"
+                                className="pl-12 pr-12 h-14 rounded-button bg-gray-50 border-gray-200 focus:bg-white"
                                 {...field}
                              />
                             <button 
@@ -177,7 +177,7 @@ export default function SignupPage() {
                             <Input 
                                 type={showConfirmPassword ? "text" : "password"}
                                 placeholder="Confirmer mot de passe"
-                                className="pl-12 pr-12 h-14 rounded-xl bg-gray-50 border-gray-200 focus:bg-white"
+                                className="pl-12 pr-12 h-14 rounded-button bg-gray-50 border-gray-200 focus:bg-white"
                                 {...field}
                              />
                             <button 
@@ -193,7 +193,7 @@ export default function SignupPage() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full h-14 text-lg rounded-xl bg-brand-teal hover:bg-brand-teal/90" disabled={isSubmitting}>
+                  <Button type="submit" className="w-full h-14 text-lg rounded-button bg-primary hover:bg-primary/90" disabled={isSubmitting}>
                      {isSubmitting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                     Continuer
                   </Button>
@@ -206,14 +206,14 @@ export default function SignupPage() {
                 <div className="flex-grow border-t border-gray-200"></div>
             </div>
             
-            <Button variant="outline" className="w-full h-14 rounded-xl flex items-center justify-center gap-2 border-gray-200" onClick={handleGoogleSignIn} disabled={isSubmitting}>
+            <Button variant="outline" className="w-full h-14 rounded-button flex items-center justify-center gap-2 border-gray-200" onClick={handleGoogleSignIn} disabled={isSubmitting}>
                 <GoogleIcon className="w-6 h-6"/>
                 <span className="text-base text-gray-700 font-semibold">S'inscrire avec Google</span>
             </Button>
             
             <div className="mt-auto text-center text-sm pt-4">
                 Déjà un compte ?{" "}
-                <Link href="/login" className="font-semibold text-destructive hover:underline">
+                <Link href="/login" className="font-semibold text-secondary hover:underline">
                 Se connecter
                 </Link>
             </div>

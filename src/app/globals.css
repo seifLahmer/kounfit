@@ -9,36 +9,40 @@ body {
 
 @layer base {
   :root {
-    --background: 220 20% 97%; /* Light grayish blue */
+    --background: 48 33% 97%; /* Brume légère #F6F8F7 */
     --foreground: 224 71.4% 4.1%;
     --card: 0 0% 100%;
     --card-foreground: 224 71.4% 4.1%;
     --popover: 0 0% 100%;
     --popover-foreground: 224 71.4% 4.1%;
-    --primary: 160 80% 45%; /* Teal color from new design */
+    
+    /* Kounfit Palette */
+    --primary: 158 64% 45%; /* Jade #22C58B */
     --primary-foreground: 0 0% 98%;
-    --secondary: 220 13% 91%;
-    --secondary-foreground: 220.9 39.3% 11%;
+    --secondary: 12 100% 67%; /* Corail #FF7A59 */
+    --secondary-foreground: 0 0% 98%;
+    --tertiary: 153 85% 27%; /* Émeraude #0B7E58 */
+    --tertiary-foreground: 0 0% 98%;
+
     --muted: 220 13% 91%;
     --muted-foreground: 220 8.9% 46.1%;
-    --accent: 33 100% 65%; /* Sunset Orange */
-    --accent-foreground: 24 9.8% 10%;
-    --destructive: 6 92% 64%; /* Coral color from new design */
+    --accent: 158 64% 45%; /* Using primary as accent */
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --brand-teal: 170 100% 21%;
-    --brand-teal-foreground: 0 0% 98%;
+    
     --border: 220 13% 89%;
     --input: 220 13% 89%;
-    --ring: 224 71.4% 4.1%;
-    --radius: 0.75rem; 
+    --ring: 158 64% 45%;
 
-    /* New macro colors */
-    --protein: 220 80% 60%; /* Blue */
-    --carbs: 40 90% 60%; /* Orange */
-    --fat: 0 80% 65%; /* Red/Pink */
+    --radius: 1rem; /* 16pt for cards */
+
+    /* Macro colors */
+    --protein: 236 93% 66%; /* #5B67FB */
+    --carbs: 38 92% 51%;   /* #F59E0B */
+    --fat: 348 100% 73%;  /* #FF758F */
     
-    --pistachio: 92 50% 85%;
-
+    /* Legacy Chart and Sidebar for component library compatibility */
     --chart-1: 220 70% 50%;
     --chart-2: 33 100% 65%;
     --chart-3: 160 60% 45%;
@@ -53,6 +57,7 @@ body {
     --sidebar-border: 220 13% 85%;
     --sidebar-ring: 224 71.4% 4.1%;
   }
+
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
@@ -60,27 +65,29 @@ body {
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 160 80% 45%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    
+    /* Kounfit Palette */
+    --primary: 158 64% 45%; /* Jade #22C58B */
+    --primary-foreground: 0 0% 98%;
+    --secondary: 12 100% 67%; /* Corail #FF7A59 */
+    --secondary-foreground: 0 0% 98%;
+    --tertiary: 153 85% 27%; /* Émeraude #0B7E58 */
+    --tertiary-foreground: 0 0% 98%;
+
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-    --accent: 33 100% 65%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 6 92% 64%;
-    --destructive-foreground: 210 40% 98%;
-    --brand-teal: 170 100% 21%;
-    --brand-teal-foreground: 0 0% 98%;
+    --accent: 158 64% 45%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 63% 94%;
+    --destructive-foreground: 0 86% 97%;
+
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 210 40% 98%;
+    --ring: 158 64% 45%;
     
-    --protein: 220 80% 60%;
-    --carbs: 40 90% 60%;
-    --fat: 0 80% 65%;
-
-    --pistachio: 92 50% 85%;
+    --protein: 236 93% 66%;
+    --carbs: 38 92% 51%;
+    --fat: 348 100% 73%;
 
     --chart-1: 220 70% 50%;
     --chart-2: 33 100% 65%;
@@ -104,5 +111,9 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Sora', sans-serif;
+    font-weight: 600;
   }
 }

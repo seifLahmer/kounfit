@@ -1,15 +1,15 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import { MainLayout } from "@/components/main-layout"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { ShoppingCart, Loader2, Frown, CheckCircle, Trash2 } from "lucide-react"
+import { Loader2, Frown, CheckCircle, Trash2 } from "lucide-react"
 import { auth } from "@/lib/firebase"
 import { useRouter } from "next/navigation"
-import type { Meal, User } from "@/lib/types"
+import type { Meal } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import { placeOrder } from "@/lib/services/orderService"
 import { getUserProfile } from "@/lib/services/userService"
@@ -84,7 +84,6 @@ export default function ShoppingCartPage() {
             let itemRemoved = false;
             const newPlan = { ...plan };
 
-            // Find and remove the first occurrence of the meal
             for (const key in newPlan) {
                 const mealType = key as keyof DailyPlan;
                 if (newPlan[mealType] && newPlan[mealType]?.id === mealId) {
@@ -180,10 +179,10 @@ export default function ShoppingCartPage() {
 
   return (
     <MainLayout>
-      <div className="flex flex-col h-full bg-brand-teal text-white">
+      <div className="flex flex-col h-full bg-tertiary text-white">
         <header className="p-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Kounfit</h1>
-          <Button variant="ghost" size="icon">
+          <h1 className="text-2xl font-bold font-heading">Kounfit</h1>
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M5 12H19" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -203,22 +202,22 @@ export default function ShoppingCartPage() {
                     />
                     <div className="flex-1">
                         <h2 className="font-semibold">{item.name}</h2>
-                        <p className="text-destructive font-bold">{item.price.toFixed(2)} DT</p>
+                        <p className="text-secondary font-bold">{item.price.toFixed(2)} DT</p>
                     </div>
                     <div className="flex items-center gap-3">
                        <span className="font-bold">{item.quantity}</span>
                     </div>
                     <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.id)}>
-                        <Trash2 className="w-5 h-5 text-destructive"/>
+                        <Trash2 className="w-5 h-5 text-secondary"/>
                     </Button>
                 </div>
             ))
           ) : (
-             <Card className="text-center p-8 text-muted-foreground border-none shadow-none">
+             <div className="text-center p-8 text-muted-foreground">
                  <Frown className="mx-auto w-12 h-12 mb-4" />
-                <h2 className="text-xl font-semibold">Votre panier est vide</h2>
+                <h2 className="text-xl font-semibold font-heading">Votre panier est vide</h2>
                 <p>Ajoutez des repas depuis la page d'accueil pour commencer.</p>
-            </Card>
+            </div>
           )}
 
           {cartItems.length > 0 && (
@@ -239,7 +238,6 @@ export default function ShoppingCartPage() {
                     <span>{total.toFixed(2)} DT</span>
                 </div>
                 
-                 {/* This part will be dynamic in the future */}
                 <div className="flex items-center justify-center gap-2 text-muted-foreground bg-gray-100 rounded-full p-2 mt-4 max-w-xs mx-auto">
                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
@@ -251,9 +249,9 @@ export default function ShoppingCartPage() {
           )}
         </div>
         {cartItems.length > 0 && (
-             <footer className="p-4 bg-white border-t rounded-t-3xl">
+             <footer className="p-4 bg-white border-t">
                   <Button 
-                    className="w-full bg-destructive hover:bg-destructive/90 text-white font-bold text-lg h-14 rounded-full"
+                    className="w-full bg-primary hover:bg-primary/90 text-white font-bold text-lg h-14 rounded-button"
                     onClick={handlePlaceOrder}
                     disabled={isPlacingOrder}
                   >

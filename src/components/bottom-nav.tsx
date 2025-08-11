@@ -28,9 +28,9 @@ import {
 
 const links = [
   { href: "/profile", label: "Profile", icon: User },
-  { href: "/meal-plans", label: "Favourites", icon: Heart },
-  { href: "/home", label: "Home", icon: LayoutGrid },
-  { href: "/shopping-list", label: "Cart", icon: ShoppingCart },
+  { href: "/meal-plans", label: "Favoris", icon: Heart },
+  { href: "/home", label: "Accueil", icon: LayoutGrid },
+  { href: "/shopping-list", label: "Panier", icon: ShoppingCart },
 ]
 
 export function BottomNav() {
@@ -54,17 +54,17 @@ export function BottomNav() {
       <div className="flex justify-around items-center h-16">
         {links.map((link) => {
           const isActive = pathname === link.href
-          const isHome = link.label === "Home"
+          const isHome = link.href === "/home"
 
           return (
             <Link key={link.href} href={link.href} className="flex-1 flex justify-center items-center h-full">
               <div className={cn(
                   "flex flex-col items-center justify-center gap-1 transition-colors relative h-full w-full",
-                   isActive && !isHome ? "text-red-500" : "text-muted-foreground hover:text-red-500"
+                   isActive && !isHome ? "text-tertiary" : "text-muted-foreground hover:text-tertiary"
               )}>
                 {isHome ? (
                   <div className={cn(
-                    "absolute -top-6 p-4 rounded-full text-white shadow-lg flex items-center justify-center bg-red-500"
+                    "absolute -top-6 p-4 rounded-full text-white shadow-lg flex items-center justify-center bg-secondary"
                     )}>
                     <link.icon className="h-6 w-6" />
                   </div>
@@ -80,10 +80,10 @@ export function BottomNav() {
         })}
         <AlertDialog>
           <AlertDialogTrigger asChild>
-             <button className="flex-1 flex justify-center items-center h-full text-muted-foreground hover:text-red-500">
+             <button className="flex-1 flex justify-center items-center h-full text-muted-foreground hover:text-tertiary">
                 <div className="flex flex-col items-center justify-center gap-1 transition-colors relative h-full w-full">
                     <LogOut className="h-6 w-6" />
-                    <span className="text-xs capitalize">Logout</span>
+                    <span className="text-xs capitalize">Déconn.</span>
                 </div>
             </button>
           </AlertDialogTrigger>

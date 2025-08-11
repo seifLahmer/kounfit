@@ -18,6 +18,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ["var(--font-inter)", "sans-serif"],
+        heading: ["var(--font-sora)", "sans-serif"],
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -38,6 +39,10 @@ export default {
           DEFAULT: 'hsl(var(--secondary))',
           foreground: 'hsl(var(--secondary-foreground))',
         },
+        tertiary: {
+          DEFAULT: 'hsl(var(--tertiary))',
+          foreground: 'hsl(var(--tertiary-foreground))',
+        },
         muted: {
           DEFAULT: 'hsl(var(--muted))',
           foreground: 'hsl(var(--muted-foreground))',
@@ -50,14 +55,13 @@ export default {
           DEFAULT: 'hsl(var(--destructive))',
           foreground: 'hsl(var(--destructive-foreground))',
         },
-        'brand-teal': {
-            DEFAULT: 'hsl(var(--brand-teal))',
-            foreground: 'hsl(var(--brand-teal-foreground))'
-        },
         pistachio: 'hsl(var(--pistachio))',
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
+        protein: 'hsl(var(--protein))',
+        carbs: 'hsl(var(--carbs))',
+        fat: 'hsl(var(--fat))',
         chart: {
           '1': 'hsl(var(--chart-1))',
           '2': 'hsl(var(--chart-2))',
@@ -78,8 +82,9 @@ export default {
       },
       borderRadius: {
         lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
+        md: 'calc(var(--radius) - 4px)',
+        sm: 'calc(var(--radius) - 8px)',
+        button: "14px",
       },
       keyframes: {
         'accordion-down': {

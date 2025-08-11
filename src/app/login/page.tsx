@@ -44,7 +44,6 @@ export default function LoginPage() {
         const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
         const user = userCredential.user;
         
-        // This delay can help ensure auth state is propagated before role check
         await new Promise(resolve => setTimeout(resolve, 100));
 
         const role = await getUserRole(user.uid);
@@ -88,14 +87,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-brand-teal">
+    <div className="flex flex-col min-h-screen bg-tertiary">
         <LeafPattern className="absolute bottom-0 left-0 w-full h-auto text-black/5 z-10" />
         <header className="flex-shrink-0 h-48 flex items-center justify-center">
-            <h1 className="text-5xl font-bold text-white">Kounfit</h1>
+            <h1 className="text-5xl font-bold text-white font-heading">Kounfit</h1>
         </header>
 
         <main className="flex-1 flex flex-col bg-white rounded-t-3xl z-20 p-8">
-            <h2 className="text-3xl font-bold text-center text-brand-teal mb-8">Connexion</h2>
+            <h2 className="text-3xl font-bold text-center text-tertiary mb-8 font-heading">Connexion</h2>
             
              <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -110,7 +109,7 @@ export default function LoginPage() {
                             <Input 
                                 type="email" 
                                 placeholder="E-mail ou nom d'utilisateur" 
-                                className="pl-12 h-14 rounded-xl bg-gray-50 border-gray-200 focus:bg-white"
+                                className="pl-12 h-14 rounded-button bg-gray-50 border-gray-200 focus:bg-white"
                                 {...field} 
                              />
                           </div>
@@ -130,7 +129,7 @@ export default function LoginPage() {
                             <Input 
                                 type={showPassword ? "text" : "password"}
                                 placeholder="Mot de passe"
-                                className="pl-12 pr-12 h-14 rounded-xl bg-gray-50 border-gray-200 focus:bg-white"
+                                className="pl-12 pr-12 h-14 rounded-button bg-gray-50 border-gray-200 focus:bg-white"
                                 {...field}
                              />
                             <button 
@@ -146,7 +145,7 @@ export default function LoginPage() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="w-full h-14 text-lg rounded-xl bg-brand-teal hover:bg-brand-teal/90" disabled={isSubmitting}>
+                  <Button type="submit" className="w-full h-14 text-lg rounded-button bg-primary hover:bg-primary/90" disabled={isSubmitting}>
                      {isSubmitting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                     Se connecter
                   </Button>
@@ -154,7 +153,7 @@ export default function LoginPage() {
             </Form>
 
             <div className="text-center my-4">
-                <Link href="#" className="text-sm text-brand-teal font-semibold hover:underline">
+                <Link href="#" className="text-sm text-tertiary font-semibold hover:underline">
                     Mot de passe oublié ?
                 </Link>
             </div>
@@ -176,7 +175,7 @@ export default function LoginPage() {
             
             <div className="mt-auto text-center text-sm">
                 Pas encore de compte ?{" "}
-                <Link href="/signup" className="font-semibold text-destructive hover:underline">
+                <Link href="/signup" className="font-semibold text-secondary hover:underline">
                 S'inscrire
                 </Link>
             </div>

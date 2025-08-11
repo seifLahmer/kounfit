@@ -75,7 +75,6 @@ export default function AddMealPage() {
         currentPlan = { breakfast: null, lunch: null, snack: null, dinner: null };
       }
       
-      // Use the category from the meal object, or the mealType from the URL as a fallback.
       const targetMealType = meal.category as keyof DailyPlan || mealType;
       
       if(currentPlan[targetMealType] === null) {
@@ -121,7 +120,7 @@ export default function AddMealPage() {
                 <Input
                     type="text"
                     placeholder={`Rechercher un ${mealTypeTranslations[mealType] || 'repas'}...`}
-                    className="pl-10 h-12 rounded-full bg-muted border-transparent focus-visible:ring-primary"
+                    className="pl-10 h-12 rounded-button bg-muted border-transparent focus-visible:ring-primary"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -137,7 +136,7 @@ export default function AddMealPage() {
         ) : filteredMeals.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {filteredMeals.map((meal) => (
-                    <Card key={meal.id} className="overflow-hidden rounded-2xl border shadow-sm flex flex-col">
+                    <Card key={meal.id} className="overflow-hidden rounded-lg border shadow-sm flex flex-col">
                         <Link href={`/home/meal/${meal.id}`} className="block relative h-40">
                            <Image
                                 src={meal.imageUrl}
@@ -148,21 +147,21 @@ export default function AddMealPage() {
                                 data-ai-hint="healthy food"
                             />
                         </Link>
-                        <CardContent className="p-4 bg-brand-teal text-white flex-1 flex flex-col justify-between">
+                        <CardContent className="p-4 bg-tertiary text-white flex-1 flex flex-col justify-between">
                             <div>
-                                <h3 className="font-bold text-xl truncate">{meal.name}</h3>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <Leaf className="w-4 h-4 text-green-300" />
+                                <h3 className="font-bold text-xl truncate font-heading">{meal.name}</h3>
+                                <div className="flex items-center gap-2 mt-1 text-primary-foreground/90">
+                                    <Leaf className="w-4 h-4 text-primary" />
                                     <span className="font-medium">{meal.calories} kcal</span>
                                 </div>
-                                 <div className="flex items-center gap-4 text-sm mt-2 text-green-200">
+                                 <div className="flex items-center gap-4 text-sm mt-2 text-primary-foreground/80">
                                     <span>P {meal.macros.protein}g</span>
                                     <span>C {meal.macros.carbs}g</span>
                                     <span>L {meal.macros.fat}g</span>
                                 </div>
                             </div>
                             <div className="flex justify-end mt-2">
-                                <Button size="icon" className="bg-destructive hover:bg-destructive/80 rounded-full h-10 w-10 shrink-0" onClick={() => handleAddMeal(meal)}>
+                                <Button size="icon" className="bg-secondary hover:bg-secondary/80 rounded-full h-10 w-10 shrink-0" onClick={() => handleAddMeal(meal)}>
                                     <Plus className="w-6 h-6"/>
                                 </Button>
                             </div>

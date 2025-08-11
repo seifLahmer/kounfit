@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { Loader2, Plus, Bell } from "lucide-react"
 import Image from "next/image"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
@@ -24,7 +24,6 @@ type DailyPlan = {
 };
 
 const emptyPlan: DailyPlan = { breakfast: null, lunch: null, snack: null, dinner: null };
-
 
 const CalorieCircle = ({ consumed, goal }: { consumed: number; goal: number }) => {
   const percentage = goal > 0 ? (consumed / goal) * 100 : 0;
@@ -56,13 +55,13 @@ const CalorieCircle = ({ consumed, goal }: { consumed: number; goal: number }) =
                 />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-3xl font-bold">{consumed}</span>
+                <span className="text-3xl font-bold font-heading text-tertiary">{consumed}</span>
                 <span className="text-sm text-muted-foreground">dans la cible</span>
             </div>
         </div>
         <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Restant / consommées</span>
-            <span className="text-4xl font-bold">{Math.max(0, goal - consumed)} kcal</span>
+            <span className="text-4xl font-bold font-heading text-tertiary">{Math.max(0, goal - consumed)} kcal</span>
             <span className="text-lg text-muted-foreground">restantes</span>
              <svg width="100" height="20" viewBox="0 0 100 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="mt-2">
                 <path d="M2 10C12.0667 2.33333 24.4 -1.4 34 5C45 12.5 56.6667 15.1667 66.5 12C76.3333 8.83333 86.5 7.5 98 14" stroke="#A1A1AA" strokeWidth="2" strokeLinecap="round"/>
@@ -78,7 +77,7 @@ const MacroCard = ({ name, consumed, goal, color }: { name: string; consumed: nu
     <Card className="flex-1">
       <CardContent className="p-4">
         <p className="text-sm text-muted-foreground">{name}</p>
-        <p className="text-2xl font-bold">{consumed} g</p>
+        <p className="text-2xl font-bold font-heading text-tertiary">{consumed} g</p>
         <p className="text-xs text-muted-foreground">sur {goal} g</p>
         <Progress value={percentage} indicatorClassName={color} className="h-2 mt-2" />
          <p className="text-right text-xs mt-1 text-muted-foreground">{Math.round(percentage)}%</p>
@@ -87,10 +86,9 @@ const MacroCard = ({ name, consumed, goal, color }: { name: string; consumed: nu
   );
 };
 
-
 const MealGridCard = ({ title, meal, onAdd, defaultImage }: { title: string; meal: Meal | null; onAdd: () => void; defaultImage: string }) => {
   return (
-    <div className="relative rounded-xl overflow-hidden shadow-lg h-48 flex flex-col justify-end p-4 text-white" onClick={onAdd}>
+    <div className="relative rounded-lg overflow-hidden shadow-sm h-48 flex flex-col justify-end p-4 text-white" onClick={onAdd}>
       <Image
         src={meal?.imageUrl || defaultImage}
         alt={title}
@@ -103,20 +101,19 @@ const MealGridCard = ({ title, meal, onAdd, defaultImage }: { title: string; mea
       <div className="relative z-20">
          {meal ? (
             <div>
-                <h3 className="font-bold text-lg">{meal.name}</h3>
+                <h3 className="font-bold text-lg font-heading">{meal.name}</h3>
                 <p className="text-sm">{meal.calories} kcal</p>
             </div>
          ) : (
-            <h3 className="font-bold text-lg">{title}</h3>
+            <h3 className="font-bold text-lg font-heading">{title}</h3>
          )}
       </div>
-      <button className="absolute top-3 right-3 bg-primary/80 hover:bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center z-20">
+      <button className="absolute top-3 right-3 bg-secondary/80 hover:bg-secondary text-white rounded-full w-8 h-8 flex items-center justify-center z-20">
         <Plus className="w-5 h-5" />
       </button>
     </div>
   );
 };
-
 
 export default function HomePage() {
   const [user, setUser] = useState<User | null>(null)
@@ -197,18 +194,18 @@ export default function HomePage() {
 
   return (
       <div className="p-4 space-y-6">
-        <header className="flex items-center justify-between bg-pistachio p-4 rounded-xl">
+        <header className="flex items-center justify-between">
             <div className="flex items-center gap-3">
                 <Avatar className="h-11 w-11">
                     <AvatarImage src={user?.photoURL || ''} alt={user?.fullName} />
                     <AvatarFallback>{user?.fullName?.[0]}</AvatarFallback>
                 </Avatar>
                  <div>
-                    <h1 className="text-2xl font-bold">Aujourd'hui</h1>
+                    <h1 className="text-2xl font-bold font-heading text-tertiary">Aujourd'hui</h1>
                     <p className="text-muted-foreground capitalize">{format(new Date(), "eeee, d MMMM", { locale: fr })}</p>
                 </div>
             </div>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" className="text-tertiary">
                 <Bell />
             </Button>
         </header>
@@ -220,9 +217,9 @@ export default function HomePage() {
         </Card>
         
         <div className="flex gap-4">
-            <MacroCard name="Protéines" consumed={consumedMacros.protein} goal={macroGoals.protein} color="bg-[--protein]" />
-            <MacroCard name="Glucides" consumed={consumedMacros.carbs} goal={macroGoals.carbs} color="bg-[--carbs]" />
-            <MacroCard name="Lipides" consumed={consumedMacros.fat} goal={macroGoals.fat} color="bg-[--fat]" />
+            <MacroCard name="Protéines" consumed={consumedMacros.protein} goal={macroGoals.protein} color="bg-protein" />
+            <MacroCard name="Glucides" consumed={consumedMacros.carbs} goal={macroGoals.carbs} color="bg-carbs" />
+            <MacroCard name="Lipides" consumed={consumedMacros.fat} goal={macroGoals.fat} color="bg-fat" />
         </div>
         
         <div className="grid grid-cols-2 gap-4">

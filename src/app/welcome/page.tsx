@@ -7,7 +7,7 @@ export default function WelcomePage() {
   return (
     <div className="relative flex flex-col items-center justify-center min-h-screen bg-background text-white">
       <Image
-        src="welcome.png"
+        src="/welcome.png"
         alt="Healthy food background"
         layout="fill"
         objectFit="cover"
@@ -18,7 +18,7 @@ export default function WelcomePage() {
       
       <div className="relative z-20 flex flex-col h-full w-full max-w-md p-8">
         <div className="flex-1 flex flex-col justify-center text-center space-y-6">
-            <h1 className="text-6xl font-extrabold" style={{ color: '#006A5D' }}>
+            <h1 className="text-6xl font-extrabold text-white font-heading">
                 Kounfit
             </h1>
             <div className="space-y-2">
@@ -35,10 +35,10 @@ export default function WelcomePage() {
         </div>
         
         <div className="space-y-4">
-          <Button asChild size="lg" className="w-full h-14 text-lg font-semibold" style={{ backgroundColor: '#006A5D', color: 'white' }}>
+          <Button asChild size="lg" className="w-full h-14 text-lg font-semibold rounded-button bg-primary hover:bg-primary/90">
             <Link href="/login">Se connecter</Link>
           </Button>
-          <Button asChild size="lg" className="w-full h-14 text-lg font-semibold" style={{ backgroundColor: '#F47C6A', color: 'white' }}>
+          <Button asChild size="lg" className="w-full h-14 text-lg font-semibold rounded-button bg-secondary hover:bg-secondary/90">
             <Link href="/signup">S'inscrire</Link>
           </Button>
         </div>
