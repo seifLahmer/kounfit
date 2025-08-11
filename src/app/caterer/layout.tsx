@@ -11,11 +11,11 @@ import { getUserRole } from "@/lib/services/roleService";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
-    { href: "/caterer", icon: Home },
-    { href: "/caterer/stats", icon: BarChart2 },
-    { href: "/caterer/add-meal", icon: PlusCircle },
-    { href: "/caterer/profile", icon: User },
-    { href: "/caterer/settings", icon: Settings },
+    { href: "/caterer", icon: Home, label: "Accueil" },
+    { href: "/caterer/stats", icon: BarChart2, label: "Stats" },
+    { href: "/caterer/add-meal", icon: PlusCircle, label: "Ajouter" },
+    { href: "/caterer/profile", icon: User, label: "Profil" },
+    { href: "/caterer/settings", icon: Settings, label: "Ajustes" },
 ]
 
 export default function CatererLayout({
@@ -76,16 +76,18 @@ export default function CatererLayout({
       <main className="flex-1 pb-20">{children}</main>
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-50">
         <div className="flex justify-around items-center h-16">
-          {navLinks.map(({ href, icon: Icon }) => {
+          {navLinks.map(({ href, icon: Icon, label }) => {
             const isActive = pathname === href;
             return (
-              <Link key={href} href={href} className={cn("flex flex-col items-center gap-1", isActive ? "text-primary" : "text-gray-500")}>
+              <Link key={href} href={href} className={cn("flex flex-col items-center gap-1 w-16", isActive ? "text-primary" : "text-gray-500")}>
                 <Icon />
+                <span className="text-xs">{label}</span>
               </Link>
             )
           })}
-          <button onClick={handleLogout} className="flex flex-col items-center gap-1 text-gray-500">
+          <button onClick={handleLogout} className="flex flex-col items-center gap-1 text-gray-500 w-16">
              <LogOut />
+             <span className="text-xs">Déconn.</span>
           </button>
         </div>
       </nav>
