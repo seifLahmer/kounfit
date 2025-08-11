@@ -127,7 +127,7 @@ export default function AddMealPage() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-4">
+      <main className="flex-1 overflow-y-auto p-4 bg-gradient-to-b from-[#a2fcdc] to-background">
         {loading ? (
             <div className="flex justify-center items-center h-64">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
