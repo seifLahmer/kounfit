@@ -10,6 +10,7 @@ import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
+  type ChartConfig,
 } from "@/components/ui/chart"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { ArrowUp, Star } from "lucide-react"
@@ -43,7 +44,7 @@ const chartConfig = {
     label: "Revenue",
     color: "hsl(var(--destructive))",
   },
-}
+} satisfies ChartConfig;
 
 export default function StatsPage() {
     const [timeframe, setTimeframe] = useState("mois")
@@ -80,18 +81,20 @@ export default function StatsPage() {
           </CardHeader>
           <CardContent>
             <div className="h-48 w-full">
-               <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={revenueData} margin={{ top: 5, right: 10, left: -30, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                    <Tooltip
-                        content={<ChartTooltipContent hideIndicator />}
-                        cursor={{ stroke: 'hsl(var(--destructive))', strokeWidth: 2, strokeDasharray: "3 3" }}
-                     />
-                    <Line type="monotone" dataKey="value" stroke="hsl(var(--destructive))" strokeWidth={3} dot={false} />
-                    </LineChart>
-                </ResponsiveContainer>
+               <ChartContainer config={chartConfig}>
+                <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={revenueData} margin={{ top: 5, right: 10, left: -30, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                      <Tooltip
+                          content={<ChartTooltipContent hideIndicator />}
+                          cursor={{ stroke: 'hsl(var(--destructive))', strokeWidth: 2, strokeDasharray: "3 3" }}
+                       />
+                      <Line type="monotone" dataKey="value" stroke="hsl(var(--destructive))" strokeWidth={3} dot={false} />
+                      </LineChart>
+                  </ResponsiveContainer>
+               </ChartContainer>
             </div>
             <div className="flex items-baseline gap-4 mt-4">
                 <p className="text-3xl font-bold">2560 DT</p>
