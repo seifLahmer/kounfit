@@ -144,7 +144,7 @@ export default function AdminDashboardPage() {
         <h2 className="text-4xl font-bold mt-4">Administration</h2>
       </header>
       
-      <main className="flex-1 p-4 -mt-16 space-y-6">
+      <main className="flex-1 p-4 -mt-8 space-y-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card className="shadow-lg">
                 <CardContent className="p-4">
