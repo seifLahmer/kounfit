@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Wand2, Upload, ChevronLeft, CheckCircle } from "lucide-react";
+import { Loader2, Wand2, Upload, ChevronLeft, CheckCircle, Trash2, PlusCircle } from "lucide-react";
 import { analyzeMeal, type MealAnalysis } from "@/ai/flows/meal-analysis-flow";
 import { addMeal } from "@/lib/services/mealService";
 import { uploadMealImage } from "@/lib/services/storageService";
@@ -39,6 +39,7 @@ export default function AddMealPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [mealNameInput, setMealNameInput] = useState("");
   const [analysisResult, setAnalysisResult] = useState<MealAnalysis | null>(null);
+  const [ingredients, setIngredients] = useState<{ name: string; grams: number }[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [catererUid, setCatererUid] = useState<string | null>(null);
@@ -73,9 +74,11 @@ export default function AddMealPage() {
     }
     setIsAnalyzing(true);
     setAnalysisResult(null);
+    setIngredients([]);
     try {
       const result = await analyzeMeal({ mealName: mealNameInput });
       setAnalysisResult(result);
+      setIngredients(result.ingredients);
       form.reset({
         name: result.mealName,
         description: result.description,
@@ -102,6 +105,26 @@ export default function AddMealPage() {
       reader.readAsDataURL(file);
     }
   };
+  
+  const handleIngredientChange = (index: number, field: 'name' | 'grams', value: string | number) => {
+    const newIngredients = [...ingredients];
+    if(field === 'grams' && typeof value === 'string') {
+        newIngredients[index][field] = parseInt(value, 10) || 0;
+    } else {
+        newIngredients[index][field] = value as any;
+    }
+    setIngredients(newIngredients);
+  };
+
+  const handleAddIngredient = () => {
+    setIngredients([...ingredients, { name: '', grams: 0 }]);
+  };
+
+  const handleRemoveIngredient = (index: number) => {
+    const newIngredients = ingredients.filter((_, i) => i !== index);
+    setIngredients(newIngredients);
+  };
+
 
   const onSubmit = async (data: MealFormValues) => {
      if (!analysisResult) {
@@ -125,7 +148,7 @@ export default function AddMealPage() {
             ...data,
             imageUrl: downloadURL,
             imageRef: imagePath,
-            ingredients: analysisResult.ingredients,
+            ingredients: ingredients, // Use the edited ingredients
             calories: analysisResult.totalMacros.calories,
             macros: analysisResult.totalMacros,
             createdBy: catererUid,
@@ -262,19 +285,44 @@ export default function AddMealPage() {
 
                  <Card>
                     <CardHeader>
-                        <CardTitle>Détails nutritionnels (Estimations de l'IA)</CardTitle>
+                        <CardTitle>Détails Nutritionnels & Ingrédients</CardTitle>
+                        <CardDescription>Les macros sont des estimations de l'IA. Ajustez la liste d'ingrédients ci-dessous.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                         <div className="flex justify-around bg-muted p-4 rounded-lg text-center mb-4">
+                         <div className="flex justify-around bg-muted p-4 rounded-lg text-center mb-6">
                             <div><p className="font-bold text-lg">{analysisResult.totalMacros.calories}</p><p className="text-sm">Kcal</p></div>
                             <div><p className="font-bold text-lg">{analysisResult.totalMacros.protein}g</p><p className="text-sm">Protéines</p></div>
                             <div><p className="font-bold text-lg">{analysisResult.totalMacros.carbs}g</p><p className="text-sm">Glucides</p></div>
                             <div><p className="font-bold text-lg">{analysisResult.totalMacros.fat}g</p><p className="text-sm">Lipides</p></div>
                          </div>
-                        <h4 className="font-semibold mb-2">Ingrédients estimés:</h4>
-                        <ul className="list-disc list-inside text-muted-foreground">
-                            {analysisResult.ingredients.map(ing => <li key={ing.name}>{ing.name} ({ing.grams}g)</li>)}
-                        </ul>
+                        
+                         <div className="space-y-4">
+                            <Label>Ingrédients</Label>
+                            {ingredients.map((ing, index) => (
+                                <div key={index} className="flex gap-2 items-center">
+                                    <Input 
+                                        placeholder="Nom de l'ingrédient" 
+                                        value={ing.name}
+                                        onChange={(e) => handleIngredientChange(index, 'name', e.target.value)}
+                                        className="flex-grow"
+                                    />
+                                    <Input
+                                        type="number"
+                                        placeholder="g"
+                                        value={ing.grams}
+                                        onChange={(e) => handleIngredientChange(index, 'grams', e.target.value)}
+                                        className="w-24"
+                                    />
+                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveIngredient(index)}>
+                                        <Trash2 className="w-4 h-4 text-destructive"/>
+                                    </Button>
+                                </div>
+                            ))}
+                            <Button type="button" variant="outline" size="sm" onClick={handleAddIngredient} className="mt-2">
+                                <PlusCircle className="mr-2 h-4 w-4"/>
+                                Ajouter un ingrédient
+                            </Button>
+                        </div>
                     </CardContent>
                 </Card>
 
