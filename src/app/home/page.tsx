@@ -227,7 +227,7 @@ export default function HomePage() {
         
         <div className="grid grid-cols-2 gap-4">
             <MealGridCard title="Petit déjeuner" meal={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} />
-            <MealGridCard title="Déjeuner" meal={daily.lunch} onAdd={() => handleAddMeal('lunch')} />
+            <MealGridCard title="Déjeuner" meal={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} />
             <MealGridCard title="Dîner" meal={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} />
             <MealGridCard title="Collation" meal={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} />
         </div>
