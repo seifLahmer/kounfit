@@ -131,10 +131,6 @@ export default function AddMealPage() {
       toast({ title: "Analyse requise", description: "Veuillez d'abord analyser un repas.", variant: "destructive" });
       return;
     }
-    if (!imageFile) {
-        toast({ title: "Image requise", description: "Veuillez télécharger une image pour le repas.", variant: "destructive" });
-        return;
-    }
      if (!catererUid) {
         toast({ title: "Erreur d'authentification", description: "Utilisateur non connecté.", variant: "destructive" });
         return;
@@ -142,11 +138,18 @@ export default function AddMealPage() {
 
     setIsSaving(true);
     try {
-        const { downloadURL, imagePath } = await uploadMealImage(catererUid, imageFile);
+        let imageUrl = "https://placehold.co/600x400.png";
+        let imagePath: string | undefined = undefined;
+
+        if (imageFile) {
+            const result = await uploadMealImage(catererUid, imageFile);
+            imageUrl = result.downloadURL;
+            imagePath = result.imagePath;
+        }
         
         await addMeal({
             ...data,
-            imageUrl: downloadURL,
+            imageUrl: imageUrl,
             imageRef: imagePath,
             ingredients: ingredients, // Use the edited ingredients
             calories: analysisResult.totalMacros.calories,
