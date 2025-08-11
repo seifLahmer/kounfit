@@ -108,7 +108,7 @@ const MealGridCard = ({ title, meal, onAdd, defaultImage }: { title: string; mea
             <h3 className="font-bold text-lg font-heading">{title}</h3>
          )}
       </div>
-      <button className="absolute top-3 right-3 bg-secondary/80 hover:bg-secondary text-white rounded-full w-8 h-8 flex items-center justify-center z-20">
+      <button className="absolute top-3 right-3 bg-primary/80 hover:bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center z-20">
         <Plus className="w-5 h-5" />
       </button>
     </div>
@@ -194,7 +194,7 @@ export default function HomePage() {
 
   return (
       <div className="p-4 space-y-6">
-        <header className="flex items-center justify-between">
+        <header className="flex items-center justify-between p-4 bg-pistachio rounded-lg">
             <div className="flex items-center gap-3">
                 <Avatar className="h-11 w-11">
                     <AvatarImage src={user?.photoURL || ''} alt={user?.fullName} />
