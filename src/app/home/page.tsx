@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Loader2, Plus, Bell } from "lucide-react"
+import { Loader2, Plus, Bell, Utensils } from "lucide-react"
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -110,6 +110,7 @@ const MetricProgressCircle = ({ consumed, goal, colorClass, label }: { consumed:
   );
 };
 
+
 const MealGridCard = ({ title, meals, onAdd, defaultImage, calorieGoal, macroGoals }: { title: string; meals: Meal[]; onAdd: () => void; defaultImage: string; calorieGoal: number; macroGoals: User['macroRatio'] }) => {
   const totalCalories = meals.reduce((sum, meal) => sum + meal.calories, 0);
   const totalMacros = meals.reduce((sum, meal) => {
@@ -165,6 +166,7 @@ export default function HomePage() {
           localStorage.removeItem("dailyPlanData");
           return emptyPlan;
         }
+        // Ensure all meal types are arrays
         return {
           breakfast: Array.isArray(plan.breakfast) ? plan.breakfast : [],
           lunch: Array.isArray(plan.lunch) ? plan.lunch : [],
@@ -233,8 +235,8 @@ export default function HomePage() {
   }
 
   return (
-      <div className="min-h-screen bg-tertiary">
-        <header className="flex items-center justify-between p-4 text-white bg-pistachio">
+      <div className="flex flex-col h-full bg-tertiary">
+        <header className="flex-shrink-0 flex items-center justify-between p-4 text-white bg-pistachio">
             <div className="flex items-center gap-3">
                 <Avatar className="h-11 w-11 border-2 border-white/50">
                     <AvatarImage src={user?.photoURL || ''} alt={user?.fullName} />
@@ -250,7 +252,7 @@ export default function HomePage() {
             </Button>
         </header>
 
-        <Card className="mt-4">
+        <Card className="flex-grow">
           <CardContent className="p-4 space-y-6">
             <Card>
                 <CardContent className="p-6">
@@ -276,3 +278,5 @@ export default function HomePage() {
       </div>
   )
 }
+
+    
