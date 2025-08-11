@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Loader2, Plus, Bell, Utensils } from "lucide-react"
+import { Loader2, Plus, Bell } from "lucide-react"
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -79,80 +79,37 @@ const MacroCard = ({ name, consumed, goal, color }: { name: string; consumed: nu
   );
 };
 
-const MealProgressCircle = ({ calories, calorieGoal }: { calories: number, calorieGoal: number }) => {
-  const targetCaloriesPerMeal = calorieGoal > 0 ? calorieGoal / 4 : 500; // Assume 4 meals a day
-  const percentage = calorieGoal > 0 ? (calories / targetCaloriesPerMeal) * 100 : 0;
+const MetricProgressCircle = ({ consumed, goal, colorClass, label }: { consumed: number; goal: number; colorClass: string; label: string }) => {
+  const percentage = goal > 0 ? Math.min((consumed / goal) * 100, 100) : 0;
   const circumference = 2 * Math.PI * 18; // radius = 18
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   return (
-    <div className="relative w-12 h-12">
-      <svg className="w-full h-full" viewBox="0 0 40 40">
-        <circle
-          className="stroke-current text-white/20"
-          strokeWidth="3"
-          fill="none"
-          cx="20"
-          cy="20"
-          r="18"
-        />
-        <circle
-          className="stroke-current text-white"
-          strokeWidth="3"
-          fill="none"
-          cx="20"
-          cy="20"
-          r="18"
-          strokeLinecap="round"
-          transform="rotate(-90 20 20)"
-          style={{
-            strokeDasharray: circumference,
-            strokeDashoffset,
-            transition: "stroke-dashoffset 0.5s",
-          }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center text-white">
-        {calories > 0 ? (
-          <span className="text-xs font-bold">{calories}</span>
-        ) : (
-          <Utensils className="w-4 h-4" />
-        )}
-      </div>
-    </div>
-  );
-};
-
-const MacroProgressCircle = ({ consumed, goal, colorClass, label }: { consumed: number; goal: number; colorClass: string; label: string }) => {
-  const percentage = goal > 0 ? Math.min((consumed / goal) * 100, 100) : 0;
-  const circumference = 2 * Math.PI * 12; // radius = 12
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
-
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <div className="relative w-7 h-7">
-        <svg className="w-full h-full" viewBox="0 0 28 28">
-          <circle className="stroke-current text-white/20" strokeWidth="2" fill="none" cx="14" cy="14" r="12" />
+    <div className="flex flex-col items-center gap-1 text-white">
+      <div className="relative w-10 h-10">
+        <svg className="w-full h-full" viewBox="0 0 40 40">
+          <circle className="stroke-current text-white/20" strokeWidth="3" fill="none" cx="20" cy="20" r="18" />
           <circle
             className={`stroke-current ${colorClass}`}
-            strokeWidth="2"
+            strokeWidth="3"
             fill="none"
-            cx="14"
-            cy="14"
-            r="12"
+            cx="20"
+            cy="20"
+            r="18"
             strokeLinecap="round"
-            transform="rotate(-90 14 14)"
+            transform="rotate(-90 20 20)"
             style={{ strokeDasharray: circumference, strokeDashoffset, transition: "stroke-dashoffset 0.5s" }}
           />
         </svg>
-        <div className={`absolute inset-0 flex items-center justify-center font-bold text-white text-[10px]`}>
-          P
+        <div className="absolute inset-0 flex items-center justify-center font-bold text-xs">
+          {Math.round(consumed)}
         </div>
       </div>
-       <span className="text-xs">{Math.round(consumed)}g</span>
+      <span className="text-xs font-medium">{label}</span>
     </div>
   );
 };
+
 
 const MealGridCard = ({ title, meals, onAdd, defaultImage, calorieGoal, macroGoals }: { title: string; meals: Meal[]; onAdd: () => void; defaultImage: string; calorieGoal: number; macroGoals: User['macroRatio'] }) => {
   const totalCalories = meals.reduce((sum, meal) => sum + meal.calories, 0);
@@ -164,7 +121,7 @@ const MealGridCard = ({ title, meals, onAdd, defaultImage, calorieGoal, macroGoa
   }, { protein: 0, carbs: 0, fat: 0 });
 
   return (
-    <div className="relative rounded-lg overflow-hidden shadow-sm h-48 flex flex-col justify-end p-4 text-white" onClick={onAdd}>
+    <div className="relative rounded-lg overflow-hidden shadow-sm h-48 flex flex-col justify-between p-3 text-white" onClick={onAdd}>
       <Image
         src={defaultImage}
         alt={title}
@@ -174,20 +131,20 @@ const MealGridCard = ({ title, meals, onAdd, defaultImage, calorieGoal, macroGoa
         data-ai-hint="healthy food"
       />
       <div className="absolute inset-0 bg-black/30 z-10"></div>
-      <div className="relative z-20 flex justify-between items-end">
-         <div className="space-y-1">
+      <div className="relative z-20 flex flex-col justify-between h-full">
+         <div className="flex justify-between items-start">
             <h3 className="font-bold text-lg font-heading">{title}</h3>
-            <MealProgressCircle calories={totalCalories} calorieGoal={calorieGoal} />
+            <button className="bg-primary hover:bg-primary/90 text-white rounded-full w-8 h-8 flex items-center justify-center z-20 shrink-0">
+                <Plus className="w-5 h-5" />
+            </button>
          </div>
-         <div className="flex gap-2">
-            <MacroProgressCircle consumed={totalMacros.protein} goal={macroGoals.protein / 4} colorClass="text-protein" label="P" />
-            <MacroProgressCircle consumed={totalMacros.carbs} goal={macroGoals.carbs / 4} colorClass="text-carbs" label="C" />
-            <MacroProgressCircle consumed={totalMacros.fat} goal={macroGoals.fat / 4} colorClass="text-fat" label="F" />
+         <div className="flex justify-around items-end">
+             <MetricProgressCircle consumed={totalCalories} goal={calorieGoal / 4} colorClass="text-primary" label="Kcal" />
+             <MetricProgressCircle consumed={totalMacros.protein} goal={macroGoals.protein / 4} colorClass="text-protein" label="Protéines" />
+             <MetricProgressCircle consumed={totalMacros.carbs} goal={macroGoals.carbs / 4} colorClass="text-carbs" label="Glucides" />
+             <MetricProgressCircle consumed={totalMacros.fat} goal={macroGoals.fat / 4} colorClass="text-fat" label="Lipides" />
          </div>
       </div>
-      <button className="absolute top-3 right-3 bg-primary hover:bg-primary/90 text-white rounded-full w-8 h-8 flex items-center justify-center z-20">
-        <Plus className="w-5 h-5" />
-      </button>
     </div>
   );
 };
@@ -208,7 +165,6 @@ export default function HomePage() {
           localStorage.removeItem("dailyPlanData");
           return emptyPlan;
         }
-        // Ensure all categories are arrays
         return {
           breakfast: Array.isArray(plan.breakfast) ? plan.breakfast : [],
           lunch: Array.isArray(plan.lunch) ? plan.lunch : [],
@@ -316,5 +272,3 @@ export default function HomePage() {
       </div>
   )
 }
-
-    
