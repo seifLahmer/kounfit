@@ -15,6 +15,7 @@ import type { Meal, DailyPlan, User } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { getUserProfile } from "@/lib/services/userService";
+import { cn } from "@/lib/utils";
 
 
 const mealTypeTranslations: { [key: string]: string } = {
@@ -123,6 +124,9 @@ export default function AddMealPage() {
             title: isFavorite ? "Ajouté aux favoris" : "Retiré des favoris",
             description: `Le repas a été ${isFavorite ? 'ajouté à' : 'retiré de'} vos favoris.`
         });
+        if (isFavorite) {
+          router.push('/meal-plans');
+        }
     } catch (error) {
         toast({
             title: "Erreur",
@@ -190,7 +194,7 @@ export default function AddMealPage() {
                                 <div className="flex items-center gap-2 text-xs mt-1">
                                     <span className="font-semibold text-protein">P</span><span>{meal.macros.protein}g</span>
                                     <span className="font-semibold text-primary">C</span><span>{meal.macros.carbs}g</span>
-                                    <span className="font-semibold text-primary">F</span><span>{meal.macros.fat}g</span>
+                                    <span className="font-semibold text-fat">F</span><span>{meal.macros.fat}g</span>
                                 </div>
                             </div>
                         </CardContent>
