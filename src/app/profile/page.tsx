@@ -230,14 +230,11 @@ export default function ProfilePage() {
                                 <AvatarImage src={profileImagePreview || user.photoURL || ''} alt={user.fullName} />
                                 <AvatarFallback>{user.fullName?.[0]}</AvatarFallback>
                             </Avatar>
-                            <div className="absolute bottom-0 right-0 bg-secondary text-white rounded-full p-2 group-hover:bg-secondary/80 transition-colors">
-                                <Camera className="h-4 w-4" />
-                            </div>
                         </div>
                         <div>
                             <h2 className="text-2xl font-bold text-white">{user.fullName}</h2>
                             <p className="text-white/80 text-sm">
-                                {user.email}
+                                {auth.currentUser?.email}
                             </p>
                         </div>
                     </div>
