@@ -110,7 +110,6 @@ const MetricProgressCircle = ({ consumed, goal, colorClass, label }: { consumed:
   );
 };
 
-
 const MealGridCard = ({ title, meals, onAdd, defaultImage, calorieGoal, macroGoals }: { title: string; meals: Meal[]; onAdd: () => void; defaultImage: string; calorieGoal: number; macroGoals: User['macroRatio'] }) => {
   const totalCalories = meals.reduce((sum, meal) => sum + meal.calories, 0);
   const totalMacros = meals.reduce((sum, meal) => {
@@ -148,6 +147,7 @@ const MealGridCard = ({ title, meals, onAdd, defaultImage, calorieGoal, macroGoa
     </div>
   );
 };
+
 
 export default function HomePage() {
   const [user, setUser] = useState<User | null>(null)
@@ -241,7 +241,7 @@ export default function HomePage() {
                     <AvatarFallback>{user?.fullName?.[0]}</AvatarFallback>
                 </Avatar>
                  <div>
-                    <h1 className="text-2xl font-bold font-heading">Aujourd'hui</h1>
+                    <h1 className="text-2xl font-bold font-heading text-white">Aujourd'hui</h1>
                     <p className="text-white/80 capitalize">{format(new Date(), "eeee, d MMMM", { locale: fr })}</p>
                 </div>
             </div>
@@ -250,7 +250,7 @@ export default function HomePage() {
             </Button>
         </header>
 
-        <Card className="m-4 mt-0 rounded-t-3xl">
+        <Card className="mt-0 rounded-t-3xl min-h-screen">
           <CardContent className="p-4 space-y-6">
             <Card>
                 <CardContent className="p-6">
