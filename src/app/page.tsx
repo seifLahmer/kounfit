@@ -9,12 +9,8 @@ export default function SplashPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Wait for a bit before redirecting to show off the splash screen
-    const timer = setTimeout(() => {
-      router.replace('/welcome');
-    }, 1500); 
-
-    return () => clearTimeout(timer);
+    // Redirect immediately to the welcome page
+    router.replace('/welcome');
   }, [router]);
 
   return (
