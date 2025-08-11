@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Utensils, Loader2, LogOut } from "lucide-react";
+import { Utensils, Loader2, LogOut, BarChart2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -70,6 +70,10 @@ export default function CatererLayout({
           <Link href="/caterer" className="flex flex-col items-center gap-1 text-primary">
             <Utensils />
             <span className="text-xs">Dashboard</span>
+          </Link>
+           <Link href="/caterer/stats" className="flex flex-col items-center gap-1 text-gray-500">
+            <BarChart2 />
+            <span className="text-xs">Statistiques</span>
           </Link>
           <button onClick={handleLogout} className="flex flex-col items-center gap-1 text-gray-500">
             <LogOut />
