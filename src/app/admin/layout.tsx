@@ -43,6 +43,11 @@ export default function AdminLayout({
 
     return () => unsubscribe();
   }, [router]);
+  
+  const handleLogout = async () => {
+    await auth.signOut();
+    router.push('/welcome');
+  };
 
   if (isLoading) {
     return (
@@ -58,7 +63,19 @@ export default function AdminLayout({
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 pb-20">{children}</main>
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-50">
+        <div className="flex justify-around items-center h-16">
+          <Link href="/admin" className="flex flex-col items-center gap-1 text-primary">
+            <Shield />
+            <span className="text-xs">Admin</span>
+          </Link>
+          <button onClick={handleLogout} className="flex flex-col items-center gap-1 text-gray-500">
+            <LogOut />
+            <span className="text-xs">Déconnexion</span>
+          </button>
+        </div>
+      </nav>
     </div>
   );
 }
