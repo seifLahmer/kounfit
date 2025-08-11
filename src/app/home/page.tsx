@@ -88,11 +88,11 @@ const MacroCard = ({ name, consumed, goal, color }: { name: string; consumed: nu
 };
 
 
-const MealGridCard = ({ title, meal, onAdd }: { title: string; meal: Meal | null; onAdd: () => void }) => {
+const MealGridCard = ({ title, meal, onAdd, defaultImage }: { title: string; meal: Meal | null; onAdd: () => void; defaultImage: string }) => {
   return (
     <div className="relative rounded-xl overflow-hidden shadow-lg h-48 flex flex-col justify-end p-4 text-white" onClick={onAdd}>
       <Image
-        src={meal?.imageUrl || `https://placehold.co/400x400.png`}
+        src={meal?.imageUrl || defaultImage}
         alt={title}
         layout="fill"
         objectFit="cover"
@@ -226,10 +226,10 @@ export default function HomePage() {
         </div>
         
         <div className="grid grid-cols-2 gap-4">
-            <MealGridCard title="Petit déjeuner" meal={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} />
-            <MealGridCard title="Déjeuner" meal={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} />
-            <MealGridCard title="Dîner" meal={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} />
-            <MealGridCard title="Collation" meal={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} />
+            <MealGridCard title="Petit déjeuner" meal={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} defaultImage="/petit-dejeuner.png" />
+            <MealGridCard title="Déjeuner" meal={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} defaultImage="/dejeuner.png" />
+            <MealGridCard title="Dîner" meal={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} defaultImage="/dinner.png" />
+            <MealGridCard title="Collation" meal={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} defaultImage="/snacks.png" />
         </div>
 
       </div>

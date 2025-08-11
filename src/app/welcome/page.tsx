@@ -7,7 +7,7 @@ export default function WelcomePage() {
   return (
     <div className="relative flex flex-col items-center justify-center min-h-screen bg-background text-white">
       <Image
-        src="https://placehold.co/1080x1920.png"
+        src="welcome.png"
         alt="Healthy food background"
         layout="fill"
         objectFit="cover"
@@ -40,9 +40,6 @@ export default function WelcomePage() {
           </Button>
           <Button asChild size="lg" className="w-full h-14 text-lg font-semibold" style={{ backgroundColor: '#F47C6A', color: 'white' }}>
             <Link href="/signup">S'inscrire</Link>
-          </Button>
-           <Button asChild variant="link" className="w-full text-white/80">
-                <Link href="#">En savoir plus</Link>
           </Button>
         </div>
       </div>
