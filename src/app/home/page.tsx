@@ -55,13 +55,13 @@ const CalorieCircle = ({ consumed, goal }: { consumed: number; goal: number }) =
                 />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-3xl font-bold font-heading text-tertiary">{consumed}</span>
+                <span className="text-3xl font-bold font-heading text-foreground">{consumed}</span>
                 <span className="text-sm text-muted-foreground">dans la cible</span>
             </div>
         </div>
         <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Restant / consommées</span>
-            <span className="text-4xl font-bold font-heading text-tertiary">{Math.max(0, goal - consumed)} kcal</span>
+            <span className="text-4xl font-bold font-heading text-foreground">{Math.max(0, goal - consumed)} kcal</span>
             <span className="text-lg text-muted-foreground">restantes</span>
              <svg width="100" height="20" viewBox="0 0 100 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="mt-2">
                 <path d="M2 10C12.0667 2.33333 24.4 -1.4 34 5C45 12.5 56.6667 15.1667 66.5 12C76.3333 8.83333 86.5 7.5 98 14" stroke="#A1A1AA" strokeWidth="2" strokeLinecap="round"/>
@@ -77,7 +77,7 @@ const MacroCard = ({ name, consumed, goal, color }: { name: string; consumed: nu
     <Card className="flex-1">
       <CardContent className="p-4">
         <p className="text-sm text-muted-foreground">{name}</p>
-        <p className="text-2xl font-bold font-heading text-tertiary">{consumed} g</p>
+        <p className="text-2xl font-bold font-heading text-foreground">{consumed} g</p>
         <p className="text-xs text-muted-foreground">sur {goal} g</p>
         <Progress value={percentage} indicatorClassName={color} className="h-2 mt-2" />
          <p className="text-right text-xs mt-1 text-muted-foreground">{Math.round(percentage)}%</p>
@@ -201,7 +201,7 @@ export default function HomePage() {
                     <AvatarFallback>{user?.fullName?.[0]}</AvatarFallback>
                 </Avatar>
                  <div>
-                    <h1 className="text-2xl font-bold font-heading text-tertiary">Aujourd'hui</h1>
+                    <h1 className="text-2xl font-bold font-heading text-foreground">Aujourd'hui</h1>
                     <p className="text-muted-foreground capitalize">{format(new Date(), "eeee, d MMMM", { locale: fr })}</p>
                 </div>
             </div>
