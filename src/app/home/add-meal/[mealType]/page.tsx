@@ -1,18 +1,21 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
-import { ChevronLeft, Loader2, Plus, Search, Leaf } from "lucide-react";
+import { ChevronLeft, Loader2, Plus, Search, Leaf, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { getAvailableMealsByCategory } from "@/lib/services/mealService";
-import type { Meal, DailyPlan } from "@/lib/types";
+import { toggleFavoriteMeal } from "@/lib/services/userService";
+import { auth } from "@/lib/firebase";
+import type { Meal, DailyPlan, User } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
+import { getUserProfile } from "@/lib/services/userService";
+
 
 const mealTypeTranslations: { [key: string]: string } = {
   breakfast: 'Petit déjeuner',
@@ -20,9 +23,6 @@ const mealTypeTranslations: { [key: string]: string } = {
   dinner: 'Dîner',
   snack: 'Collation'
 };
-
-const mealCategories: Array<keyof DailyPlan | 'all'> = ['all', 'breakfast', 'lunch', 'dinner', 'snack'];
-
 
 export default function AddMealPage() {
   const router = useRouter();
@@ -33,26 +33,41 @@ export default function AddMealPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
+  const [favoriteMealIds, setFavoriteMealIds] = useState<string[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+
+  const fetchInitialData = useCallback(async () => {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) {
+        router.push('/login');
+        return;
+    }
+    setLoading(true);
+    try {
+        const [fetchedMeals, userProfile] = await Promise.all([
+            getAvailableMealsByCategory(mealType),
+            getUserProfile(firebaseUser.uid)
+        ]);
+        setMeals(fetchedMeals);
+        if (userProfile) {
+            setUser(userProfile);
+            setFavoriteMealIds(userProfile.favoriteMealIds || []);
+        }
+    } catch (error) {
+        toast({
+            title: "Erreur",
+            description: "Impossible de charger les données initiales.",
+            variant: "destructive",
+        });
+    } finally {
+        setLoading(false);
+    }
+  }, [mealType, router, toast]);
 
   useEffect(() => {
-    const fetchMeals = async () => {
-      try {
-        setLoading(true);
-        // We only fetch meals for the relevant category passed in the URL
-        const fetchedMeals = await getAvailableMealsByCategory(mealType);
-        setMeals(fetchedMeals);
-      } catch (error) {
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger les repas disponibles.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchMeals();
-  }, [mealType, toast]);
+    fetchInitialData();
+  }, [fetchInitialData]);
+
   
   const handleAddMeal = (meal: Meal) => {
     try {
@@ -64,7 +79,6 @@ export default function AddMealPage() {
       if (savedData) {
         const parsedData = JSON.parse(savedData);
         const plan = (parsedData.date === todayStr) ? parsedData.plan : {};
-         // Ensure all categories are arrays
         currentPlan = {
           breakfast: Array.isArray(plan.breakfast) ? plan.breakfast : [],
           lunch: Array.isArray(plan.lunch) ? plan.lunch : [],
@@ -77,7 +91,6 @@ export default function AddMealPage() {
       
       const targetMealType = meal.category;
       
-      // Ensure the target array exists before pushing
       if (!Array.isArray(currentPlan[targetMealType])) {
           currentPlan[targetMealType] = [];
       }
@@ -97,6 +110,25 @@ export default function AddMealPage() {
         variant: "destructive",
       });
       console.error("Failed to update localStorage", error);
+    }
+  };
+
+  const handleToggleFavorite = async (mealId: string) => {
+    if (!user) return;
+    try {
+        const updatedFavorites = await toggleFavoriteMeal(user.uid, mealId);
+        setFavoriteMealIds(updatedFavorites);
+        const isFavorite = updatedFavorites.includes(mealId);
+        toast({
+            title: isFavorite ? "Ajouté aux favoris" : "Retiré des favoris",
+            description: `Le repas a été ${isFavorite ? 'ajouté à' : 'retiré de'} vos favoris.`
+        });
+    } catch (error) {
+        toast({
+            title: "Erreur",
+            description: "Impossible de mettre à jour les favoris.",
+            variant: "destructive",
+        });
     }
   };
 
@@ -136,7 +168,7 @@ export default function AddMealPage() {
             <div className="grid grid-cols-2 gap-4">
                 {filteredMeals.map((meal) => (
                     <Card key={meal.id} className="relative overflow-hidden rounded-2xl border shadow-sm h-56 group">
-                        <Link href={`/home/meal/${meal.id}`} className="absolute inset-0">
+                        <Link href={`/home/meal/${meal.id}`} className="absolute inset-0 z-0">
                            <Image
                                 src={meal.imageUrl}
                                 alt={meal.name}
@@ -145,8 +177,9 @@ export default function AddMealPage() {
                                 className="w-full h-full transition-transform duration-300 group-hover:scale-105"
                                 data-ai-hint="healthy food"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/10"></div>
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
                         </Link>
+                        
                         <CardContent className="relative z-10 p-3 flex flex-col justify-end h-full text-white">
                             <div>
                                 <h3 className="font-bold text-base truncate">{meal.name}</h3>
@@ -154,13 +187,24 @@ export default function AddMealPage() {
                                     <Leaf className="w-3 h-3 text-green-300" />
                                     <span className="font-medium text-sm">{meal.calories} kcal</span>
                                 </div>
-                            </div>
-                            <div className="absolute top-3 right-3">
-                                <Button size="icon" className="bg-primary/80 hover:bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center shrink-0 z-20" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAddMeal(meal); }}>
-                                    <Plus className="w-5 h-5"/>
-                                </Button>
+                                <div className="flex items-center gap-2 text-xs mt-1">
+                                    <span className="font-semibold text-protein">P</span><span>{meal.macros.protein}g</span>
+                                    <span className="font-semibold text-primary">C</span><span>{meal.macros.carbs}g</span>
+                                    <span className="font-semibold text-primary">F</span><span>{meal.macros.fat}g</span>
+                                </div>
                             </div>
                         </CardContent>
+
+                        <div className="absolute top-2 right-2 z-20">
+                            <Button variant="ghost" size="icon" className="text-white/80 hover:text-white" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleToggleFavorite(meal.id); }}>
+                                <Heart className={cn("w-6 h-6", favoriteMealIds.includes(meal.id) ? "text-red-500 fill-current" : "text-white")}/>
+                            </Button>
+                        </div>
+                        <div className="absolute bottom-2 right-2 z-20">
+                            <Button size="icon" className="bg-primary/80 hover:bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center shrink-0" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAddMeal(meal); }}>
+                                <Plus className="w-5 h-5"/>
+                            </Button>
+                        </div>
                     </Card>
                 ))}
             </div>
