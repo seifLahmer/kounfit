@@ -108,8 +108,8 @@ export default function AddMealPage() {
 
 
   return (
-    <div className="flex flex-col h-screen bg-background">
-      <header className="p-4 space-y-4 sticky top-0 bg-background z-10 border-b">
+    <div className="flex flex-col h-screen bg-gradient-to-b from-[#a2fcdc] to-background">
+      <header className="p-4 space-y-4 sticky top-0 bg-transparent z-10">
          <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" onClick={() => router.back()} className="shrink-0">
                 <ChevronLeft />
@@ -127,7 +127,7 @@ export default function AddMealPage() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-4 bg-gradient-to-b from-[#a2fcdc] to-background">
+      <main className="flex-1 overflow-y-auto p-4">
         {loading ? (
             <div className="flex justify-center items-center h-64">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
