@@ -170,10 +170,10 @@ export default function HomePage() {
         }
         // Ensure all categories are arrays
         return {
-          breakfast: Array.isArray(plan.breakfast) ? plan.breakfast : (plan.breakfast ? [plan.breakfast] : []),
-          lunch: Array.isArray(plan.lunch) ? plan.lunch : (plan.lunch ? [plan.lunch] : []),
-          snack: Array.isArray(plan.snack) ? plan.snack : (plan.snack ? [plan.snack] : []),
-          dinner: Array.isArray(plan.dinner) ? plan.dinner : (plan.dinner ? [plan.dinner] : []),
+          breakfast: Array.isArray(plan.breakfast) ? plan.breakfast : [],
+          lunch: Array.isArray(plan.lunch) ? plan.lunch : [],
+          snack: Array.isArray(plan.snack) ? plan.snack : [],
+          dinner: Array.isArray(plan.dinner) ? plan.dinner : [],
         };
       }
     } catch (error) {

@@ -8,7 +8,7 @@ import { ChevronLeft, Loader2, Plus, Search, Leaf } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { getAvailableMeals, getAvailableMealsByCategory } from "@/lib/services/mealService";
+import { getAvailableMealsByCategory } from "@/lib/services/mealService";
 import type { Meal, DailyPlan } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
@@ -32,16 +32,14 @@ export default function AddMealPage() {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeCategory, setActiveCategory] = useState<keyof DailyPlan | 'all'>(mealType);
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchMeals = async () => {
       try {
         setLoading(true);
-        const fetchedMeals = activeCategory === 'all'
-          ? await getAvailableMeals()
-          : await getAvailableMealsByCategory(activeCategory);
+        // We only fetch meals for the relevant category passed in the URL
+        const fetchedMeals = await getAvailableMealsByCategory(mealType);
         setMeals(fetchedMeals);
       } catch (error) {
         toast({
@@ -54,7 +52,7 @@ export default function AddMealPage() {
       }
     };
     fetchMeals();
-  }, [activeCategory, toast]);
+  }, [mealType, toast]);
   
   const handleAddMeal = (meal: Meal) => {
     try {
@@ -62,16 +60,25 @@ export default function AddMealPage() {
       const todayStr = new Date().toISOString().split('T')[0];
       
       let currentPlan: DailyPlan;
+      
       if (savedData) {
         const parsedData = JSON.parse(savedData);
-        currentPlan = (parsedData.date === todayStr) ? parsedData.plan : { breakfast: [], lunch: [], snack: [], dinner: [] };
+        const plan = (parsedData.date === todayStr) ? parsedData.plan : {};
+         // Ensure all categories are arrays
+        currentPlan = {
+          breakfast: Array.isArray(plan.breakfast) ? plan.breakfast : [],
+          lunch: Array.isArray(plan.lunch) ? plan.lunch : [],
+          snack: Array.isArray(plan.snack) ? plan.snack : [],
+          dinner: Array.isArray(plan.dinner) ? plan.dinner : [],
+        };
       } else {
         currentPlan = { breakfast: [], lunch: [], snack: [], dinner: [] };
       }
       
       const targetMealType = meal.category;
       
-      if (!currentPlan[targetMealType]) {
+      // Ensure the target array exists before pushing
+      if (!Array.isArray(currentPlan[targetMealType])) {
           currentPlan[targetMealType] = [];
       }
       currentPlan[targetMealType].push(meal);
@@ -111,24 +118,12 @@ export default function AddMealPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                     type="text"
-                    placeholder={`Rechercher un repas...`}
+                    placeholder={`Rechercher un ${mealTypeTranslations[mealType] || 'repas'}...`}
                     className="pl-10 h-12 rounded-button bg-gray-50 border-gray-200 focus:bg-white"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
-        </div>
-        <div className="flex gap-2 overflow-x-auto pb-2">
-             {mealCategories.map(cat => (
-                <Button 
-                    key={cat}
-                    variant={activeCategory === cat ? "default" : "outline"}
-                    className="rounded-full shrink-0 capitalize"
-                    onClick={() => setActiveCategory(cat)}
-                >
-                    {cat === 'all' ? 'Tous' : mealTypeTranslations[cat]}
-                </Button>
-             ))}
         </div>
       </header>
 
@@ -153,7 +148,6 @@ export default function AddMealPage() {
                         </Link>
                         <CardContent className="p-4 bg-white text-foreground flex-1 flex flex-col justify-between">
                             <div>
-                                <Badge variant="secondary" className="capitalize mb-1">{mealTypeTranslations[meal.category] || meal.category}</Badge>
                                 <h3 className="font-bold text-xl truncate font-heading text-tertiary">{meal.name}</h3>
                                 <div className="flex items-center gap-2 mt-1 text-tertiary">
                                     <Leaf className="w-4 h-4 text-primary" />
