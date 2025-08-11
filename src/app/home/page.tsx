@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Loader2, Plus, Bell, Utensils } from "lucide-react"
+import { Loader2, Plus, Bell, Utensils, Leaf } from "lucide-react"
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -222,6 +222,7 @@ export default function HomePage() {
 
   const calorieGoal = user?.calorieGoal || 2000;
   const macroGoals = user?.macroRatio || { protein: 150, carbs: 250, fat: 70 };
+  const formattedDate = format(new Date(), "eeee, d MMMM", { locale: fr });
 
   if (loading) {
       return (
@@ -235,16 +236,20 @@ export default function HomePage() {
   }
 
   return (
-      <div className="flex flex-col h-full bg-tertiary">
-        <header className="flex-shrink-0 flex items-center justify-between p-4 text-white bg-pistachio">
+      <div className="flex flex-col h-full bg-primary">
+        <header className="flex-shrink-0 flex items-center justify-between p-4 text-white">
             <div className="flex items-center gap-3">
                 <Avatar className="h-11 w-11 border-2 border-white/50">
                     <AvatarImage src={user?.photoURL || ''} alt={user?.fullName} />
                     <AvatarFallback>{user?.fullName?.[0]}</AvatarFallback>
                 </Avatar>
                  <div>
-                    <h1 className="text-2xl font-bold font-heading text-foreground">Aujourd'hui</h1>
-                    <p className="text-white/80 capitalize">{format(new Date(), "eeee, d MMMM", { locale: fr })}</p>
+                    <h1 className="text-lg font-bold font-heading text-white/90">
+                      Welcome back, {user?.fullName}!
+                    </h1>
+                    <p className="text-sm text-white/70 capitalize">
+                      It's {formattedDate}. Let's track your progress.
+                    </p>
                 </div>
             </div>
             <Button variant="ghost" size="icon" className="text-white">
@@ -252,7 +257,7 @@ export default function HomePage() {
             </Button>
         </header>
 
-        <Card className="flex-grow">
+        <Card className="flex-grow flex flex-col">
           <CardContent className="p-4 space-y-6">
             <Card>
                 <CardContent className="p-6">
@@ -278,5 +283,3 @@ export default function HomePage() {
       </div>
   )
 }
-
-    
