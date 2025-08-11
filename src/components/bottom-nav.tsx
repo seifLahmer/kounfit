@@ -64,7 +64,7 @@ export function BottomNav() {
               )}>
                 {isHome ? (
                   <div className={cn(
-                    "absolute -top-6 p-4 rounded-full text-white shadow-lg flex items-center justify-center bg-secondary"
+                    "absolute -top-6 p-4 rounded-full text-white shadow-lg flex items-center justify-center bg-primary"
                     )}>
                     <link.icon className="h-6 w-6" />
                   </div>
