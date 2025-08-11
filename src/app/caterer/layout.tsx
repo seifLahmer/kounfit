@@ -71,10 +71,6 @@ export default function CatererLayout({
             <Utensils />
             <span className="text-xs">Dashboard</span>
           </Link>
-           <Link href="/caterer/stats" className="flex flex-col items-center gap-1 text-gray-500">
-            <BarChart2 />
-            <span className="text-xs">Statistiques</span>
-          </Link>
           <button onClick={handleLogout} className="flex flex-col items-center gap-1 text-gray-500">
             <LogOut />
             <span className="text-xs">Déconnexion</span>
