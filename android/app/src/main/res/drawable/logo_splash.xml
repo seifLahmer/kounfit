@@ -2,32 +2,19 @@
     android:width="200dp"
     android:height="200dp"
     android:viewportWidth="100"
-    android:viewportHeight="120">
+    android:viewportHeight="100">
 
     <!-- White rounded square background for the K logo -->
     <path
-        android:pathData="M25,15 h50 a10,10 0 0 1 10,10 v30 a10,10 0 0 1 -10,10 h-50 a10,10 0 0 1 -10,-10 v-30 a10,10 0 0 1 10,-10z"
+        android:pathData="M25,15 h50 a10,10 0 0 1 10,10 v40 a10,10 0 0 1 -10,10 h-50 a10,10 0 0 1 -10,-10 v-40 a10,10 0 0 1 10,-10z"
         android:fillColor="#FFFFFF"/>
 
     <!-- Stylized K -->
     <path
-        android:pathData="M42,30 v25 M52,30 l-10,12.5 l10,12.5"
+        android:pathData="M42,30 v40 M52,30 l-10,20 l10,20"
         android:strokeColor="#22C58B"
-        android:strokeWidth="5"
+        android:strokeWidth="6"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"/>
-
-    <!-- Text KOUNFIT -->
-    <path
-        android:pathData="M0,90 H100"
-        android:strokeWidth="0" />
-    <group>
-        <path
-            android:pathData="M0,90 L100,90"
-            android:strokeWidth="0" />
-        <path
-            android:pathData="M 50, 95 A 1,1 0 0 1 50,95"
-            android:fillColor="#FFFFFF" />
-    </group>
 
 </vector>
