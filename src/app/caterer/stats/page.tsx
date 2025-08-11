@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import Image from "next/image"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import {
@@ -30,7 +30,7 @@ const chartConfig = {
     label: "Revenue",
     color: "hsl(var(--destructive))",
   },
-} satisfies ChartConfig;
+} satisfies React.ComponentProps<typeof ChartContainer>['config'];
 
 const calculateRevenueStats = (orders: Order[]) => {
     const now = new Date();
@@ -212,8 +212,8 @@ export default function StatsPage() {
     }
   
   return (
-    <div className="bg-tertiary">
-      <header className="p-4 pt-8 text-white">
+    <div className="bg-primary">
+       <header className="p-4 pt-8 text-white bg-gradient-to-br from-primary via-primary to-background/30">
         <p className="font-semibold text-lg">Kounfit</p>
         <h1 className="text-3xl font-bold font-serif">Statistiques</h1>
       </header>
