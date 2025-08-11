@@ -135,33 +135,29 @@ export default function AddMealPage() {
         ) : filteredMeals.length > 0 ? (
             <div className="grid grid-cols-2 gap-4">
                 {filteredMeals.map((meal) => (
-                    <Card key={meal.id} className="overflow-hidden rounded-2xl border shadow-sm flex flex-col">
-                        <Link href={`/home/meal/${meal.id}`} className="block relative h-40">
+                    <Card key={meal.id} className="relative overflow-hidden rounded-2xl border shadow-sm h-56 group">
+                        <Link href={`/home/meal/${meal.id}`} className="absolute inset-0">
                            <Image
                                 src={meal.imageUrl}
                                 alt={meal.name}
                                 layout="fill"
                                 objectFit="cover"
-                                className="w-full h-full"
+                                className="w-full h-full transition-transform duration-300 group-hover:scale-105"
                                 data-ai-hint="healthy food"
                             />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/10"></div>
                         </Link>
-                        <CardContent className="p-4 bg-white text-foreground flex-1 flex flex-col justify-between">
+                        <CardContent className="relative z-10 p-3 flex flex-col justify-end h-full text-white">
                             <div>
-                                <h3 className="font-bold text-lg truncate font-heading text-tertiary">{meal.name}</h3>
-                                <div className="flex items-center gap-2 mt-1 text-tertiary">
-                                    <Leaf className="w-4 h-4 text-primary" />
-                                    <span className="font-medium">{meal.calories} kcal</span>
-                                </div>
-                                 <div className="flex items-center gap-4 text-xs mt-2 text-muted-foreground">
-                                    <span>P {meal.macros.protein}g</span>
-                                    <span>C {meal.macros.carbs}g</span>
-                                    <span>L {meal.macros.fat}g</span>
+                                <h3 className="font-bold text-base truncate">{meal.name}</h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <Leaf className="w-3 h-3 text-green-300" />
+                                    <span className="font-medium text-sm">{meal.calories} kcal</span>
                                 </div>
                             </div>
-                            <div className="flex justify-end mt-2">
-                                <Button size="icon" className="bg-secondary hover:bg-secondary/80 rounded-full h-10 w-10 shrink-0" onClick={() => handleAddMeal(meal)}>
-                                    <Plus className="w-6 h-6"/>
+                            <div className="absolute top-3 right-3">
+                                <Button size="icon" className="bg-primary/80 hover:bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center shrink-0 z-20" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAddMeal(meal); }}>
+                                    <Plus className="w-5 h-5"/>
                                 </Button>
                             </div>
                         </CardContent>
