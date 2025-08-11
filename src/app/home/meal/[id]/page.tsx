@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getMealById } from '@/lib/services/mealService';
+import { getMealById, addMealRating } from '@/lib/services/mealService';
 import type { Meal } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { auth } from '@/lib/firebase';
 
 type DailyPlan = {
     breakfast: Meal | null;
@@ -24,6 +25,8 @@ export default function MealDetailPage({ params }: { params: { id: string } }) {
   const [mealData, setMealData] = useState<Meal | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -48,6 +51,25 @@ export default function MealDetailPage({ params }: { params: { id: string } }) {
     };
     fetchMeal();
   }, [id, router, toast]);
+
+  const handleRatingSubmit = async (rating: number) => {
+      const user = auth.currentUser;
+      if (!mealData || !user) return;
+      
+      setIsSubmittingRating(true);
+      try {
+          await addMealRating(mealData.id, user.uid, rating);
+          // Optimistically update the UI
+          const newTotalRating = (mealData.ratings?.average || 0) * (mealData.ratings?.count || 0) + rating;
+          const newRatingCount = (mealData.ratings?.count || 0) + 1;
+          setMealData(prev => prev ? ({ ...prev, ratings: { average: newTotalRating / newRatingCount, count: newRatingCount } }) : null);
+          toast({ title: "Merci!", description: "Votre avis a été enregistré." });
+      } catch (error: any) {
+           toast({ title: "Erreur", description: error.message || "Impossible de soumettre votre avis.", variant: "destructive" });
+      } finally {
+          setIsSubmittingRating(false);
+      }
+  };
 
   const handleQuantityChange = (amount: number) => {
     setQuantity(prev => Math.max(1, prev + amount));
@@ -163,9 +185,9 @@ export default function MealDetailPage({ params }: { params: { id: string } }) {
                 <Clock className="w-4 h-4" />
                 <span>~20 min</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                <span>4.8</span>
+                <span>{mealData.ratings?.average.toFixed(1) || 'N/A'} ({mealData.ratings?.count || 0})</span>
               </div>
             </div>
 
@@ -195,7 +217,28 @@ export default function MealDetailPage({ params }: { params: { id: string } }) {
                 </div>
              </div>
           </div>
-
+            
+          <div>
+            <h2 className="text-xl font-semibold mb-2">Évaluer ce repas</h2>
+            <div 
+                className="flex items-center gap-1"
+                onMouseLeave={() => setHoverRating(0)}
+            >
+                {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                    key={star}
+                    className={`w-8 h-8 cursor-pointer transition-colors ${
+                    (hoverRating || Math.round(mealData.ratings?.average || 0)) >= star
+                        ? 'text-yellow-400 fill-yellow-400'
+                        : 'text-gray-300'
+                    }`}
+                    onMouseEnter={() => setHoverRating(star)}
+                    onClick={() => handleRatingSubmit(star)}
+                />
+                ))}
+                {isSubmittingRating && <Loader2 className="w-5 h-5 ml-2 animate-spin" />}
+            </div>
+          </div>
         </div>
       </main>
 

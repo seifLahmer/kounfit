@@ -42,7 +42,7 @@ export interface Meal {
   name: string;
   description: string;
   category: "breakfast" | "lunch" | "dinner" | "snack";
-  imageUrl?: string;
+  imageUrl: string;
   imageRef?: string; // Path to the image in Firebase Storage for deletion
   ingredients: {
     name: string;
@@ -58,6 +58,10 @@ export interface Meal {
   price: number;
   createdBy: string; // caterer UID
   availability: boolean;
+  ratings?: {
+    average: number;
+    count: number;
+  };
   createdAt: any;
 }
 

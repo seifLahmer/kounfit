@@ -12,6 +12,7 @@ import {
   documentId,
   getDoc,
   orderBy,
+  runTransaction,
 } from "firebase/firestore";
 import { db, storage } from "@/lib/firebase";
 import type { Meal } from "@/lib/types";
@@ -28,6 +29,7 @@ export async function addMeal(mealData: Omit<Meal, 'id' | 'createdAt'>): Promise
   try {
     const docRef = await addDoc(collection(db, MEALS_COLLECTION), {
       ...mealData,
+      ratings: { average: 0, count: 0 }, // Initialize ratings
       createdAt: serverTimestamp(),
     });
     return docRef.id;
@@ -200,4 +202,57 @@ export async function getFavoriteMeals(mealIds: string[]): Promise<Meal[]> {
         console.error("Error fetching favorite meals: ", error);
         throw new Error("Could not fetch favorite meals.");
     }
+}
+
+
+/**
+ * Adds or updates a user's rating for a meal.
+ * @param mealId The ID of the meal being rated.
+ * @param userId The UID of the user giving the rating.
+ * @param rating The rating value (e.g., 1-5).
+ */
+export async function addMealRating(mealId: string, userId: string, rating: number): Promise<void> {
+  const mealRef = doc(db, MEALS_COLLECTION, mealId);
+  const ratingRef = doc(db, `meals/${mealId}/userRatings`, userId);
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const mealDoc = await transaction.get(mealRef);
+      if (!mealDoc.exists()) {
+        throw new Error("Meal does not exist!");
+      }
+
+      const userRatingDoc = await transaction.get(ratingRef);
+      const mealData = mealDoc.data() as Meal;
+      
+      const currentRatings = mealData.ratings || { average: 0, count: 0 };
+      let newTotalRating = currentRatings.average * currentRatings.count;
+      let newRatingCount = currentRatings.count;
+
+      if (userRatingDoc.exists()) {
+        // User is updating their rating
+        const oldRating = userRatingDoc.data().rating;
+        newTotalRating = newTotalRating - oldRating + rating;
+        // Rating count does not change
+      } else {
+        // New rating
+        newTotalRating += rating;
+        newRatingCount++;
+      }
+      
+      const newAverageRating = newTotalRating / newRatingCount;
+
+      // Update the user's specific rating
+      transaction.set(ratingRef, { rating, ratedAt: serverTimestamp() });
+      
+      // Update the aggregated rating on the meal document
+      transaction.update(mealRef, {
+        "ratings.average": newAverageRating,
+        "ratings.count": newRatingCount
+      });
+    });
+  } catch (error) {
+    console.error("Error adding meal rating: ", error);
+    throw new Error("Could not add meal rating.");
+  }
 }
