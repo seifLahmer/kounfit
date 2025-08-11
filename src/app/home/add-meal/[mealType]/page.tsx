@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
-import { ChevronLeft, Loader2, Plus, Search, Leaf, Heart } from "lucide-react";
+import { ChevronLeft, Loader2, Plus, Search, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { getUserProfile } from "@/lib/services/userService";
 import { cn } from "@/lib/utils";
+import { CalorieIcon } from "@/components/icons";
 
 
 const mealTypeTranslations: { [key: string]: string } = {
@@ -188,7 +189,7 @@ export default function AddMealPage() {
                             <div>
                                 <h3 className="font-bold text-base truncate">{meal.name}</h3>
                                 <div className="flex items-center gap-2 mt-1">
-                                    <Leaf className="w-3 h-3 text-green-300" />
+                                    <CalorieIcon className="w-3 h-3 text-primary" />
                                     <span className="font-medium text-sm">{meal.calories} kcal</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-xs mt-1">

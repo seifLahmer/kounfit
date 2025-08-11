@@ -40,3 +40,10 @@ export const LeafPattern = (props: SVGProps<SVGSVGElement>) => (
         </defs>
     </svg>
 );
+
+export const CalorieIcon = (props: SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}>
+        <path d="M12.93,2.37a1,1,0,0,0-1.24.38L4.3,13.29A10.43,10.43,0,0,0,4,15a10,10,0,0,0,20,0,10.43,10.43,0,0,0-.3-1.71L16.31,2.75a1,1,0,0,0-1-1.13A1,1,0,0,0,12.93,2.37ZM14,14.28a2,2,0,1,1,2-2A2,2,0,0,1,14,14.28Z" transform="translate(-4 -2)"/>
+        <path d="M13.69,2.75,6.3,13.29A10.43,10.43,0,0,0,6,15a10,10,0,0,0,1,5.71,1,1,0,0,0,1.73-1,8,8,0,0,1-1.63-8.34L14.37,3.13a1,1,0,0,0-1.37-1.51Z" transform="translate(-4 -2)"/>
+    </svg>
+);
