@@ -133,7 +133,7 @@ export default function AddMealPage() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         ) : filteredMeals.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
                 {filteredMeals.map((meal) => (
                     <Card key={meal.id} className="overflow-hidden rounded-2xl border shadow-sm flex flex-col">
                         <Link href={`/home/meal/${meal.id}`} className="block relative h-40">
@@ -148,12 +148,12 @@ export default function AddMealPage() {
                         </Link>
                         <CardContent className="p-4 bg-white text-foreground flex-1 flex flex-col justify-between">
                             <div>
-                                <h3 className="font-bold text-xl truncate font-heading text-tertiary">{meal.name}</h3>
+                                <h3 className="font-bold text-lg truncate font-heading text-tertiary">{meal.name}</h3>
                                 <div className="flex items-center gap-2 mt-1 text-tertiary">
                                     <Leaf className="w-4 h-4 text-primary" />
                                     <span className="font-medium">{meal.calories} kcal</span>
                                 </div>
-                                 <div className="flex items-center gap-4 text-sm mt-2 text-muted-foreground">
+                                 <div className="flex items-center gap-4 text-xs mt-2 text-muted-foreground">
                                     <span>P {meal.macros.protein}g</span>
                                     <span>C {meal.macros.carbs}g</span>
                                     <span>L {meal.macros.fat}g</span>
