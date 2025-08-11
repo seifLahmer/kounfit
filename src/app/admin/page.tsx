@@ -4,8 +4,15 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -14,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Bell, Search, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Edit } from "lucide-react";
+import { Bell, Search, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Edit, TrendingUp } from "lucide-react";
 import { getAllCaterers, deleteCaterer } from "@/lib/services/catererService";
 import { getUserCount } from "@/lib/services/userService";
 import { getAllOrders } from "@/lib/services/orderService";
@@ -23,6 +30,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { Badge } from "@/components/ui/badge";
+import { Loader2 } from "lucide-react";
 
 export default function AdminDashboardPage() {
   const { toast } = useToast();
@@ -34,6 +45,8 @@ export default function AdminDashboardPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 4;
+  const [regionFilter, setRegionFilter] = useState("all");
+
 
   const calculateTurnover = (allOrders: Order[], catererId: string): number => {
     return allOrders.reduce((total, order) => {
@@ -99,11 +112,21 @@ export default function AdminDashboardPage() {
 
   const totalPages = Math.ceil(filteredCaterers.length / itemsPerPage);
 
-  const dailyOrders = orders.filter(order => {
-      const orderDate = order.orderDate.toDate ? order.orderDate.toDate() : new Date(order.orderDate);
-      const today = new Date();
-      return orderDate.toDateString() === today.toDateString();
-  }).length;
+  const totalOrdersValue = orders.reduce((sum, order) => sum + order.totalPrice, 0);
+
+  const filteredOrders = orders.filter(order => 
+    regionFilter === 'all' || order.clientRegion.toLowerCase() === regionFilter
+  );
+
+  const getStatusBadge = (status: Order['status']) => {
+    switch (status) {
+      case 'pending': return <Badge variant="secondary">En attente</Badge>;
+      case 'in_preparation': return <Badge className="bg-yellow-500 text-white">En préparation</Badge>;
+      case 'delivered': return <Badge className="bg-green-500 text-white">Livrée</Badge>;
+      case 'cancelled': return <Badge variant="destructive">Annulée</Badge>;
+      default: return <Badge>{status}</Badge>;
+    }
+  };
 
 
   return (
@@ -122,7 +145,7 @@ export default function AdminDashboardPage() {
       </header>
       
       <main className="flex-1 p-4 -mt-16 space-y-6">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card className="shadow-lg">
                 <CardContent className="p-4">
                     <p className="text-sm text-muted-foreground">Total Users</p>
@@ -139,9 +162,16 @@ export default function AdminDashboardPage() {
             </Card>
              <Card className="shadow-lg">
                 <CardContent className="p-4">
-                    <p className="text-sm text-muted-foreground">Daily Orders</p>
-                    <p className="text-2xl font-bold">{loading ? '...' : dailyOrders}</p>
+                    <p className="text-sm text-muted-foreground">Total Orders</p>
+                    <p className="text-2xl font-bold">{loading ? '...' : orders.length}</p>
                     <div className="flex items-center text-sm text-green-500 gap-1"><ArrowUp className="w-4 h-4" /> 8,4%</div>
+                </CardContent>
+            </Card>
+            <Card className="shadow-lg">
+                <CardContent className="p-4">
+                    <p className="text-sm text-muted-foreground">Turnover</p>
+                    <p className="text-2xl font-bold">{loading ? '...' : totalOrdersValue.toFixed(2) + ' DT'}</p>
+                    <div className="flex items-center text-sm text-green-500 gap-1"><ArrowUp className="w-4 h-4" /> 5,1%</div>
                 </CardContent>
             </Card>
         </div>
@@ -227,6 +257,70 @@ export default function AdminDashboardPage() {
             </CardContent>
         </Card>
 
+        <Card>
+            <CardHeader>
+              <CardTitle>Suivi des Commandes</CardTitle>
+              <CardDescription>
+                Visualisez et filtrez toutes les commandes des clients.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Filtrer par région</label>
+                <Select value={regionFilter} onValueChange={setRegionFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Toutes les régions" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les régions</SelectItem>
+                    <SelectItem value="tunis">Tunis</SelectItem>
+                    <SelectItem value="ariana">Ariana</SelectItem>
+                    <SelectItem value="ben arous">Ben Arous</SelectItem>
+                    <SelectItem value="manouba">La Manouba</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Client</TableHead>
+                      <TableHead>Région</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Total</TableHead>
+                      <TableHead>Statut</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                     {loading ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center h-24">
+                            <Loader2 className="mx-auto animate-spin text-primary" />
+                          </TableCell>
+                        </TableRow>
+                      ) : filteredOrders.length > 0 ? (
+                        filteredOrders.map(order => (
+                          <TableRow key={order.id}>
+                            <TableCell className="font-medium">{order.clientName}</TableCell>
+                            <TableCell>{order.clientRegion}</TableCell>
+                            <TableCell>{format(order.orderDate, 'd MMM yyyy', { locale: fr })}</TableCell>
+                            <TableCell>{order.totalPrice.toFixed(2)} DT</TableCell>
+                            <TableCell>{getStatusBadge(order.status)}</TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center text-muted-foreground h-24">
+                            Aucune commande trouvée pour cette région
+                          </TableCell>
+                        </TableRow>
+                      )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+
         <Link href="/admin/manage">
           <Card className="hover:bg-muted transition-colors">
               <CardContent className="p-4 flex items-center justify-between">
@@ -235,8 +329,8 @@ export default function AdminDashboardPage() {
                           <Edit className="w-6 h-6 text-primary" />
                       </div>
                       <div>
-                          <p className="font-bold">Gestion Avancée</p>
-                          <p className="text-sm text-muted-foreground">Ajouter/Gérer les rôles et suivre les commandes</p>
+                          <p className="font-bold">Gestion des Rôles</p>
+                          <p className="text-sm text-muted-foreground">Ajouter ou gérer les traiteurs et administrateurs</p>
                       </div>
                   </div>
                   <ChevronRight className="w-5 h-5 text-muted-foreground"/>
