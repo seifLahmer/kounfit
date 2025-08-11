@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Loader2, Plus, Bell } from "lucide-react"
+import { Loader2, Plus, Bell, Utensils } from "lucide-react"
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -54,8 +54,8 @@ const CalorieCircle = ({ consumed, goal }: { consumed: number; goal: number }) =
         </div>
         <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Restant / consommées</span>
-            <span className="text-4xl font-bold font-heading text-foreground">{Math.max(0, goal - consumed)} kcal</span>
-            <span className="text-lg text-muted-foreground">restantes</span>
+            <span className="text-4xl font-bold font-heading text-foreground">{Math.max(0, goal - consumed)}</span>
+            <span className="text-lg text-muted-foreground">kcal restantes</span>
              <svg width="100" height="20" viewBox="0 0 100 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="mt-2">
                 <path d="M2 10C12.0667 2.33333 24.4 -1.4 34 5C45 12.5 56.6667 15.1667 66.5 12C76.3333 8.83333 86.5 7.5 98 14" stroke="#A1A1AA" strokeWidth="2" strokeLinecap="round"/>
             </svg>
@@ -233,41 +233,45 @@ export default function HomePage() {
   }
 
   return (
-      <div className="p-4 space-y-6">
-        <header className="flex items-center justify-between p-4 bg-pistachio rounded-lg">
+      <div className="min-h-screen bg-tertiary">
+        <header className="flex items-center justify-between p-4 text-white">
             <div className="flex items-center gap-3">
-                <Avatar className="h-11 w-11">
+                <Avatar className="h-11 w-11 border-2 border-white/50">
                     <AvatarImage src={user?.photoURL || ''} alt={user?.fullName} />
                     <AvatarFallback>{user?.fullName?.[0]}</AvatarFallback>
                 </Avatar>
                  <div>
-                    <h1 className="text-2xl font-bold font-heading text-foreground">Aujourd'hui</h1>
-                    <p className="text-muted-foreground capitalize">{format(new Date(), "eeee, d MMMM", { locale: fr })}</p>
+                    <h1 className="text-2xl font-bold font-heading">Aujourd'hui</h1>
+                    <p className="text-white/80 capitalize">{format(new Date(), "eeee, d MMMM", { locale: fr })}</p>
                 </div>
             </div>
-            <Button variant="ghost" size="icon" className="text-tertiary">
+            <Button variant="ghost" size="icon" className="text-white">
                 <Bell />
             </Button>
         </header>
 
-        <Card>
-            <CardContent className="p-6">
-                 <CalorieCircle consumed={consumedCalories} goal={calorieGoal} />
-            </CardContent>
+        <Card className="m-4 mt-0 rounded-t-3xl">
+          <CardContent className="p-4 space-y-6">
+            <Card>
+                <CardContent className="p-6">
+                    <CalorieCircle consumed={consumedCalories} goal={calorieGoal} />
+                </CardContent>
+            </Card>
+            
+            <div className="flex gap-4">
+                <MacroCard name="Protéines" consumed={consumedMacros.protein} goal={macroGoals.protein} color="bg-protein" />
+                <MacroCard name="Glucides" consumed={consumedMacros.carbs} goal={macroGoals.carbs} color="bg-carbs" />
+                <MacroCard name="Lipides" consumed={consumedMacros.fat} goal={macroGoals.fat} color="bg-fat" />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+                <MealGridCard title="Petit déjeuner" meals={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} defaultImage="/petit-dejeuner.png" calorieGoal={calorieGoal} macroGoals={macroGoals} />
+                <MealGridCard title="Déjeuner" meals={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} defaultImage="/dejeuner.png" calorieGoal={calorieGoal} macroGoals={macroGoals} />
+                <MealGridCard title="Dîner" meals={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} defaultImage="/dinner.png" calorieGoal={calorieGoal} macroGoals={macroGoals} />
+                <MealGridCard title="Collation" meals={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} defaultImage="/snacks.png" calorieGoal={calorieGoal} macroGoals={macroGoals} />
+            </div>
+          </CardContent>
         </Card>
-        
-        <div className="flex gap-4">
-            <MacroCard name="Protéines" consumed={consumedMacros.protein} goal={macroGoals.protein} color="bg-protein" />
-            <MacroCard name="Glucides" consumed={consumedMacros.carbs} goal={macroGoals.carbs} color="bg-carbs" />
-            <MacroCard name="Lipides" consumed={consumedMacros.fat} goal={macroGoals.fat} color="bg-fat" />
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4">
-            <MealGridCard title="Petit déjeuner" meals={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} defaultImage="/petit-dejeuner.png" calorieGoal={calorieGoal} macroGoals={macroGoals} />
-            <MealGridCard title="Déjeuner" meals={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} defaultImage="/dejeuner.png" calorieGoal={calorieGoal} macroGoals={macroGoals} />
-            <MealGridCard title="Dîner" meals={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} defaultImage="/dinner.png" calorieGoal={calorieGoal} macroGoals={macroGoals} />
-            <MealGridCard title="Collation" meals={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} defaultImage="/snacks.png" calorieGoal={calorieGoal} macroGoals={macroGoals} />
-        </div>
 
       </div>
   )
