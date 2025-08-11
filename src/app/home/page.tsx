@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Loader2, Plus, Bell } from "lucide-react"
+import { Loader2, Plus, Bell, Utensils } from "lucide-react"
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -86,11 +86,55 @@ const MacroCard = ({ name, consumed, goal, color }: { name: string; consumed: nu
   );
 };
 
-const MealGridCard = ({ title, meal, onAdd, defaultImage }: { title: string; meal: Meal | null; onAdd: () => void; defaultImage: string }) => {
+const MealProgressCircle = ({ calories, calorieGoal }: { calories: number, calorieGoal: number }) => {
+  const targetCaloriesPerMeal = calorieGoal > 0 ? calorieGoal / 4 : 500; // Assume 4 meals a day
+  const percentage = calorieGoal > 0 ? (calories / targetCaloriesPerMeal) * 100 : 0;
+  const circumference = 2 * Math.PI * 18; // radius = 18
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+  return (
+    <div className="relative w-12 h-12">
+      <svg className="w-full h-full" viewBox="0 0 40 40">
+        <circle
+          className="stroke-current text-white/20"
+          strokeWidth="3"
+          fill="none"
+          cx="20"
+          cy="20"
+          r="18"
+        />
+        <circle
+          className="stroke-current text-white"
+          strokeWidth="3"
+          fill="none"
+          cx="20"
+          cy="20"
+          r="18"
+          strokeLinecap="round"
+          transform="rotate(-90 20 20)"
+          style={{
+            strokeDasharray: circumference,
+            strokeDashoffset,
+            transition: "stroke-dashoffset 0.5s",
+          }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center text-white">
+        {calories > 0 ? (
+          <span className="text-xs font-bold">{calories}</span>
+        ) : (
+          <Utensils className="w-4 h-4" />
+        )}
+      </div>
+    </div>
+  );
+};
+
+const MealGridCard = ({ title, meal, onAdd, defaultImage, calorieGoal }: { title: string; meal: Meal | null; onAdd: () => void; defaultImage: string; calorieGoal: number; }) => {
   return (
     <div className="relative rounded-lg overflow-hidden shadow-sm h-48 flex flex-col justify-end p-4 text-white" onClick={onAdd}>
       <Image
-        src={meal?.imageUrl || defaultImage}
+        src={defaultImage}
         alt={title}
         layout="fill"
         objectFit="cover"
@@ -98,15 +142,12 @@ const MealGridCard = ({ title, meal, onAdd, defaultImage }: { title: string; mea
         data-ai-hint="healthy food"
       />
       <div className="absolute inset-0 bg-black/30 z-10"></div>
-      <div className="relative z-20">
-         {meal ? (
-            <div>
-                <h3 className="font-bold text-lg font-heading">{meal.name}</h3>
-                <p className="text-sm">{meal.calories} kcal</p>
-            </div>
-         ) : (
+      <div className="relative z-20 flex justify-between items-end">
+         <div className="space-y-1">
             <h3 className="font-bold text-lg font-heading">{title}</h3>
-         )}
+            <MealProgressCircle calories={meal?.calories || 0} calorieGoal={calorieGoal} />
+         </div>
+         <span className="text-xs font-semibold">{meal?.name || ''}</span>
       </div>
       <button className="absolute top-3 right-3 bg-primary/80 hover:bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center z-20">
         <Plus className="w-5 h-5" />
@@ -223,10 +264,10 @@ export default function HomePage() {
         </div>
         
         <div className="grid grid-cols-2 gap-4">
-            <MealGridCard title="Petit déjeuner" meal={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} defaultImage="/petit-dejeuner.png" />
-            <MealGridCard title="Déjeuner" meal={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} defaultImage="/dejeuner.png" />
-            <MealGridCard title="Dîner" meal={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} defaultImage="/dinner.png" />
-            <MealGridCard title="Collation" meal={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} defaultImage="/snacks.png" />
+            <MealGridCard title="Petit déjeuner" meal={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} defaultImage="/petit-dejeuner.png" calorieGoal={calorieGoal} />
+            <MealGridCard title="Déjeuner" meal={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} defaultImage="/dejeuner.png" calorieGoal={calorieGoal} />
+            <MealGridCard title="Dîner" meal={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} defaultImage="/dinner.png" calorieGoal={calorieGoal} />
+            <MealGridCard title="Collation" meal={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} defaultImage="/snacks.png" calorieGoal={calorieGoal} />
         </div>
 
       </div>
