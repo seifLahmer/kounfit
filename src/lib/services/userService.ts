@@ -1,5 +1,5 @@
 
-import { doc, setDoc, getDoc, serverTimestamp, Timestamp, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp, Timestamp, updateDoc, arrayUnion, arrayRemove, collection, getCountFromServer } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { User } from "@/lib/types";
 
@@ -116,5 +116,20 @@ export async function toggleFavoriteMeal(uid: string, mealId: string): Promise<s
     } catch (error) {
         console.error("Error toggling favorite meal: ", error);
         throw new Error("Could not update favorites.");
+    }
+}
+
+/**
+ * Gets the total count of users in the 'users' collection.
+ * @returns A promise that resolves to the number of users.
+ */
+export async function getUserCount(): Promise<number> {
+    try {
+        const usersCollection = collection(db, USERS_COLLECTION);
+        const snapshot = await getCountFromServer(usersCollection);
+        return snapshot.data().count;
+    } catch (error) {
+        console.error("Error getting user count: ", error);
+        throw new Error("Could not get user count.");
     }
 }

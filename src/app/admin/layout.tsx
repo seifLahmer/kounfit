@@ -47,7 +47,7 @@ export default function AdminLayout({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <Loader2 className="h-12 w-12 animate-spin text-red-500" />
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
@@ -58,19 +58,7 @@ export default function AdminLayout({
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      <main className="flex-1 pb-20">{children}</main>
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-50">
-        <div className="flex justify-around items-center h-16">
-          <Link href="/admin" className="flex flex-col items-center gap-1 text-red-500">
-            <Shield />
-            <span className="text-xs">Dashboard</span>
-          </Link>
-          <Link href="/welcome" className="flex flex-col items-center gap-1 text-gray-600">
-            <LogOut />
-            <span className="text-xs">Logout</span>
-          </Link>
-        </div>
-      </nav>
+      <main className="flex-1">{children}</main>
     </div>
   );
 }
