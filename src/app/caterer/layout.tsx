@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Home, Loader2, LogOut } from "lucide-react";
+import { Utensils, Loader2, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -68,7 +68,7 @@ export default function CatererLayout({
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-50">
         <div className="flex justify-around items-center h-16">
           <Link href="/caterer" className="flex flex-col items-center gap-1 text-primary">
-            <Home />
+            <Utensils />
             <span className="text-xs">Dashboard</span>
           </Link>
           <button onClick={handleLogout} className="flex flex-col items-center gap-1 text-gray-500">
