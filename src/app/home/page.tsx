@@ -197,7 +197,7 @@ export default function HomePage() {
 
   return (
       <div className="p-4 space-y-6">
-        <header className="flex items-center justify-between">
+        <header className="flex items-center justify-between bg-pistachio p-4 rounded-xl">
             <div className="flex items-center gap-3">
                 <Avatar className="h-11 w-11">
                     <AvatarImage src={user?.photoURL || ''} alt={user?.fullName} />
@@ -227,7 +227,7 @@ export default function HomePage() {
         
         <div className="grid grid-cols-2 gap-4">
             <MealGridCard title="Petit déjeuner" meal={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} />
-            <MealGridCard title="Déjeuner" meal={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} />
+            <MealGridCard title="Déjeuner" meal={daily.lunch} onAdd={() => handleAddMeal('lunch')} />
             <MealGridCard title="Dîner" meal={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} />
             <MealGridCard title="Collation" meal={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} />
         </div>

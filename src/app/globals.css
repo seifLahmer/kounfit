@@ -36,6 +36,8 @@ body {
     --protein: 220 80% 60%; /* Blue */
     --carbs: 40 90% 60%; /* Orange */
     --fat: 0 80% 65%; /* Red/Pink */
+    
+    --pistachio: 92 50% 85%;
 
     --chart-1: 220 70% 50%;
     --chart-2: 33 100% 65%;
@@ -77,6 +79,8 @@ body {
     --protein: 220 80% 60%;
     --carbs: 40 90% 60%;
     --fat: 0 80% 65%;
+
+    --pistachio: 92 50% 85%;
 
     --chart-1: 220 70% 50%;
     --chart-2: 33 100% 65%;

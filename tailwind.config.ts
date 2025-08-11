@@ -54,6 +54,7 @@ export default {
             DEFAULT: 'hsl(var(--brand-teal))',
             foreground: 'hsl(var(--brand-teal-foreground))'
         },
+        pistachio: 'hsl(var(--pistachio))',
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
