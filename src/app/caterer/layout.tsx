@@ -1,14 +1,22 @@
 
 "use client";
 
-import { Utensils, LogOut, Loader2 } from "lucide-react";
+import { Home, BarChart2, PlusCircle, User, Settings, Loader2, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { getUserRole } from "@/lib/services/roleService";
+import { cn } from "@/lib/utils";
 
+const navLinks = [
+    { href: "/caterer", icon: Home },
+    { href: "/caterer/stats", icon: BarChart2 },
+    { href: "/caterer/add-meal", icon: PlusCircle },
+    { href: "/caterer/profile", icon: User },
+    { href: "/caterer/settings", icon: Settings },
+]
 
 export default function CatererLayout({
   children,
@@ -16,6 +24,7 @@ export default function CatererLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
 
@@ -48,7 +57,7 @@ export default function CatererLayout({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <Loader2 className="h-12 w-12 animate-spin text-red-500" />
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
@@ -56,20 +65,28 @@ export default function CatererLayout({
   if (!isAuthorized) {
     return null;
   }
+  
+  const handleLogout = async () => {
+    await auth.signOut();
+    router.push('/welcome');
+  };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col min-h-screen bg-background">
       <main className="flex-1 pb-20">{children}</main>
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-50">
         <div className="flex justify-around items-center h-16">
-          <Link href="/caterer" className="flex flex-col items-center gap-1 text-red-500">
-            <Utensils />
-            <span className="text-xs">Dashboard</span>
-          </Link>
-          <Link href="/welcome" className="flex flex-col items-center gap-1 text-gray-600">
-            <LogOut />
-            <span className="text-xs">Logout</span>
-          </Link>
+          {navLinks.map(({ href, icon: Icon }) => {
+            const isActive = pathname === href;
+            return (
+              <Link key={href} href={href} className={cn("flex flex-col items-center gap-1", isActive ? "text-primary" : "text-gray-500")}>
+                <Icon />
+              </Link>
+            )
+          })}
+          <button onClick={handleLogout} className="flex flex-col items-center gap-1 text-gray-500">
+             <LogOut />
+          </button>
         </div>
       </nav>
     </div>
