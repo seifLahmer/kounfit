@@ -51,5 +51,3 @@ export async function uploadMealImage(catererUid: string, file: File): Promise<{
     throw error;
   }
 }
-
-    
