@@ -63,7 +63,7 @@ export default function AdminLayout({
         <div className="flex justify-around items-center h-16">
           <Link href="/admin" className="flex flex-col items-center gap-1 text-red-500">
             <Shield />
-            <span className="text-xs">Admin</span>
+            <span className="text-xs">Dashboard</span>
           </Link>
           <Link href="/welcome" className="flex flex-col items-center gap-1 text-gray-600">
             <LogOut />
