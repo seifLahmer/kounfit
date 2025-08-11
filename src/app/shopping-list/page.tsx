@@ -9,17 +9,10 @@ import { Separator } from "@/components/ui/separator"
 import { Loader2, Frown, CheckCircle, Trash2 } from "lucide-react"
 import { auth } from "@/lib/firebase"
 import { useRouter } from "next/navigation"
-import type { Meal } from "@/lib/types"
+import type { Meal, DailyPlan } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import { placeOrder } from "@/lib/services/orderService"
 import { getUserProfile } from "@/lib/services/userService"
-
-type DailyPlan = {
-    breakfast: Meal | null;
-    lunch: Meal | null;
-    snack: Meal | null;
-    dinner: Meal | null;
-};
 
 type CartItem = Meal & { quantity: number };
 
@@ -41,7 +34,7 @@ export default function ShoppingCartPage() {
                 return;
             }
             
-            const mealsFromPlan = Object.values(plan).filter((meal): meal is Meal => meal !== null);
+            const mealsFromPlan: Meal[] = Object.values(plan).flat();
             
             const items: { [id: string]: CartItem } = {};
             mealsFromPlan.forEach(meal => {
@@ -72,7 +65,14 @@ export default function ShoppingCartPage() {
       }
     });
 
-    return () => unsubscribe();
+    // Listen for storage changes to update the cart in real-time
+    const handleStorageChange = () => loadCartFromStorage();
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('storage', handleStorageChange);
+    }
   }, [router]);
   
   const handleRemoveItem = (mealId: string) => {
@@ -80,22 +80,33 @@ export default function ShoppingCartPage() {
         const savedData = localStorage.getItem("dailyPlanData");
         if (savedData) {
             const { date, plan } = JSON.parse(savedData);
-            
-            let itemRemoved = false;
-            const newPlan = { ...plan };
+            const newPlan: DailyPlan = { breakfast: [], lunch: [], dinner: [], snack: [] };
 
-            for (const key in newPlan) {
+            let itemRemoved = false;
+            for (const key in plan) {
                 const mealType = key as keyof DailyPlan;
-                if (newPlan[mealType] && newPlan[mealType]?.id === mealId) {
-                    newPlan[mealType] = null;
+                const meals = plan[mealType] as Meal[];
+                // Find the first occurrence of the meal to remove
+                const indexToRemove = meals.findIndex(m => m.id === mealId);
+                if (indexToRemove > -1 && !itemRemoved) {
+                    newPlan[mealType] = [...meals.slice(0, indexToRemove), ...meals.slice(indexToRemove + 1)];
                     itemRemoved = true;
-                    break;
+                } else {
+                    newPlan[mealType] = meals;
                 }
             }
             
             if(itemRemoved) {
                 localStorage.setItem("dailyPlanData", JSON.stringify({ date, plan: newPlan }));
                 loadCartFromStorage(); // Reload the cart to reflect the change
+            } else {
+                 // Fallback to remove all items with that id if single removal fails
+                for (const key in newPlan) {
+                   const mealType = key as keyof DailyPlan;
+                   newPlan[mealType] = (newPlan[mealType] as Meal[]).filter(m => m.id !== mealId);
+                }
+                localStorage.setItem("dailyPlanData", JSON.stringify({ date, plan: newPlan }));
+                loadCartFromStorage();
             }
         }
     } catch (e) {

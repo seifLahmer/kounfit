@@ -100,8 +100,9 @@ export type Notification = {
 };
 
 
-export interface MealPlan {
-  breakfast: Meal;
-  lunch: Meal;
-  dinner: Meal;
-}
+export type DailyPlan = {
+    breakfast: Meal[];
+    lunch: Meal[];
+    snack: Meal[];
+    dinner: Meal[];
+};

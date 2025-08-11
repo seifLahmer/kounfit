@@ -10,20 +10,13 @@ import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { auth } from "@/lib/firebase"
 import { getUserProfile } from "@/lib/services/userService"
-import type { User, Meal } from "@/lib/types"
+import type { User, Meal, DailyPlan } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 
-type DailyPlan = {
-    breakfast: Meal | null;
-    lunch: Meal | null;
-    snack: Meal | null;
-    dinner: Meal | null;
-};
-
-const emptyPlan: DailyPlan = { breakfast: null, lunch: null, snack: null, dinner: null };
+const emptyPlan: DailyPlan = { breakfast: [], lunch: [], snack: [], dinner: [] };
 
 const CalorieCircle = ({ consumed, goal }: { consumed: number; goal: number }) => {
   const percentage = goal > 0 ? (consumed / goal) * 100 : 0;
@@ -130,7 +123,10 @@ const MealProgressCircle = ({ calories, calorieGoal }: { calories: number, calor
   );
 };
 
-const MealGridCard = ({ title, meal, onAdd, defaultImage, calorieGoal }: { title: string; meal: Meal | null; onAdd: () => void; defaultImage: string; calorieGoal: number; }) => {
+const MealGridCard = ({ title, meals, onAdd, defaultImage, calorieGoal }: { title: string; meals: Meal[]; onAdd: () => void; defaultImage: string; calorieGoal: number; }) => {
+  const totalCalories = meals.reduce((sum, meal) => sum + meal.calories, 0);
+  const lastName = meals.length > 0 ? meals[meals.length-1].name : '';
+
   return (
     <div className="relative rounded-lg overflow-hidden shadow-sm h-48 flex flex-col justify-end p-4 text-white" onClick={onAdd}>
       <Image
@@ -145,11 +141,11 @@ const MealGridCard = ({ title, meal, onAdd, defaultImage, calorieGoal }: { title
       <div className="relative z-20 flex justify-between items-end">
          <div className="space-y-1">
             <h3 className="font-bold text-lg font-heading">{title}</h3>
-            <MealProgressCircle calories={meal?.calories || 0} calorieGoal={calorieGoal} />
+            <MealProgressCircle calories={totalCalories} calorieGoal={calorieGoal} />
          </div>
-         <span className="text-xs font-semibold">{meal?.name || ''}</span>
+         <span className="text-xs font-semibold">{lastName}</span>
       </div>
-      <button className="absolute top-3 right-3 bg-primary/80 hover:bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center z-20">
+      <button className="absolute top-3 right-3 bg-primary hover:bg-primary/90 text-white rounded-full w-8 h-8 flex items-center justify-center z-20">
         <Plus className="w-5 h-5" />
       </button>
     </div>
@@ -172,7 +168,13 @@ export default function HomePage() {
           localStorage.removeItem("dailyPlanData");
           return emptyPlan;
         }
-        return plan;
+        // Ensure all categories are arrays
+        return {
+          breakfast: Array.isArray(plan.breakfast) ? plan.breakfast : (plan.breakfast ? [plan.breakfast] : []),
+          lunch: Array.isArray(plan.lunch) ? plan.lunch : (plan.lunch ? [plan.lunch] : []),
+          snack: Array.isArray(plan.snack) ? plan.snack : (plan.snack ? [plan.snack] : []),
+          dinner: Array.isArray(plan.dinner) ? plan.dinner : (plan.dinner ? [plan.dinner] : []),
+        };
       }
     } catch (error) {
       console.error("Failed to parse daily plan", error);
@@ -212,11 +214,12 @@ export default function HomePage() {
     router.push(`/home/add-meal/${mealType}`);
   };
 
-  const consumedCalories = Object.values(dailyPlan).filter(Boolean).reduce((acc, meal) => acc + (meal?.calories || 0), 0);
+  const allMeals = Object.values(dailyPlan).flat();
+  const consumedCalories = allMeals.reduce((acc, meal) => acc + (meal?.calories || 0), 0);
   const consumedMacros = {
-    protein: Object.values(dailyPlan).filter(Boolean).reduce((acc, meal) => acc + (meal?.macros.protein || 0), 0),
-    carbs: Object.values(dailyPlan).filter(Boolean).reduce((acc, meal) => acc + (meal?.macros.carbs || 0), 0),
-    fat: Object.values(dailyPlan).filter(Boolean).reduce((acc, meal) => acc + (meal?.macros.fat || 0), 0),
+    protein: allMeals.reduce((acc, meal) => acc + (meal?.macros.protein || 0), 0),
+    carbs: allMeals.reduce((acc, meal) => acc + (meal?.macros.carbs || 0), 0),
+    fat: allMeals.reduce((acc, meal) => acc + (meal?.macros.fat || 0), 0),
   }
 
   const calorieGoal = user?.calorieGoal || 2000;
@@ -264,10 +267,10 @@ export default function HomePage() {
         </div>
         
         <div className="grid grid-cols-2 gap-4">
-            <MealGridCard title="Petit déjeuner" meal={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} defaultImage="/petit-dejeuner.png" calorieGoal={calorieGoal} />
-            <MealGridCard title="Déjeuner" meal={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} defaultImage="/dejeuner.png" calorieGoal={calorieGoal} />
-            <MealGridCard title="Dîner" meal={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} defaultImage="/dinner.png" calorieGoal={calorieGoal} />
-            <MealGridCard title="Collation" meal={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} defaultImage="/snacks.png" calorieGoal={calorieGoal} />
+            <MealGridCard title="Petit déjeuner" meals={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} defaultImage="/petit-dejeuner.png" calorieGoal={calorieGoal} />
+            <MealGridCard title="Déjeuner" meals={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} defaultImage="/dejeuner.png" calorieGoal={calorieGoal} />
+            <MealGridCard title="Dîner" meals={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} defaultImage="/dinner.png" calorieGoal={calorieGoal} />
+            <MealGridCard title="Collation" meals={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} defaultImage="/snacks.png" calorieGoal={calorieGoal} />
         </div>
 
       </div>
