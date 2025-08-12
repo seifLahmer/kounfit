@@ -1,23 +1,21 @@
-
 {
-  "name": "NutriTrack",
-  "short_name": "NutriTrack",
-  "description": "Your personal journey to fitness starts here.",
+  "name": "Kounfit",
+  "short_name": "Kounfit",
   "icons": [
     {
-      "src": "/icons/icon-192x192.png",
+      "src": "/icons/web-app-manifest-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
-      "src": "/icons/icon-512x512.png",
+      "src": "/icons/web-app-manifest-192x192.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
-  "theme_color": "#FFFFFF",
-  "background_color": "#FFFFFF",
-  "start_url": "/",
-  "display": "standalone",
-  "orientation": "portrait"
+  "theme_color": "#22C58B",
+  "background_color": "#22C58B",
+  "display": "standalone"
 }

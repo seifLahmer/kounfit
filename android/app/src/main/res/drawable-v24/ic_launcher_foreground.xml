@@ -7,7 +7,7 @@
      <!-- Stylized K -->
     <path
         android:pathData="M46,36 v36 M56,36 l-10,18 l10,18"
-        android:strokeColor="#FFFFFF"
+        android:strokeColor="#34ba7e"
         android:strokeWidth="8"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"/>

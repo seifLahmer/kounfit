@@ -4,10 +4,11 @@
 import { Utensils, Loader2, LogOut, BarChart2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { getUserRole } from "@/lib/services/roleService";
+import { cn } from "@/lib/utils";
 
 export default function CatererLayout({
   children,
@@ -15,6 +16,7 @@ export default function CatererLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
 
@@ -67,9 +69,13 @@ export default function CatererLayout({
       <main className="flex-1 pb-20">{children}</main>
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-50">
         <div className="flex justify-around items-center h-16">
-          <Link href="/caterer" className="flex flex-col items-center gap-1 text-primary">
+          <Link href="/caterer" className={cn("flex flex-col items-center gap-1", pathname === '/caterer' ? 'text-primary' : 'text-gray-500')}>
             <Utensils />
             <span className="text-xs">Dashboard</span>
+          </Link>
+          <Link href="/caterer/stats" className={cn("flex flex-col items-center gap-1", pathname === '/caterer/stats' ? 'text-primary' : 'text-gray-500')}>
+            <BarChart2 />
+            <span className="text-xs">Statistiques</span>
           </Link>
           <button onClick={handleLogout} className="flex flex-col items-center gap-1 text-gray-500">
             <LogOut />
