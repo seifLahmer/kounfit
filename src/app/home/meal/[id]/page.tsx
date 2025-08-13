@@ -20,6 +20,8 @@ type DailyPlan = {
     dinner: Meal | null;
 };
 
+export const dynamic = 'force-dynamic';
+
 export default function MealDetailPage({ params }: { params: { id: string } }) {
   const { id } = params;
   const [mealData, setMealData] = useState<Meal | null>(null);
