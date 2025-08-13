@@ -18,14 +18,7 @@ import { getUserProfile } from "@/lib/services/userService";
 import { cn } from "@/lib/utils";
 import { CalorieIcon } from "@/components/icons";
 
-export async function generateStaticParams() {
-  return [
-    { mealType: 'breakfast' },
-    { mealType: 'lunch' },
-    { mealType: 'dinner' },
-    { mealType: 'snack' },
-  ]
-}
+export const dynamic = 'force-dynamic';
 
 const mealTypeTranslations: { [key: string]: string } = {
   breakfast: 'Petit déjeuner',
