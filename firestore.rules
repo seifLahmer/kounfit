@@ -2,56 +2,70 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    function isAuth() {
-      return request.auth.uid != null;
-    }
-    
+
     function isAdmin() {
       return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
-    
+
     function isCaterer() {
-      return exists(/databases/$(database)/documents/caterers/$(request.auth.uid));
+        return exists(/databases/$(database)/documents/caterers/$(request.auth.uid));
     }
-    
-    function isOwner(userId) {
-      return request.auth.uid == userId;
+
+    function isClient() {
+        return exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
     match /users/{userId} {
-      allow read, update: if isOwner(userId) || isAdmin();
-      allow create: if isAuth();
+      // Un utilisateur peut créer son propre profil.
+      allow create: if request.auth.uid == userId;
+      // Seul l'utilisateur propriétaire ou un admin peut lire ou mettre à jour son profil.
+      allow read, update: if request.auth.uid == userId || isAdmin();
     }
     
     match /caterers/{catererId} {
-      allow read: if isAuth();
-      allow create, update, delete: if isAdmin();
+      // Les admins peuvent créer des profils de traiteurs.
+      allow create, delete: if isAdmin();
+      // Tout le monde peut lire les profils des traiteurs.
+      allow read: if request.auth != null;
+      // Seul le traiteur propriétaire ou un admin peut mettre à jour son profil.
+      allow update: if request.auth.uid == catererId || isAdmin();
     }
     
     match /admins/{adminId} {
-      allow read, create, update, delete: if isAdmin();
+      // Seuls les admins peuvent lire ou écrire dans la collection des admins.
+      allow read, write: if isAdmin();
     }
 
     match /meals/{mealId} {
-      allow read: if isAuth();
-      allow create: if isCaterer() || isAdmin();
-      allow update, delete: if (isCaterer() && resource.data.createdBy == request.auth.uid) || isAdmin();
-      
-      match /userRatings/{userId} {
-        allow create, update: if isOwner(userId);
-        allow read: if isAuth();
-      }
+      // Tout le monde peut lire la liste des repas.
+      allow read: if true;
+      // Seul un traiteur authentifié peut créer un repas.
+      allow create: if isCaterer();
+      // Seul le traiteur qui a créé le repas ou un admin peut le mettre à jour ou le supprimer.
+      allow update, delete: if (resource.data.createdBy == request.auth.uid || isAdmin());
+    }
+
+    match /meals/{mealId}/userRatings/{userId} {
+      // Un client connecté peut créer ou mettre à jour sa propre note.
+      allow write: if request.auth.uid == userId && isClient();
+      // Tout le monde peut lire les notes.
+      allow read: if true;
     }
 
     match /orders/{orderId} {
-      allow create: if isAuth();
-      allow read: if isOwner(resource.data.clientId) || isAdmin() || (isCaterer() && request.auth.uid in resource.data.catererIds);
-      allow update: if (isCaterer() && request.auth.uid in resource.data.catererIds) || isAdmin();
+      // Seul un client authentifié peut créer une commande.
+      allow create: if isClient();
+      // Le client qui a passé la commande, le traiteur concerné ou un admin peut la lire.
+      allow read: if (resource.data.clientId == request.auth.uid || request.auth.uid in resource.data.catererIds || isAdmin());
+      // Le traiteur concerné ou un admin peut mettre à jour le statut de la commande.
+      allow update: if (request.auth.uid in resource.data.catererIds || isAdmin());
     }
-    
+
     match /notifications/{notificationId} {
-      allow read, update: if isOwner(resource.data.userId);
+      // L'utilisateur concerné par la notification est le seul à pouvoir la lire ou la marquer comme lue.
+      allow read, update: if resource.data.userId == request.auth.uid;
+      // Personne ne peut créer de notifications directement, elles sont créées côté serveur.
+      allow create: if false;
     }
   }
 }

@@ -124,9 +124,6 @@ export default function AddMealClientPage() {
             title: isFavorite ? "Ajouté aux favoris" : "Retiré des favoris",
             description: `Le repas a été ${isFavorite ? 'ajouté à' : 'retiré de'} vos favoris.`
         });
-        if (isFavorite) {
-          router.push('/meal-plans');
-        }
     } catch (error) {
         toast({
             title: "Erreur",
