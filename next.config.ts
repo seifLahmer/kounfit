@@ -34,9 +34,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  experimental: {
-    esmExternals: 'loose',
-  }
 };
 
 export default nextConfig;
