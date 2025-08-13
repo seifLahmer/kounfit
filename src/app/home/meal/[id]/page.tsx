@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from 'react';
@@ -9,16 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getMealById, addMealRating } from '@/lib/services/mealService';
-import type { Meal } from '@/lib/types';
+import type { Meal, DailyPlan } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { auth } from '@/lib/firebase';
-
-type DailyPlan = {
-    breakfast: Meal | null;
-    lunch: Meal | null;
-    snack: Meal | null;
-    dinner: Meal | null;
-};
 
 export const dynamic = 'force-dynamic';
 
@@ -87,29 +79,23 @@ export default function MealDetailPage({ params }: { params: { id: string } }) {
       let currentPlan: DailyPlan;
       if (savedData) {
         const parsedData = JSON.parse(savedData);
-        if (parsedData.date === todayStr) {
-          currentPlan = parsedData.plan;
-        } else {
-          currentPlan = { breakfast: null, lunch: null, snack: null, dinner: null };
-        }
+        const plan = (parsedData.date === todayStr) ? parsedData.plan : {};
+        currentPlan = {
+          breakfast: Array.isArray(plan.breakfast) ? plan.breakfast : [],
+          lunch: Array.isArray(plan.lunch) ? plan.lunch : [],
+          snack: Array.isArray(plan.snack) ? plan.snack : [],
+          dinner: Array.isArray(plan.dinner) ? plan.dinner : [],
+        };
       } else {
-        currentPlan = { breakfast: null, lunch: null, snack: null, dinner: null };
+        currentPlan = { breakfast: [], lunch: [], snack: [], dinner: [] };
       }
       
-      // Simple logic: add to the next available slot based on category, or lunch by default
-      const mealType = mealData.category as keyof DailyPlan;
-      if (currentPlan[mealType] === null) {
-          currentPlan[mealType] = mealData;
-      } else {
-          // If the specific slot is taken, add to the first empty slot
-          const availableSlot = (Object.keys(currentPlan) as Array<keyof DailyPlan>).find(slot => currentPlan[slot] === null);
-          if (availableSlot) {
-              currentPlan[availableSlot] = mealData;
-          } else {
-              // Or just override lunch as a fallback
-               currentPlan.lunch = mealData;
-          }
+      const targetMealType = mealData.category as keyof DailyPlan;
+      
+      if (!Array.isArray(currentPlan[targetMealType])) {
+          currentPlan[targetMealType] = [];
       }
+      currentPlan[targetMealType].push(mealData);
       
       localStorage.setItem("dailyPlanData", JSON.stringify({ date: todayStr, plan: currentPlan }));
       
