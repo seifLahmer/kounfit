@@ -36,6 +36,19 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+   webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.externals.push({
+        '@opentelemetry/exporter-jaeger': 'commonjs @opentelemetry/exporter-jaeger',
+        '@genkit-ai/firebase': 'commonjs @genkit-ai/firebase',
+      });
+    }
+     config.module.rules.push({
+      test: /node_modules\/handlebars\//,
+      loader: 'ignore-loader',
+    });
+    return config;
+  },
 };
 
 export default nextConfig;

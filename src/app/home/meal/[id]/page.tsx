@@ -12,6 +12,8 @@ import type { Meal, DailyPlan } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { auth } from '@/lib/firebase';
 
+export const dynamic = 'force-dynamic';
+
 export default function MealDetailPage({ params }: { params: { id: string } }) {
   const { id } = params;
   const [mealData, setMealData] = useState<Meal | null>(null);
