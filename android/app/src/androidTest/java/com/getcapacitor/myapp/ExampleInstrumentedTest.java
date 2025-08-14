@@ -1,4 +1,4 @@
-package com.nutritrack.app;
+package com.kounfit.app;
 
 import static org.junit.Assert.*;
 
@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
 
-        assertEquals("com.nutritrack.app", appContext.getPackageName());
+        assertEquals("com.kounfit.app", appContext.getPackageName());
     }
 }
