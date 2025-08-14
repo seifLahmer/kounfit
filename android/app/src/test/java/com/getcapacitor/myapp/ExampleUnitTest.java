@@ -1,4 +1,4 @@
-package kounfit.app;
+package com.nutritrack.app;
 
 import static org.junit.Assert.*;
 
