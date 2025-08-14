@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  productionBrowserSourceMaps: false, // Disable source maps in production
   images: {
     unoptimized: true,
     remotePatterns: [

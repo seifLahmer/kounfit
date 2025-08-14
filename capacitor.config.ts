@@ -2,8 +2,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'kounfit.app',
-  appName: 'Kounfit',
+  appId: 'com.nutritrack.app',
+  appName: 'NutriTrack',
   webDir: 'out'
 };
 
