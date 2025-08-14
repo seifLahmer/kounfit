@@ -261,17 +261,11 @@ export async function addMealRating(mealId: string, userId: string, rating: numb
  * Retrieves all meal IDs from Firestore.
  * @returns A promise that resolves to an array of meal IDs.
  */
-export async function getAllMealIds(): Promise<string[]> {
+export async function getAllMealIds(): Promise<{ id: string }[]> {
     try {
         const mealsCollection = collection(db, MEALS_COLLECTION);
         const querySnapshot = await getDocs(mealsCollection);
-
-        const mealIds: string[] = [];
-        querySnapshot.forEach((doc) => {
-            mealIds.push(doc.id);
-        });
-
-        return mealIds;
+        return querySnapshot.docs.map((doc) => ({ id: doc.id }));
     } catch (error) {
         console.error("Error fetching all meal IDs: ", error);
         throw new Error("Could not fetch all meal IDs.");

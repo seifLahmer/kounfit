@@ -1,10 +1,11 @@
 import MealDetailClient from './meal-detail-client';
+import { getAllMealIds } from '@/lib/services/mealService';
 
 export async function generateStaticParams() {
-  // Retourne un tableau vide pour indiquer à Next.js de ne générer aucune page
-  // statique pour les repas au moment du build.
-  // Les pages seront rendues côté client.
-  return [];
+  const mealIds = await getAllMealIds();
+  return mealIds.map((meal) => ({
+    id: meal.id,
+  }));
 }
 
 export default function MealDetailPage({ params }: { params: { id: string } }) {
