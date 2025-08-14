@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from 'react';
@@ -5,17 +6,23 @@ import Image from 'next/image';
 import { ChevronLeft, Share2, Clock, Star, Minus, Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import Link from 'next/link';
+
 import { useRouter } from 'next/navigation';
 import { getMealById, addMealRating } from '@/lib/services/mealService';
 import type { Meal, DailyPlan } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { auth } from '@/lib/firebase';
 
-export const dynamic = 'force-dynamic';
 
-export default function MealDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+// This tells Next.js not to pre-render any meal pages at build time.
+// They will be rendered on the client-side when a user navigates to them.
+export async function generateStaticParams() {
+  return [];
+}
+
+
+export default function MealDetailPage({ params }: { params: { mealId: string } }) {
+  const { mealId } = params;
   const [mealData, setMealData] = useState<Meal | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -26,10 +33,10 @@ export default function MealDetailPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     const fetchMeal = async () => {
-      if (id) {
+      if (mealId) { 
         try {
           setLoading(true);
-          const meal = await getMealById(id);
+          const meal = await getMealById(mealId); 
           if (meal) {
             setMealData(meal);
           } else {
@@ -44,7 +51,7 @@ export default function MealDetailPage({ params }: { params: { id: string } }) {
       }
     };
     fetchMeal();
-  }, [id, router, toast]);
+  }, [mealId, router, toast]);
 
   const handleRatingSubmit = async (rating: number) => {
       const user = auth.currentUser;
