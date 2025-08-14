@@ -114,7 +114,7 @@ const MetricProgressCircle = ({ consumed, goal, colorClass, label }: { consumed:
 const MealGridCard = ({ title, meals, onAdd, defaultImage, calorieGoal, macroGoals }: { title: string; meals: Meal[]; onAdd: () => void; defaultImage: string; calorieGoal: number; macroGoals: User['macroRatio'] }) => {
   const totalCalories = meals.reduce((sum, meal) => sum + meal.calories, 0);
   const totalMacros = meals.reduce((sum, meal) => {
-    sum.protein += meal.macros.protein || 0;
+    sum. प्रोटीन += meal.macros.protein || 0;
     sum.carbs += meal.macros.carbs || 0;
     sum.fat += meal.macros.fat || 0;
     return sum;
@@ -283,3 +283,5 @@ export default function HomePage() {
       </div>
   )
 }
+
+    

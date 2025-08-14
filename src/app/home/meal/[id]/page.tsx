@@ -1,4 +1,3 @@
-
 import MealDetailClient from './meal-detail-client';
 
 export async function generateStaticParams() {
