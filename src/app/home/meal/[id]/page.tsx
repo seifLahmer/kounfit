@@ -13,7 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { auth } from '@/lib/firebase';
 
 
-export default function MealDetailClient({ mealId }: { mealId: string }) {
+export default function MealDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const [mealData, setMealData] = useState<Meal | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -24,10 +25,10 @@ export default function MealDetailClient({ mealId }: { mealId: string }) {
 
   useEffect(() => {
     const fetchMeal = async () => {
-      if (mealId) { 
+      if (id) { 
         try {
           setLoading(true);
-          const meal = await getMealById(mealId); 
+          const meal = await getMealById(id); 
           if (meal) {
             setMealData(meal);
           } else {
@@ -42,7 +43,7 @@ export default function MealDetailClient({ mealId }: { mealId: string }) {
       }
     };
     fetchMeal();
-  }, [mealId, router, toast]);
+  }, [id, router, toast]);
 
   const handleRatingSubmit = async (rating: number) => {
       const user = auth.currentUser;
