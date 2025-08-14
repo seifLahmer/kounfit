@@ -1,4 +1,3 @@
-
 import AddMealClientPage from './add-meal-client';
 
 export async function generateStaticParams() {
