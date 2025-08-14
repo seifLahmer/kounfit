@@ -1,5 +1,4 @@
 
-'use server';
 /**
  * @fileOverview An AI flow to analyze a meal from its name, 
  * estimating ingredients and calculating nutritional information.

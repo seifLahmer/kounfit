@@ -16,7 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Wand2, Upload, ChevronLeft, CheckCircle, Trash2, PlusCircle } from "lucide-react";
-import { analyzeMeal, type MealAnalysis } from "@/ai/flows/meal-analysis-flow";
+import { type MealAnalysis } from "@/ai/flows/meal-analysis-flow";
 import { addMeal } from "@/lib/services/mealService";
 import { uploadMealImage } from "@/lib/services/storageService";
 import { auth } from "@/lib/firebase";
@@ -76,7 +76,18 @@ export default function AddMealPage() {
     setAnalysisResult(null);
     setIngredients([]);
     try {
-      const result = await analyzeMeal({ mealName: mealNameInput });
+      const response = await fetch('/api/analyze-meal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mealName: mealNameInput }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result: MealAnalysis = await response.json();
+      
       setAnalysisResult(result);
       setIngredients(result.ingredients);
       form.reset({
