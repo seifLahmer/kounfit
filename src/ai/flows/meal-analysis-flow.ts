@@ -1,4 +1,5 @@
 
+
 /**
  * @fileOverview An AI flow to analyze a meal from its name, 
  * estimating ingredients and calculating nutritional information.
@@ -67,7 +68,7 @@ const prompt = ai.definePrompt({
   `,
 });
 
-const mealAnalysisFlow = ai.defineFlow(
+export const mealAnalysisFlow = ai.defineFlow(
   {
     name: 'mealAnalysisFlow',
     inputSchema: MealAnalysisInputSchema,
@@ -81,3 +82,5 @@ const mealAnalysisFlow = ai.defineFlow(
     return output;
   }
 );
+
+    

@@ -76,30 +76,33 @@ export default function AddMealPage() {
     setAnalysisResult(null);
     setIngredients([]);
     try {
-      const response = await fetch('/api/analyze-meal', {
+      const response = await fetch('http://localhost:3400/flows/mealAnalysisFlow', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mealName: mealNameInput }),
+        body: JSON.stringify({ data: { mealName: mealNameInput } }),
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`);
       }
 
-      const result: MealAnalysis = await response.json();
+      const result = await response.json();
+      const mealAnalysis: MealAnalysis = result.result;
       
-      setAnalysisResult(result);
-      setIngredients(result.ingredients);
+      setAnalysisResult(mealAnalysis);
+      setIngredients(mealAnalysis.ingredients);
       form.reset({
-        name: result.mealName,
-        description: result.description,
+        name: mealAnalysis.mealName,
+        description: mealAnalysis.description,
         price: 0, // Reset price, let caterer set it
         category: "lunch",
         availability: true,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast({ title: "Erreur d'analyse", description: "L'IA n'a pas pu analyser ce repas. Essayez un autre nom.", variant: "destructive" });
+      toast({ title: "Erreur d'analyse", description: error.message || "L'IA n'a pas pu analyser ce repas. Essayez un autre nom.", variant: "destructive" });
     } finally {
       setIsAnalyzing(false);
     }
@@ -350,3 +353,5 @@ export default function AddMealPage() {
     </div>
   );
 }
+
+    
