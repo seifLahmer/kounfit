@@ -76,20 +76,19 @@ export default function AddMealPage() {
     setAnalysisResult(null);
     setIngredients([]);
     try {
-      const response = await fetch('http://localhost:3400/flows/mealAnalysisFlow', {
+      const response = await fetch('/api/analyze-meal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: { mealName: mealNameInput } }),
+        body: JSON.stringify({ mealName: mealNameInput }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
         console.error('API Error:', errorData);
-        throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`);
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
-      const result = await response.json();
-      const mealAnalysis: MealAnalysis = result.result;
+      const mealAnalysis: MealAnalysis = await response.json();
       
       setAnalysisResult(mealAnalysis);
       setIngredients(mealAnalysis.ingredients);
@@ -353,5 +352,3 @@ export default function AddMealPage() {
     </div>
   );
 }
-
-    
