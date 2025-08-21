@@ -1,3 +1,4 @@
+
 # Settings to manage and configure a Firebase App Hosting backend.
 # https://firebase.google.com/docs/app-hosting/configure
 
@@ -5,6 +6,9 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+  secrets:
+    - GEMINI_API_KEY
+    - FOOD_DATA_API_KEY
 # Add a staticAssets configuration to serve the public directory
 staticAssets:
   - /_next/static

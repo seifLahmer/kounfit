@@ -1,4 +1,5 @@
 
+'use server';
 
 /**
  * @fileOverview An AI flow to analyze a meal from its name, 
@@ -68,7 +69,7 @@ const prompt = ai.definePrompt({
   `,
 });
 
-export const mealAnalysisFlow = ai.defineFlow(
+const mealAnalysisFlow = ai.defineFlow(
   {
     name: 'mealAnalysisFlow',
     inputSchema: MealAnalysisInputSchema,
@@ -82,5 +83,3 @@ export const mealAnalysisFlow = ai.defineFlow(
     return output;
   }
 );
-
-    
