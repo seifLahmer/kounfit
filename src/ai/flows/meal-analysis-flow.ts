@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -69,7 +68,7 @@ const prompt = ai.definePrompt({
   `,
 });
 
-const mealAnalysisFlow = ai.defineFlow(
+export const mealAnalysisFlow = ai.defineFlow(
   {
     name: 'mealAnalysisFlow',
     inputSchema: MealAnalysisInputSchema,
