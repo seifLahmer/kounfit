@@ -5,18 +5,15 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Form,
   FormField,
   FormItem,
-  FormLabel,
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -30,16 +27,18 @@ import { calculateNutritionalNeeds } from "@/lib/services/nutritionService";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { onAuthStateChanged } from "firebase/auth";
-import { Loader2 } from "lucide-react";
+import { Loader2, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { LeafPattern, HeightIcon, WeightIcon, AgeIcon, ActivityIcon } from "@/components/icons";
 
 const step2Schema = z.object({
+  height: z.coerce.number().min(100, "La taille doit être un nombre positif."),
+  weight: z.coerce.number().min(30, "Le poids doit être un nombre positif."),
   age: z.coerce.number().min(16, "Vous devez avoir au moins 16 ans.").max(120),
   biologicalSex: z.enum(["male", "female"], {
     required_error: "Veuillez sélectionner votre sexe.",
   }),
-  weight: z.coerce.number().min(30, "Le poids doit être un nombre positif."),
-  height: z.coerce.number().min(100, "La taille doit être un nombre positif."),
-   activityLevel: z.enum(["sedentary", "lightly_active", "moderately_active", "very_active", "extremely_active"],{
+  activityLevel: z.enum(["sedentary", "lightly_active", "moderately_active", "very_active", "extremely_active"],{
     required_error: "Veuillez sélectionner un niveau d'activité.",
   }),
   mainGoal: z.enum(["lose_weight", "maintain", "gain_muscle"], {
@@ -58,10 +57,10 @@ export default function SignupStep2Page() {
   const form = useForm<Step2FormValues>({
     resolver: zodResolver(step2Schema),
     defaultValues: {
-      age: 18,
-      biologicalSex: "male",
-      weight: 70,
       height: 175,
+      weight: 70,
+      age: 25,
+      biologicalSex: "male",
       activityLevel: "lightly_active",
       mainGoal: "maintain",
     },
@@ -84,7 +83,7 @@ export default function SignupStep2Page() {
     setLoading(true);
     const currentUser = auth.currentUser;
     if (!currentUser || !currentUser.email) {
-        toast({ title: "Erreur", description: "Utilisateur non trouvé ou informations manquantes. Veuillez vous reconnecter.", variant: "destructive" });
+        toast({ title: "Erreur", description: "Utilisateur non trouvé. Veuillez vous reconnecter.", variant: "destructive" });
         router.push('/login');
         return;
     }
@@ -118,7 +117,7 @@ export default function SignupStep2Page() {
 
       toast({
         title: "Profil complété!",
-        description: "Bienvenue sur Kounfit! Vous allez être redirigé.",
+        description: "Bienvenue ! Vous allez être redirigé.",
       });
 
       router.push("/home");
@@ -127,7 +126,7 @@ export default function SignupStep2Page() {
        console.error("Signup Step 2 Error:", error);
        toast({
          title: "Erreur",
-         description: "Impossible de sauvegarder votre profil. Veuillez réessayer.",
+         description: "Impossible de sauvegarder votre profil.",
          variant: "destructive",
        });
     } finally {
@@ -137,82 +136,45 @@ export default function SignupStep2Page() {
 
   if (!isAuthCheckComplete) {
      return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-screen bg-[#F6F8F7]">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F8F7] flex flex-col">
-       <div className="relative bg-gradient-to-b from-[#22C58B] to-[#4FD6B3] text-white pb-10" style={{ clipPath: 'ellipse(100% 70% at 50% 30%)' }}>
-            <div className="text-center pt-10 px-4 space-y-4">
-                <div className="flex items-center justify-between">
-                    <Image src="/kounfit-logo-white-s.png" alt="Kounfit Logo" width={40} height={40} />
-                    <h2 className="text-2xl font-semibold absolute left-1/2 -translate-x-1/2">Inscription - Étape 2/2</h2>
-                </div>
-                <div className="w-full max-w-sm mx-auto pt-4">
-                   <p className="text-white/80">Ces informations nous aideront à personnaliser votre expérience.</p>
-                </div>
+    <div className="min-h-screen bg-[#F6F8F7] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      <LeafPattern className="absolute inset-0 w-full h-full text-gray-400/50" />
+      <div className="relative w-full max-w-sm bg-white/70 backdrop-blur-md rounded-3xl shadow-2xl flex flex-col">
+        <div className="bg-gradient-to-b from-[#22C58B] to-[#0B7E58] rounded-t-3xl text-white text-center p-6 space-y-3">
+          <h1 className="text-xl font-semibold">Kounfit</h1>
+          <h2 className="text-2xl font-bold">Inscription Client</h2>
+          <p className="text-lg font-medium">– Etape 2/2 –</p>
+          <div className="flex items-center justify-center gap-2 pt-2">
+            <div className="w-16 h-px bg-white/30"></div>
+            <div className="w-5 h-5 bg-white/30 rounded-full"></div>
+            <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center text-[#0B7E58]">
+              <Check size={14} strokeWidth={3} />
             </div>
+            <div className="w-16 h-px bg-white/30"></div>
+          </div>
         </div>
 
-      <div className="w-full max-w-md mx-auto px-4 flex-1 -mt-8">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="biologicalSex"
-              render={({ field }) => (
-                <FormItem className="space-y-3 bg-white p-4 rounded-xl shadow-sm">
-                  <FormLabel>Vous êtes</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      className="flex gap-4"
-                    >
-                      <FormItem className="flex items-center space-x-2">
-                        <FormControl>
-                          <RadioGroupItem value="male" id="male" />
-                        </FormControl>
-                        <FormLabel htmlFor="male">Homme</FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-2">
-                        <FormControl>
-                          <RadioGroupItem value="female" id="female" />
-                        </FormControl>
-                        <FormLabel htmlFor="female">Femme</FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="age"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Âge</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="25" {...field} className="h-12 bg-white"/>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+        <div className="p-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
                 name="height"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Taille (cm)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="175" {...field} className="h-12 bg-white" />
+                      <div className="flex items-center bg-white/50 rounded-xl p-3 h-14">
+                        <HeightIcon className="text-gray-500" />
+                        <span className="ml-3 font-medium text-gray-700">Taille</span>
+                        <Input type="number" {...field} className="text-right border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none w-20" />
+                        <span className="text-gray-500">cm</span>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -223,71 +185,127 @@ export default function SignupStep2Page() {
                 name="weight"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Poids (kg)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="70" {...field} className="h-12 bg-white" />
+                      <div className="flex items-center bg-white/50 rounded-xl p-3 h-14">
+                        <WeightIcon className="text-gray-500" />
+                        <span className="ml-3 font-medium text-gray-700">Poids</span>
+                        <Input type="number" {...field} className="text-right border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none w-20" />
+                        <span className="text-gray-500">kg</span>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
-            
-            <FormField
-              control={form.control}
-              name="mainGoal"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Quel est votre objectif principal ?</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+              <FormField
+                control={form.control}
+                name="age"
+                render={({ field }) => (
+                  <FormItem>
                     <FormControl>
-                      <SelectTrigger className="h-12 bg-white">
-                        <SelectValue placeholder="Sélectionnez votre objectif" />
-                      </SelectTrigger>
+                      <div className="flex items-center bg-white/50 rounded-xl p-3 h-14">
+                        <AgeIcon className="text-gray-500" />
+                        <span className="ml-3 font-medium text-gray-700">Age</span>
+                        <Input type="number" {...field} className="text-right border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none w-24" />
+                      </div>
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="lose_weight">Perdre du poids</SelectItem>
-                      <SelectItem value="maintain">Maintien du poids</SelectItem>
-                      <SelectItem value="gain_muscle">Prendre du muscle</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-             <FormField
-              control={form.control}
-              name="activityLevel"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Votre niveau d'activité quotidien</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="h-12 bg-white">
-                        <SelectValue placeholder="Sélectionnez votre niveau d'activité" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="sedentary">Sédentaire (peu ou pas d'exercice)</SelectItem>
-                      <SelectItem value="lightly_active">Légèrement actif (exercice léger 1-3 jours/semaine)</SelectItem>
-                      <SelectItem value="moderately_active">Modérément actif (exercice modéré 3-5 jours/semaine)</SelectItem>
-                      <SelectItem value="very_active">Très actif (exercice intense 6-7 jours/semaine)</SelectItem>
-                       <SelectItem value="extremely_active">Extrêmement actif (travail physique & exercice intense)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
+              <FormField
+                control={form.control}
+                name="activityLevel"
+                render={({ field }) => (
+                  <FormItem>
+                     <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="bg-white/50 rounded-xl p-3 h-14 border-none">
+                            <div className="flex items-center">
+                                <ActivityIcon className="text-gray-500" />
+                                <SelectValue className="ml-3 font-medium text-gray-700" />
+                            </div>
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="sedentary">Sédentaire</SelectItem>
+                        <SelectItem value="lightly_active">Légèrement actif</SelectItem>
+                        <SelectItem value="moderately_active">Modérément actif</SelectItem>
+                        <SelectItem value="very_active">Très actif</SelectItem>
+                        <SelectItem value="extremely_active">Extrêmement actif</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="mainGoal"
+                render={({ field }) => (
+                  <FormItem>
+                     <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="bg-white/50 rounded-xl p-3 h-14 border-none">
+                             <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="lose_weight">Perdre du poids</SelectItem>
+                        <SelectItem value="maintain">Maintien</SelectItem>
+                        <SelectItem value="gain_muscle">Prendre du muscle</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <Button type="submit" className="w-full h-14 text-lg font-semibold rounded-xl bg-[#0B7E58] hover:bg-[#0a6e4d]" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-              Terminer
-            </Button>
-          </form>
-        </Form>
+              <FormField
+                control={form.control}
+                name="biologicalSex"
+                render={({ field }) => (
+                  <FormItem>
+                     <div className="flex items-center justify-between bg-white/50 rounded-xl p-3 h-14">
+                        <span className="ml-3 font-medium text-gray-700">Genre</span>
+                        <div className="flex items-center gap-2">
+                           <Button
+                            type="button"
+                            onClick={() => field.onChange("male")}
+                            className={cn(
+                                "rounded-full transition",
+                                field.value === "male" ? "bg-[#0B7E58] text-white" : "bg-gray-200 text-gray-600"
+                            )}
+                            >
+                                Homme
+                            </Button>
+                             <Button
+                            type="button"
+                            onClick={() => field.onChange("female")}
+                             className={cn(
+                                "rounded-full transition",
+                                field.value === "female" ? "bg-[#0B7E58] text-white" : "bg-gray-200 text-gray-600"
+                            )}
+                            >
+                                Femme
+                            </Button>
+                        </div>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button type="submit" className="w-full h-14 text-lg font-semibold rounded-full bg-secondary hover:bg-secondary/90 text-white" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                Terminer
+              </Button>
+              <Button type="button" variant="link" className="w-full text-muted-foreground" onClick={() => router.back()}>Retour</Button>
+            </form>
+          </Form>
+        </div>
       </div>
     </div>
   );

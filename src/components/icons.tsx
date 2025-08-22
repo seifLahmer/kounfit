@@ -47,3 +47,36 @@ export const CalorieIcon = (props: SVGProps<SVGSVGElement>) => (
         <path d="M13.69,2.75,6.3,13.29A10.43,10.43,0,0,0,6,15a10,10,0,0,0,1,5.71,1,1,0,0,0,1.73-1,8,8,0,0,1-1.63-8.34L14.37,3.13a1,1,0,0,0-1.37-1.51Z" transform="translate(-4 -2)"/>
     </svg>
 );
+
+
+export const HeightIcon = (props: SVGProps<SVGSVGElement>) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+        <path d="M12 21L12 3M12 21L9 18M12 21L15 18M12 3L9 6M12 3L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+);
+
+export const WeightIcon = (props: SVGProps<SVGSVGElement>) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+        <path d="M4 13V18C4 19.1046 4.89543 20 6 20H18C19.1046 20 20 19.1046 20 18V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M12 3L12 15M12 3L15 6M12 3L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+);
+
+export const AgeIcon = (props: SVGProps<SVGSVGElement>) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+        <path d="M5 22H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M12 18V6C12 4.89543 12.8954 4 14 4H15C16.1046 4 17 4.89543 17 6V9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M7 6H10C10.5523 6 11 6.44772 11 7V18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+);
+
+export const ActivityIcon = (props: SVGProps<SVGSVGElement>) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+        <path d="M1 16C2.10457 16 3 16.8954 3 18C3 19.1046 2.10457 20 1 20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M7 11C8.10457 11 9 11.8954 9 13C9 14.1046 8.10457 15 7 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M15 7C16.1046 7 17 7.89543 17 9C17 10.1046 16.1046 11 15 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M21 4C22.1046 4 23 4.89543 23 6C23 7.10457 22.1046 8 21 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M3 18C5.33333 16.6667 9.2 12.8 15 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M15 9C17.3333 7.66667 19.8 5.6 21 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+);
