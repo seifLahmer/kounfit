@@ -2,12 +2,12 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Loader2, Plus, Bell } from "lucide-react"
+import { Loader2, Bell } from "lucide-react"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { auth } from "@/lib/firebase"
 import { getUserProfile } from "@/lib/services/userService"
-import type { User, DailyPlan, Meal } from "@/lib/types"
+import type { User, DailyPlan } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -80,7 +80,13 @@ export default function HomePage() {
 
   const allMeals = Object.values(dailyPlan).flat();
   const consumedCalories = allMeals.reduce((acc, meal) => acc + (meal?.calories || 0), 0);
-  
+  const consumedMacros = allMeals.reduce((acc, meal) => {
+    acc.protein += meal?.macros.protein || 0;
+    acc.carbs += meal?.macros.carbs || 0;
+    acc.fat += meal?.macros.fat || 0;
+    return acc;
+  }, { protein: 0, carbs: 0, fat: 0 });
+
   const calorieGoal = user?.calorieGoal || 2000;
   const macroGoals = user?.macroRatio || { protein: 150, carbs: 250, fat: 70 };
   const formattedDate = format(new Date(), "eeee, d MMMM", { locale: fr });
@@ -126,8 +132,10 @@ export default function HomePage() {
             <Card className="shadow-lg">
               <CardContent className="p-4">
                 <NutritionSummary 
-                  consumed={consumedCalories}
-                  goal={calorieGoal}
+                  consumedCalories={consumedCalories}
+                  calorieGoal={calorieGoal}
+                  consumedMacros={consumedMacros}
+                  macroGoals={macroGoals}
                 />
               </CardContent>
             </Card>
