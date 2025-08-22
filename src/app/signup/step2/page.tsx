@@ -145,7 +145,7 @@ export default function SignupStep2Page() {
   return (
     <div className="min-h-screen bg-[#F6F8F7] flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <LeafPattern className="absolute inset-0 w-full h-full text-gray-400/50" />
-      <div className="relative w-full max-w-sm bg-white/70 backdrop-blur-md rounded-3xl shadow-2xl flex flex-col">
+      <div className="relative w-full max-w-md bg-white/70 backdrop-blur-md rounded-3xl shadow-2xl flex flex-col">
         <div className="bg-gradient-to-b from-[#22C58B] to-[#0B7E58] rounded-t-3xl text-white text-center p-6 space-y-3">
           <h1 className="text-xl font-semibold">Kounfit</h1>
           <h2 className="text-2xl font-bold">Inscription Client</h2>
@@ -310,3 +310,5 @@ export default function SignupStep2Page() {
     </div>
   );
 }
+
+    
