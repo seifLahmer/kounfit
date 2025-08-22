@@ -157,25 +157,31 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-[#F6F8F7] flex flex-col">
-        <div className="relative bg-gradient-to-b from-primary to-[#4FD6B3] p-6 pb-24 text-white">
+        <div className="relative bg-gradient-to-b from-primary to-[#4FD6B3] text-white">
              <LeafPattern className="absolute inset-0 w-full h-full object-cover text-white/50" />
-            <div className="relative text-center mt-8 mb-4">
+             <div 
+                className="absolute bottom-0 left-0 w-full h-20 bg-[#F6F8F7]"
+                style={{ clipPath: 'ellipse(100% 100% at 50% 100%)' }}
+            ></div>
+            <div className="relative text-center pt-8 mb-4">
                 <KounfitLogo />
+            </div>
+
+            <div className="relative w-full max-w-sm mx-auto px-4 pb-12">
+                <div className="grid grid-cols-3 gap-3">
+                    <RoleButton role="client" label="Client" icon={User} />
+                    <RoleButton role="caterer" label="Traiteur" icon={Utensils} />
+                    <RoleButton role="delivery" label="Livreur" icon={MopedIcon} />
+                </div>
             </div>
         </div>
 
-      <div className="w-full max-w-md mx-auto -mt-20 px-4 flex-1">
+      <div className="w-full max-w-md mx-auto px-4 flex-1 -mt-8">
         <div className="bg-white rounded-t-3xl p-6 h-full shadow-2xl shadow-gray-300/30">
         
             <h2 className="text-center text-2xl font-bold text-gray-800 mb-4">
                 Inscription - Étape 1/2
             </h2>
-
-            <div className="grid grid-cols-3 gap-3 mb-6">
-                <RoleButton role="client" label="Client" icon={User} />
-                <RoleButton role="caterer" label="Traiteur" icon={Utensils} />
-                <RoleButton role="delivery" label="Livreur" icon={MopedIcon} />
-            </div>
         
             <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -230,4 +236,3 @@ export default function SignupPage() {
     </div>
   );
 }
-
