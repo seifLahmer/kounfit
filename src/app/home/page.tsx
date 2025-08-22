@@ -103,7 +103,7 @@ export default function HomePage() {
   }
 
   return (
-      <div className="flex flex-col h-full bg-primary pb-4 px-4">
+      <div className="flex flex-col min-h-screen bg-primary pb-4 px-4">
         <header className="flex-shrink-0 pt-8 pb-4">
         </header>
 
