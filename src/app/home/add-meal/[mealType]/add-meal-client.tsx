@@ -26,7 +26,7 @@ const mealTypeTranslations: { [key: string]: string } = {
   snack: 'Collation'
 };
 
-const MealGrid = ({ meals, favoriteMealIds, onAddMeal, onToggleFavorite }: { meals: Meal[], favoriteMealIds: string[], onAddMeal: (meal: Meal) => void, onToggleFavorite: (mealId: string) => void }) => {
+const MealGrid = ({ meals, favoriteMealIds, onAddMeal, onToggleFavorite, showAddButton = true }: { meals: Meal[], favoriteMealIds: string[], onAddMeal: (meal: Meal) => void, onToggleFavorite: (mealId: string) => void, showAddButton?: boolean }) => {
     if (meals.length === 0) {
         return (
             <div className="text-center text-muted-foreground py-8">
@@ -72,11 +72,13 @@ const MealGrid = ({ meals, favoriteMealIds, onAddMeal, onToggleFavorite }: { mea
                             <Heart className={cn("w-6 h-6", favoriteMealIds.includes(meal.id) ? "text-red-500 fill-current" : "text-white")}/>
                         </Button>
                     </div>
-                    <div className="absolute bottom-2 right-2 z-20">
-                        <Button size="icon" className="bg-primary/80 hover:bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center shrink-0" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onAddMeal(meal); }}>
-                            <Plus className="w-5 h-5"/>
-                        </Button>
-                    </div>
+                     {showAddButton && (
+                        <div className="absolute bottom-2 right-2 z-20">
+                            <Button size="icon" className="bg-primary/80 hover:bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center shrink-0" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onAddMeal(meal); }}>
+                                <Plus className="w-5 h-5"/>
+                            </Button>
+                        </div>
+                    )}
                 </Card>
             ))}
         </div>
@@ -89,12 +91,28 @@ export default function AddMealClientPage() {
   const mealType = (Array.isArray(params.mealType) ? params.mealType[0] : params.mealType) as keyof DailyPlan;
 
   const [recommendedMeals, setRecommendedMeals] = useState<Meal[]>([]);
-  const [favoriteMeals, setFavoriteMeals] = useState<Meal[]>([]);
+  const [addedMeals, setAddedMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
   const [favoriteMealIds, setFavoriteMealIds] = useState<string[]>([]);
   const [user, setUser] = useState<User | null>(null);
+  
+  const getAddedMealsFromStorage = useCallback(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const savedData = localStorage.getItem("dailyPlanData");
+      if (savedData) {
+        const { date, plan } = JSON.parse(savedData);
+        if (date === new Date().toISOString().split('T')[0]) {
+          return plan[mealType] || [];
+        }
+      }
+    } catch (error) {
+      console.error("Failed to parse daily plan from storage", error);
+    }
+    return [];
+  }, [mealType]);
 
   const fetchInitialData = useCallback(async () => {
     const firebaseUser = auth.currentUser;
@@ -109,14 +127,11 @@ export default function AddMealClientPage() {
             getUserProfile(firebaseUser.uid)
         ]);
         setRecommendedMeals(fetchedMeals);
+        setAddedMeals(getAddedMealsFromStorage());
+
         if (userProfile) {
             setUser(userProfile);
-            const userFavoritesIds = userProfile.favoriteMealIds || [];
-            setFavoriteMealIds(userFavoritesIds);
-            if(userFavoritesIds.length > 0) {
-                const fetchedFavorites = await getFavoriteMeals(userFavoritesIds);
-                setFavoriteMeals(fetchedFavorites.filter(m => m.category === mealType));
-            }
+            setFavoriteMealIds(userProfile.favoriteMealIds || []);
         }
     } catch (error) {
         toast({
@@ -127,7 +142,7 @@ export default function AddMealClientPage() {
     } finally {
         setLoading(false);
     }
-  }, [mealType, router, toast]);
+  }, [mealType, router, toast, getAddedMealsFromStorage]);
 
   useEffect(() => {
     fetchInitialData();
@@ -163,11 +178,13 @@ export default function AddMealClientPage() {
       
       localStorage.setItem("dailyPlanData", JSON.stringify({ date: todayStr, plan: currentPlan }));
       
+      setAddedMeals(currentPlan[mealType] || []);
+
       toast({
           title: "Repas ajouté !",
           description: `${meal.name} a été ajouté à votre plan.`
-      })
-      router.push('/home');
+      });
+
     } catch (error) {
       toast({
         title: "Erreur",
@@ -184,14 +201,6 @@ export default function AddMealClientPage() {
         const updatedFavorites = await toggleFavoriteMeal(user.uid, mealId);
         setFavoriteMealIds(updatedFavorites);
         
-        // Refresh favorite meals list after toggling
-        if (updatedFavorites.length > 0) {
-            const fetchedFavorites = await getFavoriteMeals(updatedFavorites);
-            setFavoriteMeals(fetchedFavorites.filter(m => m.category === mealType));
-        } else {
-            setFavoriteMeals([]);
-        }
-
         const isFavorite = updatedFavorites.includes(mealId);
         toast({
             title: isFavorite ? "Ajouté aux favoris" : "Retiré des favoris",
@@ -212,11 +221,11 @@ export default function AddMealClientPage() {
     );
   }, [recommendedMeals, searchTerm]);
 
-  const filteredFavoriteMeals = useMemo(() => {
-    return favoriteMeals.filter(meal => 
+  const filteredAddedMeals = useMemo(() => {
+    return addedMeals.filter(meal => 
         meal.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
-  }, [favoriteMeals, searchTerm]);
+  }, [addedMeals, searchTerm]);
 
   return (
     <div className="flex flex-col h-screen bg-gradient-to-b from-[#a2fcdc] to-background">
@@ -246,12 +255,13 @@ export default function AddMealClientPage() {
         ) : (
             <>
                 <div>
-                    <h2 className="text-xl font-bold mb-4">Vos Repas Favoris</h2>
+                    <h2 className="text-xl font-bold mb-4">Repas Ajoutés</h2>
                     <MealGrid 
-                        meals={filteredFavoriteMeals} 
+                        meals={filteredAddedMeals} 
                         favoriteMealIds={favoriteMealIds} 
                         onAddMeal={handleAddMeal}
                         onToggleFavorite={handleToggleFavorite}
+                        showAddButton={false}
                     />
                 </div>
 
