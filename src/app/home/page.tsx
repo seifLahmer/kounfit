@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { NutritionSummary, MealCard, MacroCard } from "@/components/home-page-components";
+import { NutritionSummary, MealCard } from "@/components/home-page-components";
 
 const emptyPlan: DailyPlan = { breakfast: [], lunch: [], snack: [], dinner: [] };
 
@@ -80,12 +80,7 @@ export default function HomePage() {
 
   const allMeals = Object.values(dailyPlan).flat();
   const consumedCalories = allMeals.reduce((acc, meal) => acc + (meal?.calories || 0), 0);
-  const consumedMacros = {
-    protein: allMeals.reduce((acc, meal) => acc + (meal?.macros.protein || 0), 0),
-    carbs: allMeals.reduce((acc, meal) => acc + (meal?.macros.carbs || 0), 0),
-    fat: allMeals.reduce((acc, meal) => acc + (meal?.macros.fat || 0), 0),
-  }
-
+  
   const calorieGoal = user?.calorieGoal || 2000;
   const macroGoals = user?.macroRatio || { protein: 150, carbs: 250, fat: 70 };
   const formattedDate = format(new Date(), "eeee, d MMMM", { locale: fr });
@@ -128,7 +123,7 @@ export default function HomePage() {
                 </Button>
             </div>
           
-            <Card>
+            <Card className="shadow-lg">
               <CardContent className="p-4">
                 <NutritionSummary 
                   consumed={consumedCalories}
@@ -136,24 +131,6 @@ export default function HomePage() {
                 />
               </CardContent>
             </Card>
-
-            <div className="grid grid-cols-3 gap-2">
-              <MacroCard 
-                label="Protéines"
-                consumed={consumedMacros.protein}
-                goal={macroGoals.protein}
-              />
-              <MacroCard 
-                label="Glucides"
-                consumed={consumedMacros.carbs}
-                goal={macroGoals.carbs}
-              />
-              <MacroCard 
-                label="Lipides"
-                consumed={consumedMacros.fat}
-                goal={macroGoals.fat}
-              />
-            </div>
             
             <div className="grid grid-cols-2 gap-4">
                 <MealCard title="Petit déjeuner" meals={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} defaultImage="/petit-dejeuner.png" />

@@ -7,7 +7,7 @@ import type { Meal } from "@/lib/types";
 
 
 export const NutritionSummary = ({ consumed, goal }: { consumed: number; goal: number }) => {
-  const remaining = goal - consumed;
+  const remaining = goal > consumed ? goal - consumed : 0;
   const percentage = goal > 0 ? (consumed / goal) * 100 : 0;
   const circumference = 2 * Math.PI * 45; // radius = 45
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
@@ -49,53 +49,56 @@ export const NutritionSummary = ({ consumed, goal }: { consumed: number; goal: n
       </div>
       <div className="flex flex-col items-center text-center">
           <span className="text-xs text-muted-foreground">consommées</span>
-          <span className="text-4xl font-bold">{remaining < 0 ? 0 : remaining}</span>
+          <span className="text-4xl font-bold">{remaining}</span>
           <span className="text-sm text-muted-foreground">kcal restantes</span>
-          <svg width="40" height="4" viewBox="0 0 40 4" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-gray-300 mt-1">
-            <path d="M2 2C8.5 4.5 22 -2 38 2" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
-          </svg>
       </div>
     </div>
   );
 }
 
-export const MacroCard = ({ label, consumed, goal }: { label: string; consumed: number; goal: number }) => {
-  const percentage = goal > 0 ? (consumed / goal) * 100 : 0;
-  return (
-    <Card className="shadow-md">
-      <CardContent className="p-3 text-center space-y-1">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="text-lg font-bold">{consumed}g</p>
-        <p className="text-xs text-muted-foreground">sur {goal}g</p>
-        <Progress value={percentage} className="h-1.5" />
-        <p className="text-xs text-muted-foreground pt-1">{Math.round(percentage)}%</p>
-      </CardContent>
-    </Card>
-  )
-}
-
 const MealNutritionInfo = ({ meals }: { meals: Meal[] }) => {
   const totals = meals.reduce((acc, meal) => {
-    acc.calories += meal.calories || 0;
-    acc.protein += meal.macros.protein || 0;
-    acc.carbs += meal.macros.carbs || 0;
+    acc.calories += meal?.calories || 0;
+    acc.protein += meal?.macros.protein || 0;
+    acc.carbs += meal?.macros.carbs || 0;
     return acc;
   }, { calories: 0, protein: 0, carbs: 0 });
 
+  const caloriePercentage = totals.calories > 0 ? Math.min((totals.calories / 700) * 100, 100) : 0;
+  const proteinPercentage = totals.protein > 0 ? Math.min((totals.protein / 50) * 100, 100) : 0;
+  const carbsPercentage = totals.carbs > 0 ? Math.min((totals.carbs / 80) * 100, 100) : 0;
+  const circumference = 2 * Math.PI * 10;
+
   return (
-    <div className="absolute bottom-0 left-0 right-0 p-2 bg-black/30 backdrop-blur-sm">
-        <div className="flex justify-around text-center text-xs">
-          <div>
-            <p className="font-bold">{Math.round(totals.calories)}</p>
-            <p>Kcal</p>
+    <div className="absolute bottom-0 left-0 right-0 p-2 bg-black/40 backdrop-blur-sm">
+        <div className="flex justify-around items-center text-center text-xs text-white">
+          <div className="flex flex-col items-center">
+             <div className="relative w-6 h-6">
+                <svg className="w-full h-full" viewBox="0 0 24 24">
+                  <circle className="stroke-current text-white/20" strokeWidth="2.5" fill="none" cx="12" cy="12" r="10" />
+                  <circle
+                    className="stroke-current text-primary"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    fill="none"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    transform="rotate(-90 12 12)"
+                    style={{ strokeDasharray: circumference, strokeDashoffset: circumference - (caloriePercentage / 100) * circumference }}
+                  />
+                </svg>
+                 <span className="absolute inset-0 flex items-center justify-center font-bold text-[10px]">{Math.round(totals.calories)}</span>
+             </div>
+            <p className="text-[10px] mt-0.5">Kcal</p>
           </div>
-          <div>
-            <p className="font-bold">{Math.round(totals.protein)}</p>
-            <p>Protéines</p>
+          <div className="flex flex-col items-center">
+            <Progress value={proteinPercentage} className="w-8 h-1 bg-white/20" indicatorClassName="bg-protein" />
+            <p className="text-[10px] mt-1">{Math.round(totals.protein)}g Protéines</p>
           </div>
-          <div>
-            <p className="font-bold">{Math.round(totals.carbs)}</p>
-            <p>Glucides</p>
+           <div className="flex flex-col items-center">
+            <Progress value={carbsPercentage} className="w-8 h-1 bg-white/20" indicatorClassName="bg-carbs" />
+            <p className="text-[10px] mt-1">{Math.round(totals.carbs)}g Glucides</p>
           </div>
         </div>
     </div>
@@ -118,7 +121,7 @@ export const MealCard = ({ title, meals, onAdd, defaultImage }: { title: string;
       <CardContent className="relative z-20 flex flex-col justify-between h-full p-3 text-white">
         <div className="flex justify-between items-start">
             <h3 className="font-bold text-lg font-heading">{title}</h3>
-             <button className="bg-primary hover:bg-primary/90 text-white rounded-full w-8 h-8 flex items-center justify-center shrink-0 shadow-md">
+             <button className="bg-white hover:bg-gray-200 text-primary rounded-full w-8 h-8 flex items-center justify-center shrink-0 shadow-md">
                 <Plus className="w-5 h-5" />
             </button>
         </div>
