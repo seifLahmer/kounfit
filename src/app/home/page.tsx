@@ -13,7 +13,7 @@ import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { CalorieCircle, MacroGrid, MealGridCard } from "@/components/home-page-components";
+import { MealGridCard, NutritionGrid } from "@/components/home-page-components";
 
 const emptyPlan: DailyPlan = { breakfast: [], lunch: [], snack: [], dinner: [] };
 
@@ -130,13 +130,12 @@ export default function HomePage() {
                 </Button>
             </div>
           
-            <Card className="shadow-lg">
-                <CardContent className="p-4 sm:p-6">
-                    <CalorieCircle consumed={consumedCalories} goal={calorieGoal} />
-                </CardContent>
-            </Card>
-            
-            <MacroGrid consumedMacros={consumedMacros} macroGoals={macroGoals} calorieGoal={calorieGoal} />
+            <NutritionGrid
+              consumedCalories={consumedCalories}
+              calorieGoal={calorieGoal}
+              consumedMacros={consumedMacros}
+              macroGoals={macroGoals}
+            />
             
             <div className="grid grid-cols-2 gap-4">
                 <MealGridCard title="Petit déjeuner" meals={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} defaultImage="/petit-dejeuner.png" />
