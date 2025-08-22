@@ -7,9 +7,22 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Form, FormField, FormItem, FormControl, FormMessage, FormLabel } from "@/components/ui/form";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { auth } from "@/lib/firebase";
 import { updateUserProfile } from "@/lib/services/userService";
 import { calculateNutritionalNeeds } from "@/lib/services/nutritionService";
@@ -17,8 +30,6 @@ import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { onAuthStateChanged } from "firebase/auth";
 import { Loader2 } from "lucide-react";
-import { LeafPattern } from "@/components/icons";
-
 
 const step2Schema = z.object({
   age: z.coerce.number().min(16, "Vous devez avoir au moins 16 ans.").max(120),
@@ -125,161 +136,152 @@ export default function SignupStep2Page() {
 
   if (!isAuthCheckComplete) {
      return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-tertiary">
-        <LeafPattern className="absolute bottom-0 left-0 w-full h-auto text-white/5 z-0" />
-        <header className="flex-shrink-0 h-48 flex items-center justify-center">
-            <h1 className="text-5xl font-bold text-white font-heading">Kounfit</h1>
-        </header>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
+      <div className="w-full max-w-lg">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-primary">Finalisez votre profil</h1>
+          <p className="text-muted-foreground">
+            Ces informations nous aideront à personnaliser votre expérience.
+          </p>
+        </div>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <FormField
+              control={form.control}
+              name="biologicalSex"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Vous êtes</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      className="flex gap-4"
+                    >
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <RadioGroupItem value="male" id="male" />
+                        </FormControl>
+                        <FormLabel htmlFor="male">Homme</FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <RadioGroupItem value="female" id="female" />
+                        </FormControl>
+                        <FormLabel htmlFor="female">Femme</FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        <main className="flex-1 flex flex-col bg-white rounded-t-3xl z-10 p-8">
-            <h2 className="text-3xl font-bold text-center text-tertiary font-heading">Inscription - Étape 2/2</h2>
-            <div className="w-16 h-1 bg-gray-200 rounded-full mx-auto my-4 relative">
-                <div className="absolute left-0 top-0 h-full w-full bg-primary rounded-full"></div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="age"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Âge</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="25" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="height"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Taille (cm)</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="175" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="weight"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Poids (kg)</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="70" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-          
-            <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <FormField
-                      control={form.control}
-                      name="biologicalSex"
-                      render={({ field }) => (
-                        <FormItem className="space-y-3 pt-2">
-                          <FormLabel>Vous êtes ?</FormLabel>
-                          <FormControl>
-                            <RadioGroup
-                              onValueChange={field.onChange}
-                              value={field.value}
-                              className="grid grid-cols-2 gap-4"
-                            >
-                              <FormItem>
-                                <FormControl>
-                                  <RadioGroupItem value="male" id="male" className="sr-only peer" />
-                                </FormControl>
-                                <FormLabel htmlFor="male" className="flex flex-col items-center justify-between rounded-button border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                                    Homme
-                                </FormLabel>
-                              </FormItem>
-                              <FormItem>
-                                <FormControl>
-                                  <RadioGroupItem value="female" id="female" className="sr-only peer" />
-                                </FormControl>
-                                <FormLabel htmlFor="female" className="flex flex-col items-center justify-between rounded-button border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                                    Femme
-                                </FormLabel>
-                              </FormItem>
-                            </RadioGroup>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <div className="grid grid-cols-3 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="age"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Âge</FormLabel>
-                              <FormControl>
-                                <Input type="number" {...field} className="h-12 rounded-button text-center" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="height"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Taille (cm)</FormLabel>
-                              <FormControl>
-                                <Input type="number" {...field} className="h-12 rounded-button text-center"/>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                         <FormField
-                          control={form.control}
-                          name="weight"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Poids (kg)</FormLabel>
-                              <FormControl>
-                                <Input type="number" {...field} className="h-12 rounded-button text-center"/>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                    </div>
+            
+            <FormField
+              control={form.control}
+              name="mainGoal"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Quel est votre objectif principal ?</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionnez votre objectif" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="lose_weight">Perdre du poids</SelectItem>
+                      <SelectItem value="maintain">Maintien du poids</SelectItem>
+                      <SelectItem value="gain_muscle">Prendre du muscle</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+             <FormField
+              control={form.control}
+              name="activityLevel"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Votre niveau d'activité quotidien</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionnez votre niveau d'activité" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="sedentary">Sédentaire (peu ou pas d'exercice)</SelectItem>
+                      <SelectItem value="lightly_active">Légèrement actif (exercice léger 1-3 jours/semaine)</SelectItem>
+                      <SelectItem value="moderately_active">Modérément actif (exercice modéré 3-5 jours/semaine)</SelectItem>
+                      <SelectItem value="very_active">Très actif (exercice intense 6-7 jours/semaine)</SelectItem>
+                       <SelectItem value="extremely_active">Extrêmement actif (travail physique & exercice intense)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
 
-                    <FormField
-                        control={form.control}
-                        name="mainGoal"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Quel est votre objectif principal ?</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                                <SelectTrigger className="h-14 rounded-button">
-                                <SelectValue placeholder="Sélectionnez votre objectif" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                <SelectItem value="lose_weight">Perdre du poids</SelectItem>
-                                <SelectItem value="maintain">Maintien du poids</SelectItem>
-                                <SelectItem value="gain_muscle">Prendre du muscle</SelectItem>
-                            </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    
-                     <FormField
-                        control={form.control}
-                        name="activityLevel"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Votre niveau d'activité quotidien</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                                <SelectTrigger className="h-14 rounded-button">
-                                <SelectValue placeholder="Sélectionnez votre niveau d'activité" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                <SelectItem value="sedentary">Sédentaire (peu/pas d'exercice)</SelectItem>
-                                <SelectItem value="lightly_active">Léger (1-2 jours/semaine)</SelectItem>
-                                <SelectItem value="moderately_active">Modéré (3-5 jours/semaine)</SelectItem>
-                                <SelectItem value="very_active">Actif (6-7 jours/semaine)</SelectItem>
-                                <SelectItem value="extremely_active">Très actif (travail physique/2x par jour)</SelectItem>
-                            </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-
-
-                    <Button type="submit" className="w-full h-14 text-lg rounded-button bg-primary hover:bg-primary/90" disabled={loading}>
-                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Terminer l'inscription
-                    </Button>
-                </form>
-            </Form>
-        </main>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Terminer
+            </Button>
+          </form>
+        </Form>
+      </div>
     </div>
   );
 }
