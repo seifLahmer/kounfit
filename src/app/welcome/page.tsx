@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef } from "react";
@@ -27,7 +26,7 @@ export default function WelcomePage() {
     <div className="flex flex-col h-screen bg-white">
       <div className="flex-1 relative">
         <Image
-          src="https://storage.googleapis.com/builder-floor-plans/kounfit/welcome-image.jpeg"
+          src="https://storage.googleapis.com/builder-floor-plans/kounfit/welcome-image-2.jpeg"
           alt="Bol de nourriture saine avec quinoa, pois chiches, concombre et tomates"
           layout="fill"
           objectFit="cover"
