@@ -1,50 +1,27 @@
 
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import { ChevronLeft, Share2, Clock, Star, Minus, Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 import { useRouter } from 'next/navigation';
-import { getMealById, addMealRating } from '@/lib/services/mealService';
+import { addMealRating } from '@/lib/services/mealService';
 import type { Meal, DailyPlan } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { auth } from '@/lib/firebase';
 
 
-export default function MealDetailClient({ params }: { params: { id: string } }) {
-  const { id } = params;
-  const [mealData, setMealData] = useState<Meal | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function MealDetailClient({ meal }: { meal: Meal }) {
+  const [mealData, setMealData] = useState<Meal>(meal);
   const [quantity, setQuantity] = useState(1);
   const [hoverRating, setHoverRating] = useState(0);
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchMeal = async () => {
-      if (id) { 
-        try {
-          setLoading(true);
-          const meal = await getMealById(id); 
-          if (meal) {
-            setMealData(meal);
-          } else {
-            toast({ title: "Erreur", description: "Repas non trouvé.", variant: "destructive" });
-            router.push('/home');
-          }
-        } catch (error) {
-          toast({ title: "Erreur", description: "Impossible de charger les détails du repas.", variant: "destructive" });
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-    fetchMeal();
-  }, [id, router, toast]);
 
   const handleRatingSubmit = async (rating: number) => {
       const user = auth.currentUser;
@@ -56,7 +33,7 @@ export default function MealDetailClient({ params }: { params: { id: string } })
           // Optimistically update the UI
           const newTotalRating = (mealData.ratings?.average || 0) * (mealData.ratings?.count || 0) + rating;
           const newRatingCount = (mealData.ratings?.count || 0) + 1;
-          setMealData(prev => prev ? ({ ...prev, ratings: { average: newTotalRating / newRatingCount, count: newRatingCount } }) : null);
+          setMealData(prev => prev ? ({ ...prev, ratings: { average: newTotalRating / newRatingCount, count: newRatingCount } }) : meal);
           toast({ title: "Merci!", description: "Votre avis a été enregistré." });
       } catch (error: any) {
            toast({ title: "Erreur", description: error.message || "Impossible de soumettre votre avis.", variant: "destructive" });
@@ -115,24 +92,6 @@ export default function MealDetailClient({ params }: { params: { id: string } })
     }
   };
   
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  if (!mealData) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen bg-background">
-        <p className="text-lg text-muted-foreground mb-4">Désolé, ce repas est introuvable.</p>
-        <Button onClick={() => router.push('/home')}>Retour à l'accueil</Button>
-      </div>
-    );
-  }
-
-
   return (
     <div className="flex flex-col h-screen bg-background text-foreground">
       <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4 bg-gradient-to-b from-black/50 to-transparent">
@@ -153,6 +112,7 @@ export default function MealDetailClient({ params }: { params: { id: string } })
             objectFit="cover"
             className="rounded-b-3xl"
             data-ai-hint="grilled chicken dish"
+            priority
           />
         </div>
 
