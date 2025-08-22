@@ -21,14 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, User, Mail, Lock, Eye, EyeOff, Utensils } from "lucide-react";
 import { GoogleIcon, LeafPattern } from "@/components/icons";
 import { cn } from "@/lib/utils";
-
-const KounfitLogo = () => (
-  <svg width="150" height="36" viewBox="0 0 150 36" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontFamily="Sora, sans-serif" fontSize="30" fontWeight="bold" fill="white">
-      Kounfit
-    </text>
-  </svg>
-);
+import Image from "next/image";
 
 const MopedIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -160,11 +153,11 @@ export default function SignupPage() {
         <div className="relative bg-gradient-to-b from-primary to-[#4FD6B3] text-white">
              <LeafPattern className="absolute inset-0 w-full h-full object-cover text-white/50" />
              <div 
-                className="absolute bottom-0 left-0 w-full h-20 bg-[#F6F8F7]"
-                style={{ clipPath: 'ellipse(100% 100% at 50% 100%)' }}
+                className="absolute bottom-[-1px] left-0 w-full h-20 bg-[#F6F8F7]"
+                style={{ clipPath: 'ellipse(100% 100% at 50% 0%)' }}
             ></div>
-            <div className="relative text-center pt-8 mb-4">
-                <KounfitLogo />
+            <div className="relative text-left pt-8 px-4">
+                <Image src="/kounfit-logo.png" alt="Kounfit Logo" width={120} height={30} />
             </div>
 
             <div className="relative w-full max-w-sm mx-auto px-4 pb-12">
