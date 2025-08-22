@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -143,21 +144,27 @@ export default function SignupStep2Page() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
-      <div className="w-full max-w-lg">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary">Finalisez votre profil</h1>
-          <p className="text-muted-foreground">
-            Ces informations nous aideront à personnaliser votre expérience.
-          </p>
+    <div className="min-h-screen bg-[#F6F8F7] flex flex-col">
+       <div className="relative bg-gradient-to-b from-[#22C58B] to-[#4FD6B3] text-white pb-10" style={{ clipPath: 'ellipse(100% 70% at 50% 30%)' }}>
+            <div className="text-center pt-10 px-4 space-y-4">
+                <div className="flex items-center justify-between">
+                    <Image src="/kounfit-logo-white-s.png" alt="Kounfit Logo" width={40} height={40} />
+                    <h2 className="text-2xl font-semibold absolute left-1/2 -translate-x-1/2">Inscription - Étape 2/2</h2>
+                </div>
+                <div className="w-full max-w-sm mx-auto pt-4">
+                   <p className="text-white/80">Ces informations nous aideront à personnaliser votre expérience.</p>
+                </div>
+            </div>
         </div>
+
+      <div className="w-full max-w-md mx-auto px-4 flex-1 -mt-8">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
               name="biologicalSex"
               render={({ field }) => (
-                <FormItem className="space-y-3">
+                <FormItem className="space-y-3 bg-white p-4 rounded-xl shadow-sm">
                   <FormLabel>Vous êtes</FormLabel>
                   <FormControl>
                     <RadioGroup
@@ -192,7 +199,7 @@ export default function SignupStep2Page() {
                   <FormItem>
                     <FormLabel>Âge</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="25" {...field} />
+                      <Input type="number" placeholder="25" {...field} className="h-12 bg-white"/>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -205,7 +212,7 @@ export default function SignupStep2Page() {
                   <FormItem>
                     <FormLabel>Taille (cm)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="175" {...field} />
+                      <Input type="number" placeholder="175" {...field} className="h-12 bg-white" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -218,7 +225,7 @@ export default function SignupStep2Page() {
                   <FormItem>
                     <FormLabel>Poids (kg)</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="70" {...field} />
+                      <Input type="number" placeholder="70" {...field} className="h-12 bg-white" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -234,7 +241,7 @@ export default function SignupStep2Page() {
                   <FormLabel>Quel est votre objectif principal ?</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-12 bg-white">
                         <SelectValue placeholder="Sélectionnez votre objectif" />
                       </SelectTrigger>
                     </FormControl>
@@ -257,7 +264,7 @@ export default function SignupStep2Page() {
                   <FormLabel>Votre niveau d'activité quotidien</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="h-12 bg-white">
                         <SelectValue placeholder="Sélectionnez votre niveau d'activité" />
                       </SelectTrigger>
                     </FormControl>
@@ -275,8 +282,8 @@ export default function SignupStep2Page() {
             />
 
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" className="w-full h-14 text-lg font-semibold rounded-xl bg-[#0B7E58] hover:bg-[#0a6e4d]" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
               Terminer
             </Button>
           </form>
