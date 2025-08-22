@@ -39,9 +39,9 @@ const MealGrid = ({ meals, favoriteMealIds, onAddMeal, onToggleFavorite, showAdd
     return (
         <div className="grid grid-cols-2 gap-4">
             {meals.map((meal) => (
-                <Card key={meal.id} className="relative overflow-hidden rounded-2xl border shadow-sm h-56 group">
-                    <Link href={`/home/meal/${meal.id}`} className="absolute inset-0 z-0">
-                       <Image
+                 <Link key={meal.id} href={`/home/meal/${meal.id}`} passHref>
+                    <Card as="a" className="relative block overflow-hidden rounded-2xl border shadow-sm h-56 group cursor-pointer">
+                        <Image
                             src={meal.imageUrl}
                             alt={meal.name}
                             layout="fill"
@@ -50,36 +50,36 @@ const MealGrid = ({ meals, favoriteMealIds, onAddMeal, onToggleFavorite, showAdd
                             data-ai-hint="healthy food"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
-                    </Link>
                     
-                    <CardContent className="relative z-10 p-3 flex flex-col justify-end h-full text-white">
-                        <div>
-                            <h3 className="font-bold text-base truncate">{meal.name}</h3>
-                            <div className="flex items-center gap-2 mt-1">
-                                <CalorieIcon className="w-3 h-3 text-primary" />
-                                <span className="font-medium text-sm">{meal.calories} kcal</span>
+                        <CardContent className="relative z-10 p-3 flex flex-col justify-end h-full text-white">
+                            <div>
+                                <h3 className="font-bold text-base truncate">{meal.name}</h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <CalorieIcon className="w-3 h-3 text-primary" />
+                                    <span className="font-medium text-sm">{meal.calories} kcal</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs mt-1">
+                                    <span className="font-semibold text-protein">P</span><span>{meal.macros.protein}g</span>
+                                    <span className="font-semibold text-primary">C</span><span>{meal.macros.carbs}g</span>
+                                    <span className="font-semibold text-fat">F</span><span>{meal.macros.fat}g</span>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2 text-xs mt-1">
-                                <span className="font-semibold text-protein">P</span><span>{meal.macros.protein}g</span>
-                                <span className="font-semibold text-primary">C</span><span>{meal.macros.carbs}g</span>
-                                <span className="font-semibold text-fat">F</span><span>{meal.macros.fat}g</span>
-                            </div>
-                        </div>
-                    </CardContent>
+                        </CardContent>
 
-                    <div className="absolute top-2 right-2 z-20">
-                        <Button variant="ghost" size="icon" className="text-white/80 hover:text-white" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleFavorite(meal.id); }}>
-                            <Heart className={cn("w-6 h-6", favoriteMealIds.includes(meal.id) ? "text-red-500 fill-current" : "text-white")}/>
-                        </Button>
-                    </div>
-                     {showAddButton && (
-                        <div className="absolute bottom-2 right-2 z-20">
-                            <Button size="icon" className="bg-primary/80 hover:bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center shrink-0" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onAddMeal(meal); }}>
-                                <Plus className="w-5 h-5"/>
+                        <div className="absolute top-2 right-2 z-20">
+                            <Button variant="ghost" size="icon" className="text-white/80 hover:text-white" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleFavorite(meal.id); }}>
+                                <Heart className={cn("w-6 h-6", favoriteMealIds.includes(meal.id) ? "text-red-500 fill-current" : "text-white")}/>
                             </Button>
                         </div>
-                    )}
-                </Card>
+                        {showAddButton && (
+                            <div className="absolute bottom-2 right-2 z-20">
+                                <Button size="icon" className="bg-primary/80 hover:bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center shrink-0" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onAddMeal(meal); }}>
+                                    <Plus className="w-5 h-5"/>
+                                </Button>
+                            </div>
+                        )}
+                    </Card>
+                 </Link>
             ))}
         </div>
     );
