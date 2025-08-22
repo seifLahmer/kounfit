@@ -1,27 +1,50 @@
 
 "use client"
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { ChevronLeft, Share2, Clock, Star, Minus, Plus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-
 import { useRouter } from 'next/navigation';
 import { addMealRating } from '@/lib/services/mealService';
 import type { Meal, DailyPlan } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { auth } from '@/lib/firebase';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
-export default function MealDetailClient({ meal }: { meal: Meal }) {
-  const [mealData, setMealData] = useState<Meal>(meal);
+export default function MealDetailClient({ mealId }: { mealId: string }) {
+  const [mealData, setMealData] = useState<Meal | null>(null);
+  const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [hoverRating, setHoverRating] = useState(0);
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
+  useEffect(() => {
+    const fetchMeal = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`/api/meal/${mealId}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch meal details');
+        }
+        const data: Meal = await response.json();
+        setMealData(data);
+      } catch (error) {
+        console.error(error);
+        toast({ title: "Erreur", description: "Impossible de charger les détails du repas.", variant: "destructive" });
+        router.back();
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (mealId) {
+      fetchMeal();
+    }
+  }, [mealId, router, toast]);
 
   const handleRatingSubmit = async (rating: number) => {
       const user = auth.currentUser;
@@ -33,7 +56,7 @@ export default function MealDetailClient({ meal }: { meal: Meal }) {
           // Optimistically update the UI
           const newTotalRating = (mealData.ratings?.average || 0) * (mealData.ratings?.count || 0) + rating;
           const newRatingCount = (mealData.ratings?.count || 0) + 1;
-          setMealData(prev => prev ? ({ ...prev, ratings: { average: newTotalRating / newRatingCount, count: newRatingCount } }) : meal);
+          setMealData(prev => prev ? ({ ...prev, ratings: { average: newTotalRating / newRatingCount, count: newRatingCount } }) : null);
           toast({ title: "Merci!", description: "Votre avis a été enregistré." });
       } catch (error: any) {
            toast({ title: "Erreur", description: error.message || "Impossible de soumettre votre avis.", variant: "destructive" });
@@ -92,6 +115,49 @@ export default function MealDetailClient({ meal }: { meal: Meal }) {
     }
   };
   
+  if (loading) {
+    return (
+        <div className="flex flex-col h-screen bg-background text-foreground">
+             <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4 bg-gradient-to-b from-black/50 to-transparent">
+                <Button variant="ghost" size="icon" className="rounded-full bg-white/80 backdrop-blur-sm" onClick={() => router.back()}>
+                    <ChevronLeft />
+                </Button>
+                <Button variant="ghost" size="icon" className="rounded-full bg-white/80 backdrop-blur-sm">
+                    <Share2 />
+                </Button>
+            </header>
+            <main className="flex-1 overflow-y-auto">
+                <Skeleton className="h-80 w-full rounded-b-3xl" />
+                <div className="p-6 space-y-4">
+                    <Skeleton className="h-8 w-3/4 rounded" />
+                    <Skeleton className="h-6 w-1/4 rounded" />
+                    <div className="flex items-center space-x-4">
+                        <Skeleton className="h-5 w-16 rounded-full" />
+                        <Skeleton className="h-5 w-20 rounded" />
+                        <Skeleton className="h-5 w-24 rounded" />
+                    </div>
+                    <div className="space-y-2 pt-4">
+                        <Skeleton className="h-5 w-1/3 rounded" />
+                        <Skeleton className="h-4 w-full rounded" />
+                        <Skeleton className="h-4 w-5/6 rounded" />
+                    </div>
+                </div>
+            </main>
+             <footer className="p-4 border-t bg-background">
+                <Skeleton className="h-12 w-full rounded-full" />
+            </footer>
+        </div>
+    );
+  }
+
+  if (!mealData) {
+    return (
+        <div className="flex items-center justify-center h-screen">
+            <p>Repas introuvable.</p>
+        </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen bg-background text-foreground">
       <header className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4 bg-gradient-to-b from-black/50 to-transparent">
