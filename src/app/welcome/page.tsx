@@ -23,20 +23,17 @@ export default function WelcomePage() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-white">
-      <div className="flex-1 relative">
-        <Image
-          src="/welcome.png"
-          alt="Bol de nourriture saine avec quinoa, pois chiches, concombre et tomates"
-          layout="fill"
-          objectFit="cover"
-          className="z-0"
-          data-ai-hint="healthy food bowl"
-          priority
-        />
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent z-10"></div>
-      </div>
-      <div className="bg-white p-8 pt-6 flex flex-col items-center text-center rounded-t-3xl shadow-lg -mt-10 z-20">
+    <div className="relative h-screen w-screen">
+      <Image
+        src="/welcome.png"
+        alt="Bol de nourriture saine avec quinoa, pois chiches, concombre et tomates"
+        layout="fill"
+        objectFit="cover"
+        className="z-0"
+        data-ai-hint="healthy food bowl"
+        priority
+      />
+      <div className="absolute bottom-0 left-0 right-0 z-10 p-8 pb-12 flex flex-col items-center text-center">
         <h1 className="text-4xl font-bold text-gray-800 font-heading">kounfit</h1>
         <p className="text-2xl font-semibold text-gray-700 mt-2 mb-8">
           Mangez sain, vivez mieux
