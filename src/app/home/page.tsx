@@ -7,13 +7,13 @@ import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { auth } from "@/lib/firebase"
 import { getUserProfile } from "@/lib/services/userService"
-import type { User, DailyPlan } from "@/lib/types"
+import type { User, DailyPlan, Meal } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { MealGridCard, NutritionGrid } from "@/components/home-page-components";
+import { NutritionSummary, MealCard, MacroCard } from "@/components/home-page-components";
 
 const emptyPlan: DailyPlan = { breakfast: [], lunch: [], snack: [], dinner: [] };
 
@@ -33,7 +33,6 @@ export default function HomePage() {
           localStorage.removeItem("dailyPlanData");
           return emptyPlan;
         }
-        // Ensure all meal types are arrays
         return {
           breakfast: Array.isArray(plan.breakfast) ? plan.breakfast : [],
           lunch: Array.isArray(plan.lunch) ? plan.lunch : [],
@@ -105,7 +104,6 @@ export default function HomePage() {
   return (
       <div className="flex flex-col h-full bg-primary pb-4 px-4">
         <header className="flex-shrink-0 pt-8 pb-4">
-            {/* This space is intentionally left for the decorative green background */}
         </header>
 
         <Card className="flex-grow flex flex-col rounded-3xl shadow-lg">
@@ -130,18 +128,38 @@ export default function HomePage() {
                 </Button>
             </div>
           
-            <NutritionGrid
-              consumedCalories={consumedCalories}
-              calorieGoal={calorieGoal}
-              consumedMacros={consumedMacros}
-              macroGoals={macroGoals}
-            />
+            <Card>
+              <CardContent className="p-4">
+                <NutritionSummary 
+                  consumed={consumedCalories}
+                  goal={calorieGoal}
+                />
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-3 gap-2">
+              <MacroCard 
+                label="Protéines"
+                consumed={consumedMacros.protein}
+                goal={macroGoals.protein}
+              />
+              <MacroCard 
+                label="Glucides"
+                consumed={consumedMacros.carbs}
+                goal={macroGoals.carbs}
+              />
+              <MacroCard 
+                label="Lipides"
+                consumed={consumedMacros.fat}
+                goal={macroGoals.fat}
+              />
+            </div>
             
             <div className="grid grid-cols-2 gap-4">
-                <MealGridCard title="Petit déjeuner" meals={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} defaultImage="/petit-dejeuner.png" />
-                <MealGridCard title="Déjeuner" meals={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} defaultImage="/dejeuner.png" />
-                <MealGridCard title="Dîner" meals={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} defaultImage="/dinner.png" />
-                <MealGridCard title="Collation" meals={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} defaultImage="/snacks.png" />
+                <MealCard title="Petit déjeuner" meals={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} defaultImage="/petit-dejeuner.png" />
+                <MealCard title="Déjeuner" meals={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} defaultImage="/dejeuner.png" />
+                <MealCard title="Dîner" meals={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} defaultImage="/dinner.png" />
+                <MealCard title="Collation" meals={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} defaultImage="/snacks.png" />
             </div>
           </CardContent>
         </Card>
