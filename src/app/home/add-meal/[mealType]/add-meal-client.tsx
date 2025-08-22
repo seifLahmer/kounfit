@@ -1,13 +1,14 @@
+
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
-import { ChevronLeft, Loader2, Plus, Search, Heart } from "lucide-react";
+import { ChevronLeft, Loader2, Plus, Search, Heart, Frown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { getAvailableMealsByCategory } from "@/lib/services/mealService";
+import { getAvailableMealsByCategory, getFavoriteMeals } from "@/lib/services/mealService";
 import { toggleFavoriteMeal } from "@/lib/services/userService";
 import { auth } from "@/lib/firebase";
 import type { Meal, DailyPlan, User } from "@/lib/types";
@@ -16,6 +17,7 @@ import Link from "next/link";
 import { getUserProfile } from "@/lib/services/userService";
 import { cn } from "@/lib/utils";
 import { CalorieIcon } from "@/components/icons";
+import { Separator } from "@/components/ui/separator";
 
 const mealTypeTranslations: { [key: string]: string } = {
   breakfast: 'Petit déjeuner',
@@ -24,12 +26,70 @@ const mealTypeTranslations: { [key: string]: string } = {
   snack: 'Collation'
 };
 
+const MealGrid = ({ meals, favoriteMealIds, onAddMeal, onToggleFavorite }: { meals: Meal[], favoriteMealIds: string[], onAddMeal: (meal: Meal) => void, onToggleFavorite: (mealId: string) => void }) => {
+    if (meals.length === 0) {
+        return (
+            <div className="text-center text-muted-foreground py-8">
+                <Frown className="w-12 h-12 mx-auto mb-2" />
+                <p>Aucun repas trouvé dans cette section.</p>
+            </div>
+        );
+    }
+    
+    return (
+        <div className="grid grid-cols-2 gap-4">
+            {meals.map((meal) => (
+                <Card key={meal.id} className="relative overflow-hidden rounded-2xl border shadow-sm h-56 group">
+                    <Link href={`/home/meal/${meal.id}`} className="absolute inset-0 z-0">
+                       <Image
+                            src={meal.imageUrl}
+                            alt={meal.name}
+                            layout="fill"
+                            objectFit="cover"
+                            className="w-full h-full transition-transform duration-300 group-hover:scale-105"
+                            data-ai-hint="healthy food"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+                    </Link>
+                    
+                    <CardContent className="relative z-10 p-3 flex flex-col justify-end h-full text-white">
+                        <div>
+                            <h3 className="font-bold text-base truncate">{meal.name}</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                                <CalorieIcon className="w-3 h-3 text-primary" />
+                                <span className="font-medium text-sm">{meal.calories} kcal</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs mt-1">
+                                <span className="font-semibold text-protein">P</span><span>{meal.macros.protein}g</span>
+                                <span className="font-semibold text-primary">C</span><span>{meal.macros.carbs}g</span>
+                                <span className="font-semibold text-fat">F</span><span>{meal.macros.fat}g</span>
+                            </div>
+                        </div>
+                    </CardContent>
+
+                    <div className="absolute top-2 right-2 z-20">
+                        <Button variant="ghost" size="icon" className="text-white/80 hover:text-white" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleFavorite(meal.id); }}>
+                            <Heart className={cn("w-6 h-6", favoriteMealIds.includes(meal.id) ? "text-red-500 fill-current" : "text-white")}/>
+                        </Button>
+                    </div>
+                    <div className="absolute bottom-2 right-2 z-20">
+                        <Button size="icon" className="bg-primary/80 hover:bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center shrink-0" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onAddMeal(meal); }}>
+                            <Plus className="w-5 h-5"/>
+                        </Button>
+                    </div>
+                </Card>
+            ))}
+        </div>
+    );
+};
+
 export default function AddMealClientPage() {
   const router = useRouter();
   const params = useParams();
   const mealType = (Array.isArray(params.mealType) ? params.mealType[0] : params.mealType) as keyof DailyPlan;
 
-  const [meals, setMeals] = useState<Meal[]>([]);
+  const [recommendedMeals, setRecommendedMeals] = useState<Meal[]>([]);
+  const [favoriteMeals, setFavoriteMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
@@ -48,10 +108,15 @@ export default function AddMealClientPage() {
             getAvailableMealsByCategory(mealType),
             getUserProfile(firebaseUser.uid)
         ]);
-        setMeals(fetchedMeals);
+        setRecommendedMeals(fetchedMeals);
         if (userProfile) {
             setUser(userProfile);
-            setFavoriteMealIds(userProfile.favoriteMealIds || []);
+            const userFavoritesIds = userProfile.favoriteMealIds || [];
+            setFavoriteMealIds(userFavoritesIds);
+            if(userFavoritesIds.length > 0) {
+                const fetchedFavorites = await getFavoriteMeals(userFavoritesIds);
+                setFavoriteMeals(fetchedFavorites.filter(m => m.category === mealType));
+            }
         }
     } catch (error) {
         toast({
@@ -118,6 +183,15 @@ export default function AddMealClientPage() {
     try {
         const updatedFavorites = await toggleFavoriteMeal(user.uid, mealId);
         setFavoriteMealIds(updatedFavorites);
+        
+        // Refresh favorite meals list after toggling
+        if (updatedFavorites.length > 0) {
+            const fetchedFavorites = await getFavoriteMeals(updatedFavorites);
+            setFavoriteMeals(fetchedFavorites.filter(m => m.category === mealType));
+        } else {
+            setFavoriteMeals([]);
+        }
+
         const isFavorite = updatedFavorites.includes(mealId);
         toast({
             title: isFavorite ? "Ajouté aux favoris" : "Retiré des favoris",
@@ -132,16 +206,21 @@ export default function AddMealClientPage() {
     }
   };
 
-  const filteredMeals = useMemo(() => {
-    return meals.filter(meal => 
+  const filteredRecommendedMeals = useMemo(() => {
+    return recommendedMeals.filter(meal => 
       meal.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [meals, searchTerm]);
+  }, [recommendedMeals, searchTerm]);
 
+  const filteredFavoriteMeals = useMemo(() => {
+    return favoriteMeals.filter(meal => 
+        meal.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+  }, [favoriteMeals, searchTerm]);
 
   return (
     <div className="flex flex-col h-screen bg-gradient-to-b from-[#a2fcdc] to-background">
-      <header className="p-4 space-y-4 sticky top-0 bg-transparent z-10">
+      <header className="p-4 space-y-4 sticky top-0 bg-transparent backdrop-blur-sm z-10">
          <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" onClick={() => router.back()} className="shrink-0">
                 <ChevronLeft />
@@ -159,60 +238,38 @@ export default function AddMealClientPage() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-4">
+      <main className="flex-1 overflow-y-auto p-4 space-y-6">
         {loading ? (
             <div className="flex justify-center items-center h-64">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-        ) : filteredMeals.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4">
-                {filteredMeals.map((meal) => (
-                    <Card key={meal.id} className="relative overflow-hidden rounded-2xl border shadow-sm h-56 group">
-                        <Link href={`/home/meal/${meal.id}`} className="absolute inset-0 z-0">
-                           <Image
-                                src={meal.imageUrl}
-                                alt={meal.name}
-                                layout="fill"
-                                objectFit="cover"
-                                className="w-full h-full transition-transform duration-300 group-hover:scale-105"
-                                data-ai-hint="healthy food"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
-                        </Link>
-                        
-                        <CardContent className="relative z-10 p-3 flex flex-col justify-end h-full text-white">
-                            <div>
-                                <h3 className="font-bold text-base truncate">{meal.name}</h3>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <CalorieIcon className="w-3 h-3 text-primary" />
-                                    <span className="font-medium text-sm">{meal.calories} kcal</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-xs mt-1">
-                                    <span className="font-semibold text-protein">P</span><span>{meal.macros.protein}g</span>
-                                    <span className="font-semibold text-primary">C</span><span>{meal.macros.carbs}g</span>
-                                    <span className="font-semibold text-fat">F</span><span>{meal.macros.fat}g</span>
-                                </div>
-                            </div>
-                        </CardContent>
-
-                        <div className="absolute top-2 right-2 z-20">
-                            <Button variant="ghost" size="icon" className="text-white/80 hover:text-white" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleToggleFavorite(meal.id); }}>
-                                <Heart className={cn("w-6 h-6", favoriteMealIds.includes(meal.id) ? "text-red-500 fill-current" : "text-white")}/>
-                            </Button>
-                        </div>
-                        <div className="absolute bottom-2 right-2 z-20">
-                            <Button size="icon" className="bg-primary/80 hover:bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center shrink-0" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAddMeal(meal); }}>
-                                <Plus className="w-5 h-5"/>
-                            </Button>
-                        </div>
-                    </Card>
-                ))}
-            </div>
         ) : (
-             <div className="text-center text-muted-foreground py-16">
-                <p className="font-semibold text-lg">Aucun repas trouvé</p>
-                <p>Aucun repas n'est disponible pour cette catégorie ou votre recherche.</p>
-            </div>
+            <>
+                <div>
+                    <h2 className="text-xl font-bold mb-4">Vos Repas Favoris</h2>
+                    <MealGrid 
+                        meals={filteredFavoriteMeals} 
+                        favoriteMealIds={favoriteMealIds} 
+                        onAddMeal={handleAddMeal}
+                        onToggleFavorite={handleToggleFavorite}
+                    />
+                </div>
+
+                <div className="flex items-center gap-4">
+                    <Separator className="flex-1"/>
+                    <h2 className="text-xl font-bold whitespace-nowrap">Repas Recommandés</h2>
+                    <Separator className="flex-1"/>
+                </div>
+
+                <div>
+                    <MealGrid 
+                        meals={filteredRecommendedMeals}
+                        favoriteMealIds={favoriteMealIds}
+                        onAddMeal={handleAddMeal}
+                        onToggleFavorite={handleToggleFavorite}
+                    />
+                </div>
+            </>
         )}
       </main>
     </div>
