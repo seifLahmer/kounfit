@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef } from "react";
@@ -50,20 +51,20 @@ export default function WelcomePage() {
                 >
                 <div
                     ref={constraintsRef}
-                    className="relative w-full h-16 bg-gray-100 rounded-full flex items-center p-1"
+                    className="relative w-full h-16 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full flex items-center p-1"
                 >
                     <motion.div
                     drag="x"
                     dragConstraints={constraintsRef}
                     dragElastic={0.1}
                     onDragEnd={handleDragEnd}
-                    className="w-14 h-14 bg-gradient-to-br from-secondary to-red-400 rounded-full flex items-center justify-center cursor-pointer shadow-md"
+                    className="w-14 h-14 bg-primary rounded-full flex items-center justify-center cursor-pointer shadow-md"
                     whileTap={{ scale: 1.1, cursor: "grabbing" }}
                     >
                     <ChevronRight className="text-white h-8 w-8" />
                     </motion.div>
-                    <span className="absolute left-1/2 -translate-x-1/2 text-gray-500 font-semibold pointer-events-none">
-                    Commencer
+                    <span className="absolute left-1/2 -translate-x-1/2 text-white font-semibold pointer-events-none">
+                    Get Started
                     </span>
                 </div>
                 </motion.div>
