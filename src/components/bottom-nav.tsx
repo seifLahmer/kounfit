@@ -27,10 +27,10 @@ import {
 } from "@/components/ui/alert-dialog"
 
 const links = [
-  { href: "/home", label: "Accueil", icon: Home },
-  { href: "/meal-plans", label: "Favoris", icon: Heart },
-  { href: "/shopping-list", label: "Panier", icon: ShoppingCart },
   { href: "/profile", label: "Profil", icon: User },
+  { href: "/meal-plans", label: "Favoris", icon: Heart },
+  { href: "/home", label: "Accueil", icon: Home },
+  { href: "/shopping-list", label: "Panier", icon: ShoppingCart },
 ]
 
 export function BottomNav() {
