@@ -129,16 +129,12 @@ export default function HomePage() {
                 </Button>
             </div>
           
-            <Card className="shadow-lg">
-              <CardContent className="p-4">
-                <NutritionSummary 
-                  consumedCalories={consumedCalories}
-                  calorieGoal={calorieGoal}
-                  consumedMacros={consumedMacros}
-                  macroGoals={macroGoals}
-                />
-              </CardContent>
-            </Card>
+            <NutritionSummary 
+              consumedCalories={consumedCalories}
+              calorieGoal={calorieGoal}
+              consumedMacros={consumedMacros}
+              macroGoals={macroGoals}
+            />
             
             <div className="grid grid-cols-2 gap-4">
                 <MealCard title="Petit déjeuner" meals={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} defaultImage="/petit-dejeuner.png" />

@@ -5,6 +5,72 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import type { Meal } from "@/lib/types";
 
+const CalorieCircle = ({ consumed, goal }: { consumed: number; goal: number }) => {
+  const percentage = goal > 0 ? Math.min((consumed / goal) * 100, 100) : 0;
+  const circumference = 2 * Math.PI * 40; // radius = 40
+  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+  return (
+    <div className="relative w-28 h-28">
+      <svg className="w-full h-full" viewBox="0 0 100 100">
+        <circle
+          className="stroke-current text-gray-200"
+          strokeWidth="8"
+          fill="none"
+          cx="50"
+          cy="50"
+          r="40"
+        />
+        <circle
+          className="stroke-current text-primary"
+          strokeWidth="8"
+          strokeLinecap="round"
+          fill="none"
+          cx="50"
+          cy="50"
+          r="40"
+          transform="rotate(-90 50 50)"
+          style={{ strokeDasharray: circumference, strokeDashoffset, transition: "stroke-dashoffset 0.5s" }}
+        />
+        <text x="50%" y="45%" textAnchor="middle" dy=".3em" className="text-xl font-bold fill-current">
+          {Math.round(consumed)}
+        </text>
+        <text x="50%" y="60%" textAnchor="middle" dy=".3em" className="text-xs fill-muted-foreground">
+          dans la cible
+        </text>
+      </svg>
+    </div>
+  );
+};
+
+const MacroCard = ({
+  label,
+  consumed,
+  goal,
+}: {
+  label: string;
+  consumed: number;
+  goal: number;
+}) => {
+  const percentage = goal > 0 ? Math.round((consumed / goal) * 100) : 0;
+  return (
+    <Card className="flex-1 shadow-md rounded-2xl">
+      <CardContent className="p-3 space-y-1">
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <div className="flex items-baseline gap-1">
+          <p className="text-xl font-bold">{consumed.toFixed(2)}</p>
+          <p className="text-sm font-semibold">g</p>
+        </div>
+        <p className="text-xs text-muted-foreground">sur {goal} g</p>
+        <div className="flex items-center gap-2">
+            <Progress value={percentage} className="h-1.5 w-full" />
+            <span className="text-xs text-muted-foreground">{percentage}%</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 export const NutritionSummary = ({
   consumedCalories,
   calorieGoal,
@@ -16,72 +82,31 @@ export const NutritionSummary = ({
   consumedMacros: { protein: number; carbs: number; fat: number };
   macroGoals: { protein: number; carbs: number; fat: number };
 }) => {
+  const remainingCalories = calorieGoal - consumedCalories;
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-4">
       <Card className="shadow-lg rounded-2xl">
         <CardContent className="p-4 flex items-center justify-between">
-          <div>
-            <p className="text-sm text-muted-foreground">Calories Consumées</p>
-            <p className="text-3xl font-bold">{Math.round(consumedCalories)}</p>
-          </div>
+          <CalorieCircle consumed={consumedCalories} goal={calorieGoal} />
           <div className="text-right">
-             <p className="text-sm text-muted-foreground">Objectif</p>
-             <p className="text-lg font-bold">{calorieGoal}</p>
+            <p className="text-xs text-muted-foreground">Restant / consommées</p>
+            <p className="text-4xl font-bold">{remainingCalories.toFixed(1)}</p>
+            <p className="text-md text-muted-foreground">kcal restantes</p>
+             <svg width="60" height="8" viewBox="0 0 60 8" fill="none" xmlns="http://www.w3.org/2000/svg" className="ml-auto mt-1">
+                <path d="M1 6.5C8.66667 2.5 18.2 -1.1 29 2C41.2 5.5 51.8333 6.33333 59 4.5" stroke="#D1D5DB" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
           </div>
         </CardContent>
       </Card>
-      <Card className="shadow-lg rounded-2xl">
-        <CardContent className="p-4 space-y-2">
-           <MacroBar
-                label="Protéines"
-                consumed={consumedMacros.protein}
-                goal={macroGoals.protein}
-                percentage={(consumedMacros.protein / (macroGoals.protein || 1)) * 100}
-                colorClass="bg-protein"
-            />
-            <MacroBar
-                label="Glucides"
-                consumed={consumedMacros.carbs}
-                goal={macroGoals.carbs}
-                percentage={(consumedMacros.carbs / (macroGoals.carbs || 1)) * 100}
-                colorClass="bg-carbs"
-            />
-            <MacroBar
-                label="Lipides"
-                consumed={consumedMacros.fat}
-                goal={macroGoals.fat}
-                percentage={(consumedMacros.fat / (macroGoals.fat || 1)) * 100}
-                colorClass="bg-fat"
-            />
-        </CardContent>
-      </Card>
+      <div className="flex gap-3">
+        <MacroCard label="Protéines" consumed={consumedMacros.protein} goal={macroGoals.protein} />
+        <MacroCard label="Glucides" consumed={consumedMacros.carbs} goal={macroGoals.carbs} />
+        <MacroCard label="Lipides" consumed={consumedMacros.fat} goal={macroGoals.fat} />
+      </div>
     </div>
   );
 };
-
-
-export const MacroBar = ({
-  label,
-  consumed,
-  goal,
-  percentage,
-  colorClass,
-}: {
-  label: string;
-  consumed: number;
-  goal: number;
-  percentage: number;
-  colorClass: string;
-}) => (
-  <div className="space-y-1">
-    <div className="flex justify-between items-baseline">
-      <span className="font-semibold text-xs">{label}</span>
-      <span className="text-xs text-muted-foreground">{Math.round(consumed)}/{goal}g</span>
-    </div>
-    <Progress value={percentage} indicatorClassName={colorClass} className="h-1.5" />
-  </div>
-);
-
 
 const MealNutritionCircle = ({
     value,
@@ -140,6 +165,7 @@ const MealNutritionInfo = ({ meals }: { meals: Meal[] }) => {
         return acc;
     }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
 
+    // These are arbitrary goals for the small circles, adjust as needed for visual representation.
     const mealGoals = { calories: 600, protein: 40, carbs: 70, fat: 20 };
   
     return (
@@ -165,8 +191,8 @@ export const MealCard = ({ title, meals, onAdd, defaultImage }: { title: string;
         className="z-0 group-hover:scale-105 transition-transform duration-300"
         data-ai-hint="healthy food"
       />
-      <div className="absolute inset-0 bg-black/30 z-0"></div>
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent z-10"></div>
+      <div className="absolute inset-0 bg-black/40 z-0"></div>
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10"></div>
       
       <CardContent className="relative z-20 flex flex-col justify-between h-full p-3 text-white">
         <div className="flex justify-between items-start">
