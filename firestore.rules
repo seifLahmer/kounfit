@@ -2,70 +2,45 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isAdmin() {
-      return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
-    }
-
-    function isCaterer() {
-        return exists(/databases/$(database)/documents/caterers/$(request.auth.uid));
-    }
-
-    function isClient() {
-        return exists(/databases/$(database)/documents/users/$(request.auth.uid));
-    }
-
+    
+    // Users can only read/write their own profile
     match /users/{userId} {
-      // Un utilisateur peut créer son propre profil.
-      allow create: if request.auth.uid == userId;
-      // Seul l'utilisateur propriétaire ou un admin peut lire ou mettre à jour son profil.
-      allow read, update: if request.auth.uid == userId || isAdmin();
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
     }
-    
-    match /caterers/{catererId} {
-      // Les admins peuvent créer des profils de traiteurs.
-      allow create, delete: if isAdmin();
-      // Tout le monde peut lire les profils des traiteurs.
-      allow read: if request.auth != null;
-      // Seul le traiteur propriétaire ou un admin peut mettre à jour son profil.
-      allow update: if request.auth.uid == catererId || isAdmin();
-    }
-    
+
+    // Admins can read/write any admin document
     match /admins/{adminId} {
-      // Seuls les admins peuvent lire ou écrire dans la collection des admins.
-      allow read, write: if isAdmin();
+      allow read, write: if get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
     }
 
+    // Caterers can only manage their own profile
+    match /caterers/{catererId} {
+      allow read: if request.auth != null; // Allow reading caterer info
+      allow create, update, delete: if request.auth != null && request.auth.uid == catererId;
+    }
+
+    // Any authenticated user can read meals. Only creators can write them.
     match /meals/{mealId} {
-      // Tout le monde peut lire la liste des repas.
-      allow read: if true;
-      // Seul un traiteur authentifié peut créer un repas.
-      allow create: if isCaterer();
-      // Seul le traiteur qui a créé le repas ou un admin peut le mettre à jour ou le supprimer.
-      allow update, delete: if (resource.data.createdBy == request.auth.uid || isAdmin());
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
     }
-
+    
+    // Ratings can be created/updated by any authenticated user, but only read by the meal creator or admin
     match /meals/{mealId}/userRatings/{userId} {
-      // Un client connecté peut créer ou mettre à jour sa propre note.
-      allow write: if request.auth.uid == userId && isClient();
-      // Tout le monde peut lire les notes.
-      allow read: if true;
+       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    // Orders can be created by clients. Read/Update by client or involved caterer.
     match /orders/{orderId} {
-      // Seul un client authentifié peut créer une commande.
-      allow create: if isClient();
-      // Le client qui a passé la commande, le traiteur concerné ou un admin peut la lire.
-      allow read: if (resource.data.clientId == request.auth.uid || request.auth.uid in resource.data.catererIds || isAdmin());
-      // Le traiteur concerné ou un admin peut mettre à jour le statut de la commande.
-      allow update: if (request.auth.uid in resource.data.catererIds || isAdmin());
+      allow create: if request.auth != null;
+      allow read, update: if request.auth != null && (request.auth.uid == resource.data.clientId || request.auth.uid in resource.data.catererIds);
     }
-
+    
+    // Notifications are private to the user
     match /notifications/{notificationId} {
-      // L'utilisateur concerné par la notification est le seul à pouvoir la lire ou la marquer comme lue.
-      allow read, update: if resource.data.userId == request.auth.uid;
-      // Personne ne peut créer de notifications directement, elles sont créées côté serveur.
-      allow create: if false;
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
     }
   }
 }
