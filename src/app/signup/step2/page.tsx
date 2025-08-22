@@ -27,7 +27,7 @@ import { calculateNutritionalNeeds } from "@/lib/services/nutritionService";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { onAuthStateChanged } from "firebase/auth";
-import { Loader2, Check } from "lucide-react";
+import { Loader2, Check, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LeafPattern, HeightIcon, WeightIcon, AgeIcon, ActivityIcon } from "@/components/icons";
 
@@ -38,6 +38,7 @@ const step2Schema = z.object({
   biologicalSex: z.enum(["male", "female"], {
     required_error: "Veuillez sélectionner votre sexe.",
   }),
+  region: z.string().min(1, "La région est requise."),
   activityLevel: z.enum(["sedentary", "lightly_active", "moderately_active", "very_active", "extremely_active"],{
     required_error: "Veuillez sélectionner un niveau d'activité.",
   }),
@@ -61,6 +62,7 @@ export default function SignupStep2Page() {
       weight: 70,
       age: 25,
       biologicalSex: "male",
+      region: "",
       activityLevel: "lightly_active",
       mainGoal: "maintain",
     },
@@ -107,6 +109,7 @@ export default function SignupStep2Page() {
           biologicalSex: data.biologicalSex,
           weight: data.weight,
           height: data.height,
+          region: data.region,
           activityLevel: data.activityLevel,
           mainGoal: data.mainGoal,
           calorieGoal: nutritionalNeeds.calories,
@@ -145,8 +148,8 @@ export default function SignupStep2Page() {
   return (
     <div className="min-h-screen bg-[#F6F8F7] flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <LeafPattern className="absolute inset-0 w-full h-full text-gray-400/50" />
-      <div className="relative w-full max-w-md bg-white/70 backdrop-blur-md rounded-3xl shadow-2xl flex flex-col">
-        <div className="bg-gradient-to-b from-[#22C58B] to-[#0B7E58] rounded-t-3xl text-white text-center p-6 space-y-3">
+      <div className="relative w-full max-w-lg bg-white/70 backdrop-blur-md rounded-3xl shadow-2xl flex flex-col">
+        <div className="bg-gradient-to-b from-[#22C58B] to-[#0B7E58] rounded-t-3xl text-white text-center p-6 space-y-3 rounded-b-2xl">
           <h1 className="text-xl font-semibold">Kounfit</h1>
           <h2 className="text-2xl font-bold">Inscription Client</h2>
           <p className="text-lg font-medium">– Etape 2/2 –</p>
@@ -163,40 +166,42 @@ export default function SignupStep2Page() {
         <div className="p-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="height"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <div className="flex items-center bg-white/50 rounded-xl p-3 h-14">
-                        <HeightIcon className="text-gray-500" />
-                        <span className="ml-3 font-medium text-gray-700">Taille</span>
-                        <Input type="number" {...field} className="text-right border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none w-20" />
-                        <span className="text-gray-500">cm</span>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="weight"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <div className="flex items-center bg-white/50 rounded-xl p-3 h-14">
-                        <WeightIcon className="text-gray-500" />
-                        <span className="ml-3 font-medium text-gray-700">Poids</span>
-                        <Input type="number" {...field} className="text-right border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none w-20" />
-                        <span className="text-gray-500">kg</span>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="height"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <div className="flex items-center bg-white/50 rounded-xl p-3 h-14">
+                          <HeightIcon className="text-gray-500" />
+                          <span className="ml-3 font-medium text-gray-700">Taille</span>
+                          <Input type="number" {...field} className="text-right border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none w-16" />
+                          <span className="text-gray-500">cm</span>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="weight"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <div className="flex items-center bg-white/50 rounded-xl p-3 h-14">
+                          <WeightIcon className="text-gray-500" />
+                          <span className="ml-3 font-medium text-gray-700">Poids</span>
+                          <Input type="number" {...field} className="text-right border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none w-16" />
+                          <span className="text-gray-500">kg</span>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <FormField
                 control={form.control}
                 name="age"
@@ -207,6 +212,22 @@ export default function SignupStep2Page() {
                         <AgeIcon className="text-gray-500" />
                         <span className="ml-3 font-medium text-gray-700">Age</span>
                         <Input type="number" {...field} className="text-right border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none w-24" />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="region"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <div className="flex items-center bg-white/50 rounded-xl p-3 h-14">
+                        <MapPin className="text-gray-500 h-6 w-6" />
+                        <span className="ml-3 font-medium text-gray-700">Région</span>
+                        <Input type="text" {...field} placeholder="Ex: Tunis" className="text-right border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none" />
                       </div>
                     </FormControl>
                     <FormMessage />
@@ -310,5 +331,3 @@ export default function SignupStep2Page() {
     </div>
   );
 }
-
-    
