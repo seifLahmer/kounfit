@@ -1,57 +1,57 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users can only read and write their own data.
+    // Users can only read/write their own data
     match /users/{userId} {
-      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null;
+      allow read, update, delete: if request.auth.uid == userId;
+      allow create: if request.auth.uid != null;
     }
     
-    // Allow public read for meals and their ratings
+    // Admins can read/write their own data
+    match /admins/{adminId} {
+       allow read, write: if request.auth.uid == adminId;
+    }
+    
+    // Caterers can read/write their own data
+    match /caterers/{catererId} {
+       allow read, write: if request.auth.uid == catererId;
+    }
+
+    // Orders:
+    // - Clients can create their own orders.
+    // - Caterers and Admins can read orders they are involved in.
+    // - Clients can read their own orders.
+    match /orders/{orderId} {
+      allow create: if request.auth.uid == request.resource.data.clientId;
+      allow read: if request.auth.uid == resource.data.clientId 
+                      || request.auth.uid in resource.data.catererIds
+                      || get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
+      allow update: if request.auth.uid in resource.data.catererIds
+                       || get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Meals: Public read, but only caterers/admins can create/update/delete.
     match /meals/{mealId} {
       allow read: if true;
+      allow create, update: if get(/databases/$(database)/documents/caterers/$(request.auth.uid)).data.role == 'caterer' 
+                           || get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
+      allow delete: if get(/databases/$(database)/documents/caterers/$(request.auth.uid)).data.role == 'caterer' 
+                         && resource.data.createdBy == request.auth.uid
+                         || get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
       
-      // Allow create only for authenticated users (caterers will do this)
-      allow create: if request.auth != null;
-      
-      // Allow update and delete only by the caterer who created it.
-      allow update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
-      
+      // Allow any authenticated user to read and write their own rating.
       match /userRatings/{userId} {
-          allow read: if true;
-          // Allow authenticated users to create/update their own rating
-          allow write: if request.auth != null && request.auth.uid == userId;
+        allow read: if true;
+        allow write: if request.auth.uid == userId;
       }
     }
-
-    // Caterers can be read by any authenticated user, but only created/updated/deleted by admins (via backend).
-    match /caterers/{catererId} {
-        allow read: if request.auth != null;
-        // Write operations should be handled by a secure backend with admin privileges.
-        allow write: if false; 
-    }
-
-    // Admins collection should be private. Only readable by admins.
-    match /admins/{adminId} {
-        allow read: if request.auth != null && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
-        // Write should be handled by a secure backend.
-        allow write: if false;
-    }
     
-    // Orders can only be created by authenticated users.
-    // Reading/updating depends on user role (client reads own, caterer reads assigned).
-    match /orders/{orderId} {
-        allow create: if request.auth != null && request.auth.uid == request.resource.data.clientId;
-        allow read, update: if request.auth != null && 
-                             (request.auth.uid == resource.data.clientId || request.auth.uid in resource.data.catererIds);
-    }
-    
-    // Notifications can only be read/updated by the assigned user.
+    // Notifications can only be accessed by the target user
     match /notifications/{notificationId} {
-        allow read, update: if request.auth != null && request.auth.uid == resource.data.userId;
-        allow create: if true; // Created by backend service/functions
+      allow read, write: if request.auth.uid == resource.data.userId;
     }
   }
 }
