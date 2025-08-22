@@ -157,8 +157,8 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-[#F6F8F7] flex flex-col">
-       <div className="relative bg-gradient-to-b from-[#22C58B] to-[#4FD6B3] text-white overflow-hidden">
-            <div className="text-center pt-10 pb-6 px-4 space-y-4">
+       <div className="relative bg-gradient-to-b from-[#22C58B] to-[#4FD6B3] text-white pb-12" style={{ clipPath: 'ellipse(120% 70% at 50% 30%)' }}>
+            <div className="text-center pt-10 px-4 space-y-4">
                 <h1 className="text-4xl font-bold font-heading">Kounfit</h1>
                 <h2 className="text-2xl font-semibold">Inscription - Étape 1/2</h2>
                 <div className="w-full max-w-sm mx-auto pt-4">
@@ -169,10 +169,9 @@ export default function SignupPage() {
                     </div>
                 </div>
             </div>
-            <div className="h-12 bg-[#F6F8F7]" style={{ borderTopLeftRadius: '100%', borderTopRightRadius: '100%' }}></div>
         </div>
 
-      <div className="w-full max-w-md mx-auto px-4 flex-1 -mt-12">
+      <div className="w-full max-w-md mx-auto px-4 flex-1 -mt-24">
         <div className="bg-white rounded-t-3xl p-6 h-full shadow-2xl shadow-gray-300/30">
             <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -227,5 +226,7 @@ export default function SignupPage() {
     </div>
   );
 }
+
+    
 
     
