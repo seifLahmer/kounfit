@@ -87,14 +87,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-tertiary">
-        <LeafPattern className="absolute bottom-0 left-0 w-full h-auto text-black/5 z-10" />
+    <div className="flex flex-col min-h-screen bg-tertiary relative">
+        <LeafPattern className="absolute bottom-0 left-0 w-full h-auto text-white/5 z-0" />
         <header className="flex-shrink-0 h-48 flex items-center justify-center">
             <h1 className="text-5xl font-bold text-white font-heading">Kounfit</h1>
         </header>
 
-        <main className="flex-1 flex flex-col bg-white rounded-t-3xl z-20 p-8">
-            <h2 className="text-3xl font-bold text-center text-tertiary mb-8 font-heading">Connexion</h2>
+        <main className="flex-1 flex flex-col z-10 p-8">
+            <h2 className="text-3xl font-bold text-center text-white mb-8 font-heading">Connexion</h2>
             
              <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -105,16 +105,16 @@ export default function LoginPage() {
                       <FormItem>
                         <FormControl>
                           <div className="relative">
-                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/80" />
                             <Input 
                                 type="email" 
-                                placeholder="E-mail ou nom d'utilisateur" 
-                                className="pl-12 h-14 rounded-button bg-gray-50 border-gray-200 focus:bg-white"
+                                placeholder="E-mail" 
+                                className="pl-12 h-14 rounded-button bg-white/20 backdrop-blur-sm border-white/10 text-white placeholder:text-white/70 focus:bg-white/30"
                                 {...field} 
                              />
                           </div>
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-secondary" />
                       </FormItem>
                     )}
                   />
@@ -125,23 +125,23 @@ export default function LoginPage() {
                       <FormItem>
                         <FormControl>
                           <div className="relative">
-                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/80" />
                             <Input 
                                 type={showPassword ? "text" : "password"}
                                 placeholder="Mot de passe"
-                                className="pl-12 pr-12 h-14 rounded-button bg-gray-50 border-gray-200 focus:bg-white"
+                                className="pl-12 pr-12 h-14 rounded-button bg-white/20 backdrop-blur-sm border-white/10 text-white placeholder:text-white/70 focus:bg-white/30"
                                 {...field}
                              />
                             <button 
                                 type="button" 
                                 onClick={() => setShowPassword(!showPassword)} 
-                                className="absolute right-4 top-1/2 -translate-y-1/2"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80"
                             >
-                                {showPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
+                                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                             </button>
                           </div>
                         </FormControl>
-                        <FormMessage />
+                         <FormMessage className="text-secondary" />
                       </FormItem>
                     )}
                   />
@@ -153,27 +153,27 @@ export default function LoginPage() {
             </Form>
 
             <div className="text-center my-4">
-                <Link href="#" className="text-sm text-tertiary font-semibold hover:underline">
+                <Link href="#" className="text-sm text-white font-semibold hover:underline">
                     Mot de passe oublié ?
                 </Link>
             </div>
 
             <div className="flex items-center my-4">
-                <div className="flex-grow border-t border-gray-200"></div>
-                <span className="mx-4 text-sm text-gray-400">ou</span>
-                <div className="flex-grow border-t border-gray-200"></div>
+                <div className="flex-grow border-t border-white/20"></div>
+                <span className="mx-4 text-sm text-white/70">ou</span>
+                <div className="flex-grow border-t border-white/20"></div>
             </div>
 
             <div className="flex justify-center gap-4">
-                 <Button variant="outline" size="icon" className="h-14 w-14 rounded-full" onClick={handleGoogleSignIn} disabled={isSubmitting}>
+                 <Button variant="outline" size="icon" className="h-14 w-14 rounded-full bg-white/20 backdrop-blur-sm border-white/10 text-white hover:bg-white/30 hover:text-white" onClick={handleGoogleSignIn} disabled={isSubmitting}>
                     <GoogleIcon className="w-7 h-7"/>
                 </Button>
-                <Button variant="outline" size="icon" className="h-14 w-14 rounded-full" disabled>
+                <Button variant="outline" size="icon" className="h-14 w-14 rounded-full bg-white/20 backdrop-blur-sm border-white/10 text-white hover:bg-white/30 hover:text-white" disabled>
                      <FacebookIcon className="w-7 h-7" />
                 </Button>
             </div>
             
-            <div className="mt-auto text-center text-sm">
+            <div className="mt-auto text-center text-sm text-white">
                 Pas encore de compte ?{" "}
                 <Link href="/signup" className="font-semibold text-secondary hover:underline">
                 S'inscrire

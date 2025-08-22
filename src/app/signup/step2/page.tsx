@@ -133,12 +133,12 @@ export default function SignupStep2Page() {
 
   return (
     <div className="flex flex-col min-h-screen bg-tertiary">
-        <LeafPattern className="absolute bottom-0 left-0 w-full h-auto text-black/5 z-10" />
+        <LeafPattern className="absolute bottom-0 left-0 w-full h-auto text-white/5 z-0" />
         <header className="flex-shrink-0 h-48 flex items-center justify-center">
             <h1 className="text-5xl font-bold text-white font-heading">Kounfit</h1>
         </header>
 
-        <main className="flex-1 flex flex-col bg-white rounded-t-3xl z-20 p-8">
+        <main className="flex-1 flex flex-col bg-white rounded-t-3xl z-10 p-8">
             <h2 className="text-3xl font-bold text-center text-tertiary font-heading">Inscription - Étape 2/2</h2>
             <div className="w-16 h-1 bg-gray-200 rounded-full mx-auto my-4 relative">
                 <div className="absolute left-0 top-0 h-full w-full bg-primary rounded-full"></div>

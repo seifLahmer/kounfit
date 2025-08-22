@@ -86,15 +86,15 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-tertiary">
-        <LeafPattern className="absolute bottom-0 left-0 w-full h-auto text-black/5 z-10" />
+    <div className="flex flex-col min-h-screen bg-tertiary relative">
+        <LeafPattern className="absolute bottom-0 left-0 w-full h-auto text-white/5 z-0" />
         <header className="flex-shrink-0 h-48 flex items-center justify-center">
             <h1 className="text-5xl font-bold text-white font-heading">Kounfit</h1>
         </header>
 
-        <main className="flex-1 flex flex-col bg-white rounded-t-3xl z-20 p-8">
-            <h2 className="text-3xl font-bold text-center text-tertiary font-heading">Inscription - Étape 1/2</h2>
-             <div className="w-16 h-1 bg-gray-200 rounded-full mx-auto my-4 relative">
+        <main className="flex-1 flex flex-col z-10 p-8">
+            <h2 className="text-3xl font-bold text-center text-white font-heading">Inscription - Étape 1/2</h2>
+             <div className="w-16 h-1 bg-white/20 rounded-full mx-auto my-4 relative">
                 <div className="absolute left-0 top-0 h-full w-1/2 bg-primary rounded-full"></div>
             </div>
             
@@ -107,15 +107,15 @@ export default function SignupPage() {
                       <FormItem>
                         <FormControl>
                           <div className="relative">
-                            <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                            <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/80" />
                             <Input 
                                 placeholder="Nom complet" 
-                                className="pl-12 h-14 rounded-button bg-gray-50 border-gray-200 focus:bg-white"
+                                className="pl-12 h-14 rounded-button bg-white/20 backdrop-blur-sm border-white/10 text-white placeholder:text-white/70 focus:bg-white/30"
                                 {...field} 
                              />
                           </div>
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-secondary" />
                       </FormItem>
                     )}
                   />
@@ -126,16 +126,16 @@ export default function SignupPage() {
                       <FormItem>
                         <FormControl>
                            <div className="relative">
-                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/80" />
                             <Input 
                                 type="email"
                                 placeholder="Email"
-                                className="pl-12 h-14 rounded-button bg-gray-50 border-gray-200 focus:bg-white"
+                                className="pl-12 h-14 rounded-button bg-white/20 backdrop-blur-sm border-white/10 text-white placeholder:text-white/70 focus:bg-white/30"
                                 {...field}
                              />
                           </div>
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-secondary" />
                       </FormItem>
                     )}
                   />
@@ -146,23 +146,23 @@ export default function SignupPage() {
                       <FormItem>
                         <FormControl>
                           <div className="relative">
-                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/80" />
                             <Input 
                                 type={showPassword ? "text" : "password"}
                                 placeholder="Mot de passe"
-                                className="pl-12 pr-12 h-14 rounded-button bg-gray-50 border-gray-200 focus:bg-white"
+                                className="pl-12 pr-12 h-14 rounded-button bg-white/20 backdrop-blur-sm border-white/10 text-white placeholder:text-white/70 focus:bg-white/30"
                                 {...field}
                              />
                             <button 
                                 type="button" 
                                 onClick={() => setShowPassword(!showPassword)} 
-                                className="absolute right-4 top-1/2 -translate-y-1/2"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80"
                             >
-                                {showPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
+                                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                             </button>
                           </div>
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-secondary" />
                       </FormItem>
                     )}
                   />
@@ -173,23 +173,23 @@ export default function SignupPage() {
                       <FormItem>
                         <FormControl>
                           <div className="relative">
-                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/80" />
                             <Input 
                                 type={showConfirmPassword ? "text" : "password"}
                                 placeholder="Confirmer mot de passe"
-                                className="pl-12 pr-12 h-14 rounded-button bg-gray-50 border-gray-200 focus:bg-white"
+                                className="pl-12 pr-12 h-14 rounded-button bg-white/20 backdrop-blur-sm border-white/10 text-white placeholder:text-white/70 focus:bg-white/30"
                                 {...field}
                              />
                             <button 
                                 type="button" 
                                 onClick={() => setShowConfirmPassword(!showConfirmPassword)} 
-                                className="absolute right-4 top-1/2 -translate-y-1/2"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80"
                             >
-                                {showConfirmPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
+                                {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                             </button>
                           </div>
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-secondary" />
                       </FormItem>
                     )}
                   />
@@ -201,17 +201,17 @@ export default function SignupPage() {
             </Form>
 
             <div className="flex items-center my-4">
-                <div className="flex-grow border-t border-gray-200"></div>
-                <span className="mx-4 text-sm text-gray-400">ou</span>
-                <div className="flex-grow border-t border-gray-200"></div>
+                <div className="flex-grow border-t border-white/20"></div>
+                <span className="mx-4 text-sm text-white/70">ou</span>
+                <div className="flex-grow border-t border-white/20"></div>
             </div>
             
-            <Button variant="outline" className="w-full h-14 rounded-button flex items-center justify-center gap-2 border-gray-200" onClick={handleGoogleSignIn} disabled={isSubmitting}>
+            <Button variant="outline" className="w-full h-14 rounded-button flex items-center justify-center gap-2 bg-white/20 backdrop-blur-sm border-white/10 text-white hover:bg-white/30 hover:text-white" onClick={handleGoogleSignIn} disabled={isSubmitting}>
                 <GoogleIcon className="w-6 h-6"/>
-                <span className="text-base text-gray-700 font-semibold">S'inscrire avec Google</span>
+                <span className="text-base font-semibold">S'inscrire avec Google</span>
             </Button>
             
-            <div className="mt-auto text-center text-sm pt-4">
+            <div className="mt-auto text-center text-sm pt-4 text-white">
                 Déjà un compte ?{" "}
                 <Link href="/login" className="font-semibold text-secondary hover:underline">
                 Se connecter
