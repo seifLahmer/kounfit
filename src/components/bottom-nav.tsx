@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "next/navigation"
 import {
   User,
   Heart,
-  LayoutGrid,
+  Home,
   ShoppingCart,
   LogOut
 } from "lucide-react"
@@ -27,10 +27,10 @@ import {
 } from "@/components/ui/alert-dialog"
 
 const links = [
-  { href: "/profile", label: "Profile", icon: User },
+  { href: "/home", label: "Accueil", icon: Home },
   { href: "/meal-plans", label: "Favoris", icon: Heart },
-  { href: "/home", label: "Accueil", icon: LayoutGrid },
   { href: "/shopping-list", label: "Panier", icon: ShoppingCart },
+  { href: "/profile", label: "Profil", icon: User },
 ]
 
 export function BottomNav() {
@@ -48,42 +48,27 @@ export function BottomNav() {
     }
   };
 
-
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t z-50 md:hidden">
-      <div className="flex justify-around items-center h-16">
+    <nav className="fixed bottom-4 left-4 right-4 z-50 md:hidden">
+      <div className="relative flex justify-around items-center h-16 bg-white/70 backdrop-blur-md rounded-full shadow-lg border border-white/30">
         {links.map((link) => {
-          const isActive = pathname === link.href
-          const isHome = link.href === "/home"
-
+          const isActive = pathname === link.href || (link.href !== "/home" && pathname.startsWith(link.href))
           return (
             <Link key={link.href} href={link.href} className="flex-1 flex justify-center items-center h-full">
               <div className={cn(
-                  "flex flex-col items-center justify-center gap-1 transition-colors relative h-full w-full",
-                   isActive && !isHome ? "text-tertiary" : "text-muted-foreground hover:text-tertiary"
+                  "flex flex-col items-center justify-center gap-1 transition-colors",
+                   isActive ? "text-primary" : "text-gray-400 hover:text-primary"
               )}>
-                {isHome ? (
-                  <div className={cn(
-                    "absolute -top-6 p-4 rounded-full text-white shadow-lg flex items-center justify-center bg-primary"
-                    )}>
-                    <link.icon className="h-6 w-6" />
-                  </div>
-                ) : (
-                  <link.icon className="h-6 w-6" />
-                )}
-                <span className={cn("text-xs capitalize", isHome ? "mt-12" : "")}>
-                  {link.label}
-                </span>
+                <link.icon className="h-6 w-6" />
               </div>
             </Link>
           )
         })}
         <AlertDialog>
           <AlertDialogTrigger asChild>
-             <button className="flex-1 flex justify-center items-center h-full text-muted-foreground hover:text-tertiary">
-                <div className="flex flex-col items-center justify-center gap-1 transition-colors relative h-full w-full">
+             <button className="flex-1 flex justify-center items-center h-full text-gray-400 hover:text-primary">
+                <div className="flex flex-col items-center justify-center gap-1 transition-colors">
                     <LogOut className="h-6 w-6" />
-                    <span className="text-xs capitalize">Déconn.</span>
                 </div>
             </button>
           </AlertDialogTrigger>

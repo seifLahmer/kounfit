@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
@@ -12,7 +13,7 @@ import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { CalorieCircle, MacroCard, MealGridCard } from "@/components/home-page-components";
+import { CalorieCircle, MacroGrid, MealGridCard } from "@/components/home-page-components";
 
 const emptyPlan: DailyPlan = { breakfast: [], lunch: [], snack: [], dinner: [] };
 
@@ -102,46 +103,46 @@ export default function HomePage() {
   }
 
   return (
-      <div className="flex flex-col h-full bg-primary">
-        <header className="flex-shrink-0 flex items-center justify-between p-4 text-white">
-            <div className="flex items-center gap-3">
-                <Avatar className="h-11 w-11 border-2 border-white/50">
-                    <AvatarImage src={user?.photoURL || ''} alt={user?.fullName} />
-                    <AvatarFallback>{user?.fullName?.[0]}</AvatarFallback>
-                </Avatar>
-                 <div>
-                    <h1 className="text-lg font-bold font-heading text-white/90">
-                      Welcome back, {user?.fullName}!
-                    </h1>
-                    <p className="text-sm text-white/70 capitalize">
-                      It's {formattedDate}. Let's track your progress.
-                    </p>
-                </div>
-            </div>
-            <Button variant="ghost" size="icon" className="text-white">
-                <Bell />
-            </Button>
+      <div className="flex flex-col h-full bg-primary pb-4 px-4">
+        <header className="flex-shrink-0 pt-8 pb-4">
+            {/* This space is intentionally left for the decorative green background */}
         </header>
 
-        <Card className="flex-grow flex flex-col">
+        <Card className="flex-grow flex flex-col rounded-3xl shadow-lg">
           <CardContent className="p-4 space-y-6">
-            <Card>
-                <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <Avatar className="h-11 w-11 border-2 border-primary/20">
+                        <AvatarImage src={user?.photoURL || ''} alt={user?.fullName} />
+                        <AvatarFallback>{user?.fullName?.[0]}</AvatarFallback>
+                    </Avatar>
+                     <div>
+                        <h1 className="text-lg font-bold font-heading text-foreground">
+                          Bonjour, {user?.fullName}!
+                        </h1>
+                        <p className="text-sm text-muted-foreground capitalize">
+                          C'est {formattedDate}.
+                        </p>
+                    </div>
+                </div>
+                <Button variant="ghost" size="icon">
+                    <Bell />
+                </Button>
+            </div>
+          
+            <Card className="shadow-lg">
+                <CardContent className="p-4 sm:p-6">
                     <CalorieCircle consumed={consumedCalories} goal={calorieGoal} />
                 </CardContent>
             </Card>
             
-            <div className="flex gap-4">
-                <MacroCard name="Protéines" consumed={consumedMacros.protein} goal={macroGoals.protein} color="bg-protein" />
-                <MacroCard name="Glucides" consumed={consumedMacros.carbs} goal={macroGoals.carbs} color="bg-carbs" />
-                <MacroCard name="Lipides" consumed={consumedMacros.fat} goal={macroGoals.fat} color="bg-fat" />
-            </div>
+            <MacroGrid consumedMacros={consumedMacros} macroGoals={macroGoals} calorieGoal={calorieGoal} />
             
             <div className="grid grid-cols-2 gap-4">
-                <MealGridCard title="Petit déjeuner" meals={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} defaultImage="/petit-dejeuner.png" calorieGoal={calorieGoal} macroGoals={macroGoals} />
-                <MealGridCard title="Déjeuner" meals={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} defaultImage="/dejeuner.png" calorieGoal={calorieGoal} macroGoals={macroGoals} />
-                <MealGridCard title="Dîner" meals={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} defaultImage="/dinner.png" calorieGoal={calorieGoal} macroGoals={macroGoals} />
-                <MealGridCard title="Collation" meals={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} defaultImage="/snacks.png" calorieGoal={calorieGoal} macroGoals={macroGoals} />
+                <MealGridCard title="Petit déjeuner" meals={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} defaultImage="/petit-dejeuner.png" />
+                <MealGridCard title="Déjeuner" meals={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} defaultImage="/dejeuner.png" />
+                <MealGridCard title="Dîner" meals={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} defaultImage="/dinner.png" />
+                <MealGridCard title="Collation" meals={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} defaultImage="/snacks.png" />
             </div>
           </CardContent>
         </Card>
