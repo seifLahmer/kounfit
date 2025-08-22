@@ -8,7 +8,7 @@ import { ChevronLeft, Loader2, Plus, Search, Heart, Frown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { getAvailableMealsByCategory, getFavoriteMeals } from "@/lib/services/mealService";
+import { getAvailableMealsByCategory } from "@/lib/services/mealService";
 import { toggleFavoriteMeal } from "@/lib/services/userService";
 import { auth } from "@/lib/firebase";
 import type { Meal, DailyPlan, User } from "@/lib/types";
@@ -169,7 +169,7 @@ export default function AddMealClientPage() {
         currentPlan = { breakfast: [], lunch: [], snack: [], dinner: [] };
       }
       
-      const targetMealType = meal.category;
+      const targetMealType = meal.category as keyof DailyPlan;
       
       if (!Array.isArray(currentPlan[targetMealType])) {
           currentPlan[targetMealType] = [];
