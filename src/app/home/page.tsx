@@ -103,11 +103,11 @@ export default function HomePage() {
   }
 
   return (
-      <div className="flex flex-col min-h-screen bg-primary px-4">
-        <header className="flex-shrink-0 pt-8 pb-4">
+      <div className="flex flex-col min-h-screen bg-primary px-4 pt-4 pb-4">
+        <header className="flex-shrink-0 pt-4 pb-4">
         </header>
 
-        <Card className="flex flex-col rounded-3xl shadow-lg mb-4">
+        <Card className="flex flex-col rounded-3xl shadow-lg">
           <CardContent className="p-4 space-y-6">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
