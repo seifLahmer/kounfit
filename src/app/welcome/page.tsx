@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef } from "react";
@@ -15,7 +14,8 @@ export default function WelcomePage() {
   const handleDragEnd = (event: any, info: any) => {
     if (constraintsRef.current) {
       const railWidth = constraintsRef.current.offsetWidth;
-      const handleWidth = 56; // h-14 is 56px
+      // The handle is not a fixed width anymore, so let's estimate or get it dynamically if possible
+      const handleWidth = 140; // Approximate width of the "Get started" handle
       const travelDistance = railWidth - handleWidth;
       if (info.offset.x > travelDistance * 0.8) {
         setIsUnlocked(true);
@@ -51,21 +51,30 @@ export default function WelcomePage() {
                 >
                 <div
                     ref={constraintsRef}
-                    className="relative w-full h-16 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full flex items-center p-1"
+                    className="relative w-full h-16 bg-black/20 backdrop-blur-sm border border-white/10 rounded-full flex items-center p-1"
                 >
                     <motion.div
-                    drag="x"
-                    dragConstraints={constraintsRef}
-                    dragElastic={0.1}
-                    onDragEnd={handleDragEnd}
-                    className="w-14 h-14 bg-primary rounded-full flex items-center justify-center cursor-pointer shadow-md"
-                    whileTap={{ scale: 1.1, cursor: "grabbing" }}
+                        drag="x"
+                        dragConstraints={constraintsRef}
+                        dragElastic={0.1}
+                        onDragEnd={handleDragEnd}
+                        className="bg-white rounded-full flex items-center justify-center cursor-pointer shadow-md px-6 py-4"
+                        whileTap={{ scale: 1.05, cursor: "grabbing" }}
                     >
-                    <ChevronRight className="text-white h-8 w-8" />
+                        <span className="font-semibold text-tertiary text-lg whitespace-nowrap">Get started</span>
                     </motion.div>
-                    <span className="absolute left-1/2 -translate-x-1/2 text-white font-semibold pointer-events-none">
-                    Get Started
-                    </span>
+                    
+                    <div className="absolute right-6 flex items-center gap-1 pointer-events-none">
+                        <motion.div initial={{ opacity: 0.3 }} animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0 }}>
+                            <ChevronRight className="text-white/50 h-5 w-5" />
+                        </motion.div>
+                        <motion.div initial={{ opacity: 0.3 }} animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}>
+                            <ChevronRight className="text-white/50 h-5 w-5" />
+                        </motion.div>
+                        <motion.div initial={{ opacity: 0.3 }} animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }}>
+                            <ChevronRight className="text-white/50 h-5 w-5" />
+                        </motion.div>
+                    </div>
                 </div>
                 </motion.div>
             ) : (
