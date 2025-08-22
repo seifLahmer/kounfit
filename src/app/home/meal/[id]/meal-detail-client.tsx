@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState, useEffect } from 'react';
@@ -169,7 +170,7 @@ export default function MealDetailClient({ mealId }: { mealId: string }) {
         </Button>
       </header>
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pb-24">
         <div className="relative h-80">
           <Image
             src={mealData.imageUrl}
@@ -256,7 +257,7 @@ export default function MealDetailClient({ mealId }: { mealId: string }) {
         </div>
       </main>
 
-      <footer className="p-4 border-t bg-background">
+      <footer className="p-4 border-t bg-background fixed bottom-0 left-0 right-0">
         <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
                  <Button variant="outline" size="icon" onClick={() => handleQuantityChange(-1)} className="rounded-full" disabled>

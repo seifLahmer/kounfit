@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -8,7 +9,7 @@ import { ChevronLeft, Loader2, Plus, Search, Heart, Frown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { getAvailableMealsByCategory } from "@/lib/services/mealService";
+import { getAvailableMealsByCategory, getFavoriteMeals } from "@/lib/services/mealService";
 import { toggleFavoriteMeal } from "@/lib/services/userService";
 import { auth } from "@/lib/firebase";
 import type { Meal, DailyPlan, User } from "@/lib/types";
@@ -40,7 +41,7 @@ const MealGrid = ({ meals, favoriteMealIds, onAddMeal, onToggleFavorite, showAdd
         <div className="grid grid-cols-2 gap-4">
             {meals.map((meal) => (
                  <Link key={meal.id} href={`/home/meal/${meal.id}`} passHref>
-                    <Card className="relative block overflow-hidden rounded-2xl border shadow-sm h-56 group cursor-pointer">
+                    <Card as="div" className="relative block overflow-hidden rounded-2xl border shadow-sm h-56 group cursor-pointer">
                         <Image
                             src={meal.imageUrl}
                             alt={meal.name}
@@ -247,7 +248,7 @@ export default function AddMealClientPage() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-4 space-y-6">
+      <main className="flex-1 overflow-y-auto p-4 space-y-6 pb-24">
         {loading ? (
             <div className="flex justify-center items-center h-64">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />

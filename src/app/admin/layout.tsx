@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { Shield, LogOut, Loader2 } from "lucide-react";
@@ -63,7 +64,7 @@ export default function AdminLayout({
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      <main className="flex-1 pb-20">{children}</main>
+      <main className="flex-1 pb-24">{children}</main>
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-50">
         <div className="flex justify-around items-center h-16">
           <Link href="/admin" className="flex flex-col items-center gap-1 text-primary">
