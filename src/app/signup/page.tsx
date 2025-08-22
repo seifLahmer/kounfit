@@ -18,22 +18,29 @@ import { useState } from "react";
 import { createUserWithEmailAndPassword, signInWithRedirect, updateProfile } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Mail, Lock, Eye, EyeOff, Utensils } from "lucide-react";
-import { GoogleIcon, LeafPattern } from "@/components/icons";
+import { Loader2, User, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { GoogleIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
 const MopedIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="6" cy="18" r="3" />
-        <circle cx="19" cy="18" r="3" />
-        <path d="M12 18h3.5" />
-        <path d="M9 18a6.5 6.5 0 0 0-6.5-6.5V10H6" />
-        <path d="M14.5 11.5H19a2 2 0 0 1 2 2v1" />
-        <path d="m14.5 5 3 4" />
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="6.5" cy="17.5" r="2.5" fill="currentColor" stroke="none" />
+      <circle cx="17.5" cy="17.5" r="2.5" fill="currentColor" stroke="none" />
+      <path d="M12 18h3.5" strokeWidth="2" />
+      <path d="M9 18a6.5 6.5 0 0 0-6.5-6.5V10H6" strokeWidth="2" />
+      <path d="M14.5 11.5H19a2 2 0 0 1 2 2v1" strokeWidth="2" />
+      <path d="m14.5 5 3 4" strokeWidth="2" />
     </svg>
 );
 
+const CatererIcon = () => (
+     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 15h18v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1Z" />
+        <path d="M8 15V8a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v7" />
+        <path d="M12 4v3" />
+    </svg>
+)
 
 const signupSchema = z.object({
   fullName: z.string().min(2, "Le nom complet doit comporter au moins 2 caractères."),
@@ -110,13 +117,13 @@ export default function SignupPage() {
         type="button"
         onClick={() => setSelectedRole(role)}
         className={cn(
-            "flex flex-col items-center justify-center gap-1.5 rounded-xl aspect-square w-full transition-all duration-300",
+            "flex flex-col items-center justify-center gap-1 rounded-xl aspect-square w-full transition-all duration-300",
             selectedRole === role
-            ? "bg-white text-primary shadow-lg border-2 border-primary/20"
+            ? "bg-white text-gray-800 shadow-lg"
             : "bg-white/20 text-white hover:bg-white/30"
         )}
     >
-        <Icon className="w-6 h-6" />
+        <Icon className="w-7 h-7" />
         <span className="font-semibold text-sm">{label}</span>
     </button>
   );
@@ -133,7 +140,7 @@ export default function SignupPage() {
                 <Input 
                     type={isVisible ? 'text' : type}
                     placeholder={placeholder} {...field} 
-                    className="pl-12 pr-12 h-14 bg-white border-gray-200 rounded-xl text-base"
+                    className="pl-12 pr-12 h-14 bg-gray-100 border-gray-200 rounded-xl text-base"
                 />
                 {isPassword && (
                      <button type="button" onClick={onToggleVisibility} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
@@ -150,32 +157,23 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-[#F6F8F7] flex flex-col">
-        <div className="relative bg-gradient-to-b from-primary to-[#4FD6B3] text-white">
-             <LeafPattern className="absolute inset-0 w-full h-full object-cover text-white/50" />
-             <div 
-                className="absolute bottom-[-1px] left-0 w-full h-20 bg-[#F6F8F7]"
-                style={{ clipPath: 'ellipse(100% 100% at 50% 0%)' }}
-            ></div>
-            <div className="relative text-left pt-8 px-4">
-                <Image src="/kounfit-logo.png" alt="Kounfit Logo" width={120} height={30} />
-            </div>
-
-            <div className="relative w-full max-w-sm mx-auto px-4 pb-12">
-                <div className="grid grid-cols-3 gap-3">
-                    <RoleButton role="client" label="Client" icon={User} />
-                    <RoleButton role="caterer" label="Traiteur" icon={Utensils} />
-                    <RoleButton role="delivery" label="Livreur" icon={MopedIcon} />
+       <div className="relative bg-gradient-to-b from-[#22C58B] to-[#4FD6B3] text-white overflow-hidden">
+            <div className="text-center pt-10 pb-6 px-4 space-y-4">
+                <h1 className="text-4xl font-bold font-heading">Kounfit</h1>
+                <h2 className="text-2xl font-semibold">Inscription - Étape 1/2</h2>
+                <div className="w-full max-w-sm mx-auto pt-4">
+                     <div className="grid grid-cols-3 gap-3">
+                        <RoleButton role="client" label="Client" icon={User} />
+                        <RoleButton role="caterer" label="Traiteur" icon={CatererIcon} />
+                        <RoleButton role="delivery" label="Livreur" icon={MopedIcon} />
+                    </div>
                 </div>
             </div>
+            <div className="h-12 bg-[#F6F8F7]" style={{ borderTopLeftRadius: '100%', borderTopRightRadius: '100%' }}></div>
         </div>
 
-      <div className="w-full max-w-md mx-auto px-4 flex-1 -mt-8">
+      <div className="w-full max-w-md mx-auto px-4 flex-1 -mt-12">
         <div className="bg-white rounded-t-3xl p-6 h-full shadow-2xl shadow-gray-300/30">
-        
-            <h2 className="text-center text-2xl font-bold text-gray-800 mb-4">
-                Inscription - Étape 1/2
-            </h2>
-        
             <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <InputField name="fullName" placeholder="Nom complet" icon={User} />
@@ -229,3 +227,5 @@ export default function SignupPage() {
     </div>
   );
 }
+
+    
