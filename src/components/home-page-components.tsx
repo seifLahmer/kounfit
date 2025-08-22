@@ -133,29 +133,38 @@ const MealNutritionCircle = ({
     colorClass: string;
     goal: number;
   }) => {
-    const percentage = goal > 0 ? (value / goal) * 100 : 0;
-    const circumference = 2 * Math.PI * 10;
+    const percentage = goal > 0 ? Math.min((value / goal) * 100, 100) : 0;
+    const circumference = 2 * Math.PI * 18; // radius = 18
     const strokeDashoffset = circumference - (percentage / 100) * circumference;
   
     return (
         <div className="flex flex-col items-center">
-            <div className="relative w-6 h-6">
-                <svg className="w-full h-full" viewBox="0 0 24 24">
-                <circle className="stroke-current text-white/20" strokeWidth="2.5" fill="none" cx="12" cy="12" r="10" />
+            <div className="relative w-11 h-11">
+                <svg className="w-full h-full" viewBox="0 0 40 40">
+                <circle className="stroke-current text-white/20" strokeWidth="3" fill="none" cx="20" cy="20" r="18" />
                 <circle
                     className={`stroke-current ${colorClass}`}
-                    strokeWidth="2.5"
+                    strokeWidth="3"
                     strokeLinecap="round"
                     fill="none"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    transform="rotate(-90 12 12)"
+                    cx="20"
+                    cy="20"
+                    r="18"
+                    transform="rotate(-90 20 20)"
                     style={{ strokeDasharray: circumference, strokeDashoffset, transition: "stroke-dashoffset 0.5s" }}
                 />
+                 <text
+                    x="50%"
+                    y="50%"
+                    textAnchor="middle"
+                    dy=".3em"
+                    className="text-[10px] font-bold fill-white"
+                >
+                    {Math.round(value)}
+                </text>
                 </svg>
             </div>
-            <p className="text-[10px] mt-0.5">{label}</p>
+            <p className="text-[10px] mt-1">{label}</p>
         </div>
     );
 };
@@ -170,17 +179,16 @@ const MealNutritionInfo = ({ meals }: { meals: Meal[] }) => {
         return acc;
     }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
 
-    // Approximate goals for a single meal
     const mealGoals = { calories: 600, protein: 40, carbs: 70, fat: 20 };
   
     return (
-      <div className="absolute bottom-0 left-0 right-0 p-2">
-          <div className="flex justify-around items-center text-center text-xs text-white">
+      <div className="w-full">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-center text-xs text-white">
             <MealNutritionCircle value={totals.calories} label="Kcal" colorClass="text-primary" goal={mealGoals.calories} />
             <MealNutritionCircle value={totals.protein} label="Prot" colorClass="text-protein" goal={mealGoals.protein} />
             <MealNutritionCircle value={totals.carbs} label="Gluc" colorClass="text-carbs" goal={mealGoals.carbs} />
             <MealNutritionCircle value={totals.fat} label="Lip" colorClass="text-fat" goal={mealGoals.fat} />
-          </div>
+        </div>
       </div>
     )
 }
