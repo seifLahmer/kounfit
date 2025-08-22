@@ -128,12 +128,12 @@ export default function SignupPage() {
     </button>
   );
 
-  const InputField = ({ name, placeholder, icon: Icon, type = "text", isPassword = false, onToggleVisibility, isVisible = false }: any) => (
+  const InputField = ({ name, placeholder, icon: Icon, type = "text", isPassword = false, onToggleVisibility, isVisible = false, className = "" }: any) => (
      <FormField
       control={form.control}
       name={name}
       render={({ field }) => (
-        <FormItem>
+        <FormItem className={className}>
           <FormControl>
             <div className="relative">
                 <Icon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -157,8 +157,9 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-[#F6F8F7] flex flex-col">
-       <div className="relative bg-gradient-to-b from-[#22C58B] to-[#4FD6B3] text-white pb-12" style={{ clipPath: 'ellipse(120% 70% at 50% 30%)' }}>
+       <div className="relative bg-gradient-to-b from-[#22C58B] to-[#4FD6B3] text-white pb-20" style={{ clipPath: 'ellipse(120% 70% at 50% 30%)' }}>
             <div className="text-center pt-10 px-4 space-y-4">
+                <Image src="/kounfit-logo.png" alt="Kounfit Logo" width={80} height={40} className="mx-auto" />
                 <h1 className="text-4xl font-bold font-heading">Kounfit</h1>
                 <h2 className="text-2xl font-semibold">Inscription - Étape 1/2</h2>
                 <div className="w-full max-w-sm mx-auto pt-4">
@@ -172,34 +173,42 @@ export default function SignupPage() {
         </div>
 
       <div className="w-full max-w-md mx-auto px-4 flex-1 -mt-24">
-        <div className="bg-white rounded-t-3xl p-6 h-full shadow-2xl shadow-gray-300/30">
+        <div className="relative bg-white rounded-t-3xl p-6 h-full shadow-2xl shadow-gray-300/30">
             <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <InputField name="fullName" placeholder="Nom complet" icon={User} />
-                <InputField name="email" placeholder="Email" icon={Mail} />
-                <InputField 
-                    name="password" 
-                    placeholder="Mot de passe" 
-                    icon={Lock} 
-                    type="password" 
-                    isPassword={true} 
-                    isVisible={passwordVisible}
-                    onToggleVisibility={() => setPasswordVisible(!passwordVisible)}
-                />
                  <InputField 
-                    name="confirmPassword" 
-                    placeholder="Confirmer mot de passe" 
-                    icon={Lock} 
-                    type="password" 
-                    isPassword={true} 
-                    isVisible={confirmPasswordVisible}
-                    onToggleVisibility={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
+                    name="fullName" 
+                    placeholder="Nom complet" 
+                    icon={User} 
+                    className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4/5"
                 />
 
-                <Button type="submit" className="w-full h-14 text-lg font-semibold rounded-xl bg-[#0B7E58] hover:bg-[#0a6e4d]" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                Continuer
-                </Button>
+                <div className="pt-12 space-y-4">
+                     <InputField name="email" placeholder="Email" icon={Mail} />
+                    <InputField 
+                        name="password" 
+                        placeholder="Mot de passe" 
+                        icon={Lock} 
+                        type="password" 
+                        isPassword={true} 
+                        isVisible={passwordVisible}
+                        onToggleVisibility={() => setPasswordVisible(!passwordVisible)}
+                    />
+                    <InputField 
+                        name="confirmPassword" 
+                        placeholder="Confirmer mot de passe" 
+                        icon={Lock} 
+                        type="password" 
+                        isPassword={true} 
+                        isVisible={confirmPasswordVisible}
+                        onToggleVisibility={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
+                    />
+
+                    <Button type="submit" className="w-full h-14 text-lg font-semibold rounded-xl bg-[#0B7E58] hover:bg-[#0a6e4d]" disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                        Continuer
+                    </Button>
+                </div>
             </form>
             </Form>
             <div className="relative my-6">
@@ -226,7 +235,3 @@ export default function SignupPage() {
     </div>
   );
 }
-
-    
-
-    
