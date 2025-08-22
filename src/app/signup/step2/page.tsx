@@ -38,7 +38,9 @@ const step2Schema = z.object({
   biologicalSex: z.enum(["male", "female"], {
     required_error: "Veuillez sélectionner votre sexe.",
   }),
-  region: z.string().min(1, "La région est requise."),
+  region: z.string({
+    required_error: "Veuillez sélectionner votre région."
+  }),
   activityLevel: z.enum(["sedentary", "lightly_active", "moderately_active", "very_active", "extremely_active"],{
     required_error: "Veuillez sélectionner un niveau d'activité.",
   }),
@@ -62,7 +64,7 @@ export default function SignupStep2Page() {
       weight: 70,
       age: 25,
       biologicalSex: "male",
-      region: "",
+      region: "tunis",
       activityLevel: "lightly_active",
       mainGoal: "maintain",
     },
@@ -223,13 +225,26 @@ export default function SignupStep2Page() {
                 name="region"
                 render={({ field }) => (
                   <FormItem>
-                    <FormControl>
-                      <div className="flex items-center bg-white/50 rounded-xl p-3 h-14">
-                        <MapPin className="text-gray-500 h-6 w-6" />
-                        <span className="ml-3 font-medium text-gray-700">Région</span>
-                        <Input type="text" {...field} placeholder="Ex: Tunis" className="text-right border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none" />
-                      </div>
-                    </FormControl>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="bg-white/50 rounded-xl p-3 h-14 border-none">
+                            <div className="flex items-center gap-3">
+                                <MapPin className="text-gray-500 h-6 w-6" />
+                                <SelectValue />
+                            </div>
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="tunis">Tunis</SelectItem>
+                        <SelectItem value="ariana">Ariana</SelectItem>
+                        <SelectItem value="ben arous">Ben Arous</SelectItem>
+                        <SelectItem value="manouba">La Manouba</SelectItem>
+                        <SelectItem value="nabeul">Nabeul</SelectItem>
+                        <SelectItem value="sousse">Sousse</SelectItem>
+                        <SelectItem value="sfax">Sfax</SelectItem>
+                        <SelectItem value="bizerte">Bizerte</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -243,9 +258,9 @@ export default function SignupStep2Page() {
                      <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="bg-white/50 rounded-xl p-3 h-14 border-none">
-                            <div className="flex items-center">
+                            <div className="flex items-center gap-3">
                                 <ActivityIcon className="text-gray-500" />
-                                <SelectValue className="ml-3 font-medium text-gray-700" />
+                                <SelectValue />
                             </div>
                         </SelectTrigger>
                       </FormControl>
@@ -331,3 +346,5 @@ export default function SignupStep2Page() {
     </div>
   );
 }
+
+    
