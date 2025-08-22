@@ -184,7 +184,7 @@ export const MealCard = ({ title, meals, onAdd, defaultImage }: { title: string;
   return (
     <Card className="relative rounded-2xl overflow-hidden shadow-lg h-48 group" onClick={onAdd}>
       <Image
-        src={meals[0]?.imageUrl || defaultImage}
+        src={defaultImage}
         alt={title}
         layout="fill"
         objectFit="cover"
