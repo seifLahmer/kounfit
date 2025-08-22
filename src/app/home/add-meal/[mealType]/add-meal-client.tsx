@@ -40,7 +40,7 @@ const MealGrid = ({ meals, favoriteMealIds, onAddMeal, onToggleFavorite, showAdd
         <div className="grid grid-cols-2 gap-4">
             {meals.map((meal) => (
                  <Link key={meal.id} href={`/home/meal/${meal.id}`} passHref>
-                    <Card as="a" className="relative block overflow-hidden rounded-2xl border shadow-sm h-56 group cursor-pointer">
+                    <Card className="relative block overflow-hidden rounded-2xl border shadow-sm h-56 group cursor-pointer">
                         <Image
                             src={meal.imageUrl}
                             alt={meal.name}
