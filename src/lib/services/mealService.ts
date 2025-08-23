@@ -15,10 +15,11 @@ import {
   runTransaction,
 } from "firebase/firestore";
 import { db, storage } from "@/lib/firebase";
-import type { Meal } from "@/lib/types";
+import type { Meal, Caterer } from "@/lib/types";
 import { ref, deleteObject } from "firebase/storage";
 
 const MEALS_COLLECTION = "meals";
+const CATERERS_COLLECTION = "caterers";
 
 /**
  * Adds a new meal to the Firestore 'meals' collection.
@@ -105,20 +106,34 @@ export async function getMealsByCaterer(catererUid: string): Promise<Meal[]> {
 }
 
 /**
- * Retrieves all available meals for a specific category, ordered by creation date.
+ * Retrieves all available meals for a specific category and region.
  * @param category The meal category ('breakfast', 'lunch', etc.).
+ * @param region The client's region.
  * @returns A promise that resolves to an array of meals.
  */
-export async function getAvailableMealsByCategory(category: Meal['category']): Promise<Meal[]> {
+export async function getAvailableMealsByCategory(category: Meal['category'], region: string): Promise<Meal[]> {
     try {
+        // 1. Find all caterers in the specified region
+        const caterersRef = collection(db, CATERERS_COLLECTION);
+        const regionQuery = query(caterersRef, where("region", "==", region), where("status", "==", "approved"));
+        const catererSnapshot = await getDocs(regionQuery);
+        
+        if (catererSnapshot.empty) {
+            return []; // No caterers in this region, so no meals
+        }
+        
+        const catererIds = catererSnapshot.docs.map(doc => doc.id);
+
+        // 2. Find all meals created by those caterers in the specified category
         const mealsCollection = collection(db, MEALS_COLLECTION);
-        const q = query(
+        const mealsQuery = query(
             mealsCollection,
             where("availability", "==", true),
-            where("category", "==", category)
+            where("category", "==", category),
+            where("createdBy", "in", catererIds)
         );
 
-        const querySnapshot = await getDocs(q);
+        const querySnapshot = await getDocs(mealsQuery);
 
         const meals: Meal[] = [];
         querySnapshot.forEach((doc) => {
@@ -131,12 +146,11 @@ export async function getAvailableMealsByCategory(category: Meal['category']): P
             meals.push(meal);
         });
         
-        // Sort in code to avoid composite index
         meals.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
         return meals;
     } catch (error) {
-        console.error("Error fetching available meals by category: ", error);
+        console.error("Error fetching available meals by category and region: ", error);
         throw new Error("Could not fetch available meals.");
     }
 }

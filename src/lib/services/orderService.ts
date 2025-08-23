@@ -159,6 +159,7 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
     const statusMessages = {
         pending: "est en attente de confirmation",
         in_preparation: "est en cours de préparation",
+        ready_for_delivery: "est prête pour la livraison",
         delivered: "a été livrée",
         cancelled: "a été annulée",
     };
@@ -170,4 +171,40 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
     console.error("Error updating order status: ", error);
     throw new Error("Could not update the order status.");
   }
+}
+
+/**
+ * Retrieves all orders in a specific region that are ready for delivery.
+ * @param region The region of the delivery person.
+ * @returns A promise that resolves to an array of orders ready for delivery.
+ */
+export async function getReadyForDeliveryOrders(region: string): Promise<Order[]> {
+    try {
+        const ordersCollection = collection(db, ORDERS_COLLECTION);
+        const q = query(
+            ordersCollection,
+            where("clientRegion", "==", region),
+            where("status", "==", "ready_for_delivery"),
+            orderBy("orderDate", "desc")
+        );
+        
+        const querySnapshot = await getDocs(q);
+        
+        const orders: Order[] = [];
+        querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            const order: Order = {
+                id: docSnap.id,
+                ...data,
+                orderDate: data.orderDate instanceof Timestamp ? data.orderDate.toDate() : new Date(),
+                deliveryDate: data.deliveryDate instanceof Timestamp ? data.deliveryDate.toDate() : new Date(),
+            } as Order;
+            orders.push(order);
+        });
+        
+        return orders;
+    } catch (error) {
+        console.error("Error fetching ready for delivery orders: ", error);
+        throw new Error("Could not fetch orders for delivery.");
+    }
 }

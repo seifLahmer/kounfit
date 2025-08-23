@@ -97,7 +97,7 @@ export type Order = {
   }[];
   catererIds: string[]; // List of caterer UIDs involved in the order
   totalPrice: number;
-  status: "pending" | "in_preparation" | "delivered" | "cancelled";
+  status: "pending" | "in_preparation" | "ready_for_delivery" | "delivered" | "cancelled";
   orderDate: any;
   deliveryDate: any;
   deliveryTime?: number; // Estimated delivery time in minutes

@@ -123,21 +123,24 @@ export default function AddMealClientPage() {
     }
     setLoading(true);
     try {
-        const [fetchedMeals, userProfile] = await Promise.all([
-            getAvailableMealsByCategory(mealType),
-            getUserProfile(firebaseUser.uid)
-        ]);
-        setRecommendedMeals(fetchedMeals);
-        setAddedMeals(getAddedMealsFromStorage());
-
-        if (userProfile) {
+        const userProfile = await getUserProfile(firebaseUser.uid);
+        if (userProfile?.region) {
+            const fetchedMeals = await getAvailableMealsByCategory(mealType, userProfile.region);
+            setRecommendedMeals(fetchedMeals);
             setUser(userProfile);
             setFavoriteMealIds(userProfile.favoriteMealIds || []);
+        } else {
+             toast({
+                title: "Région non définie",
+                description: "Veuillez définir votre région dans votre profil pour voir les repas disponibles.",
+                variant: "destructive",
+            });
         }
+        setAddedMeals(getAddedMealsFromStorage());
     } catch (error) {
         toast({
             title: "Erreur",
-            description: "Impossible de charger les données initiales.",
+            description: "Impossible de charger les repas disponibles.",
             variant: "destructive",
         });
     } finally {

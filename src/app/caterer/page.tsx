@@ -114,10 +114,11 @@ export default function CatererPage() {
     }
   };
 
-  const { pendingOrders, inPreparationOrders, deliveredOrders } = useMemo(() => {
+  const { pendingOrders, inPreparationOrders, readyForDeliveryOrders, deliveredOrders } = useMemo(() => {
     return {
       pendingOrders: orders.filter(o => o.status === 'pending'),
       inPreparationOrders: orders.filter(o => o.status === 'in_preparation'),
+      readyForDeliveryOrders: orders.filter(o => o.status === 'ready_for_delivery'),
       deliveredOrders: orders.filter(o => o.status === 'delivered')
     }
   }, [orders]);
@@ -129,7 +130,9 @@ export default function CatererPage() {
         case 'pending':
           return { text: 'Préparer', action: () => handleStatusChange(order.id, 'in_preparation'), className: 'bg-primary hover:bg-primary/90' };
         case 'in_preparation':
-          return { text: 'En cours', action: () => handleStatusChange(order.id, 'delivered'), className: 'bg-blue-500 hover:bg-blue-600' };
+          return { text: 'Prêt pour livraison', action: () => handleStatusChange(order.id, 'ready_for_delivery'), className: 'bg-blue-500 hover:bg-blue-600' };
+        case 'ready_for_delivery':
+          return { text: 'En attente du livreur', action: () => {}, className: 'bg-yellow-500', disabled: true };
         case 'delivered':
            return { text: 'Détails', action: () => {}, className: 'bg-gray-500 hover:bg-gray-600' };
         default:
@@ -137,7 +140,7 @@ export default function CatererPage() {
       }
     };
     
-    const { text, action, className } = getButtonAction();
+    const { text, action, className, disabled } = getButtonAction();
 
     return (
       <Card className="w-64 shrink-0">
@@ -157,10 +160,11 @@ export default function CatererPage() {
             
             {order.status === 'pending' && <Badge variant="secondary">À préparer</Badge>}
             {order.status === 'in_preparation' && <Badge className="bg-blue-100 text-blue-800">En cours</Badge>}
+            {order.status === 'ready_for_delivery' && <Badge className="bg-yellow-100 text-yellow-800">Prêt</Badge>}
             {order.status === 'delivered' && <Badge className="bg-green-100 text-green-800 flex items-center gap-1"><CheckCircle className="w-3 h-3"/> Livrée</Badge>}
             
             <p className="font-bold text-lg">{order.totalPrice.toFixed(2)} DT</p>
-            <Button onClick={action} className={`w-full ${className} text-white rounded-lg`}>{text}</Button>
+            <Button onClick={action} className={`w-full ${className} text-white rounded-lg`} disabled={disabled}>{text}</Button>
         </CardContent>
       </Card>
     )
@@ -197,6 +201,12 @@ export default function CatererPage() {
                 <h3 className="text-lg font-semibold mb-2">En cours ({inPreparationOrders.length})</h3>
                 <div className="flex gap-4 overflow-x-auto pb-4">
                   {inPreparationOrders.length > 0 ? inPreparationOrders.map(o => <OrderCard key={o.id} order={o} />) : <p className="text-sm text-muted-foreground">Aucune commande en cours.</p>}
+                </div>
+              </div>
+               <div>
+                <h3 className="text-lg font-semibold mb-2">Prêtes ({readyForDeliveryOrders.length})</h3>
+                <div className="flex gap-4 overflow-x-auto pb-4">
+                  {readyForDeliveryOrders.length > 0 ? readyForDeliveryOrders.map(o => <OrderCard key={o.id} order={o} />) : <p className="text-sm text-muted-foreground">Aucune commande prête.</p>}
                 </div>
               </div>
               <div>
