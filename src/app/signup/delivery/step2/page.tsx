@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -27,7 +28,6 @@ import { onAuthStateChanged } from "firebase/auth";
 import { Loader2, Check, MapPin, Bike } from "lucide-react";
 import { LeafPattern } from "@/components/icons";
 import Image from "next/image";
-import { updateUserProfile } from "@/lib/services/userService";
 
 const deliveryStep2Schema = z.object({
   vehicleType: z.enum(["scooter", "car", "bicycle"], {
@@ -84,8 +84,6 @@ export default function SignupDeliveryStep2Page() {
           region: data.region,
           status: 'pending' // Set default status
       });
-
-      await updateUserProfile(currentUser.uid, { role: 'delivery' });
 
       router.push("/signup/pending-approval");
 

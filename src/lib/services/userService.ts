@@ -8,6 +8,7 @@ const USERS_COLLECTION = "users";
 
 /**
  * Creates or updates a user's profile in Firestore.
+ * This is intended for CLIENT users only.
  * It removes any undefined fields before saving.
  * @param uid The user's unique ID from Firebase Auth.
  * @param data The user profile data to save.
@@ -28,12 +29,17 @@ export async function updateUserProfile(uid: string, data: Partial<Omit<User, 'u
         cleanData[key] = value;
       }
     });
+    
+    // Explicitly set the role to 'client' and remove it from dynamic data
+    // to prevent other roles from being saved in the 'users' collection.
+    delete cleanData.role; 
 
     const dataToSet = {
       ...cleanData,
       uid,
+      role: 'client', // Hardcode role to 'client' for this collection
       updatedAt: serverTimestamp(),
-      ...(docSnap.exists() ? {} : { createdAt: serverTimestamp(), role: data.role || 'client' }),
+      ...(docSnap.exists() ? {} : { createdAt: serverTimestamp() }),
     };
 
     await setDoc(userRef, dataToSet, { merge: true });

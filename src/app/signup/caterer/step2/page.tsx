@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -28,8 +29,6 @@ import { onAuthStateChanged } from "firebase/auth";
 import { Loader2, Check, MapPin, Building } from "lucide-react";
 import { LeafPattern } from "@/components/icons";
 import Image from "next/image";
-import { updateUserProfile } from "@/lib/services/userService";
-
 
 const catererStep2Schema = z.object({
   restaurantName: z.string().min(2, "Le nom du restaurant est requis."),
@@ -76,16 +75,14 @@ export default function SignupCatererStep2Page() {
     }
 
     try {
+      // This is the only function needed. It creates the document in the 'caterers' collection.
       await addCaterer({
           uid: currentUser.uid,
           name: data.restaurantName,
-          email: currentUser.email,
+          email: currentUser.email, // Use email from auth
           region: data.region,
           status: 'pending' // Set default status
       });
-
-      // also update the user's role in the generic users collection for role checks
-      await updateUserProfile(currentUser.uid, { role: 'caterer' });
 
       router.push("/signup/pending-approval");
 
@@ -93,7 +90,7 @@ export default function SignupCatererStep2Page() {
        console.error("Signup Caterer Step 2 Error:", error);
        toast({
          title: "Erreur",
-         description: "Impossible de sauvegarder votre profil.",
+         description: "Impossible de sauvegarder votre profil de traiteur.",
          variant: "destructive",
        });
     } finally {
