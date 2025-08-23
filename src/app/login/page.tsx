@@ -18,11 +18,12 @@ import {
 } from "@/components/ui/form";
 import { useState } from "react";
 import { signInWithEmailAndPassword, signInWithRedirect } from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase";
+import { auth, db, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { getUserRole } from "@/lib/services/roleService";
 import { Loader2 } from "lucide-react";
 import { GoogleIcon } from "@/components/icons";
+import { doc, getDoc } from "firebase/firestore";
 
 const loginSchema = z.object({
   email: z.string().email("Veuillez saisir une adresse e-mail valide."),
@@ -54,15 +55,39 @@ export default function LoginPage() {
 
         const role = await getUserRole(user.uid);
         
-        toast({ title: "Connexion réussie!", description: "Redirection en cours..." });
+        if (role === 'caterer') {
+            const catererDocRef = doc(db, 'caterers', user.uid);
+            const catererSnap = await getDoc(catererDocRef);
+            if (catererSnap.exists() && catererSnap.data().status === 'approved') {
+                toast({ title: "Connexion réussie!", description: "Redirection en cours..." });
+                router.push('/caterer');
+            } else {
+                router.push('/signup/pending-approval');
+            }
+            return;
+        }
+
+        if (role === 'delivery') {
+            const deliveryDocRef = doc(db, 'deliveryPeople', user.uid);
+            const deliverySnap = await getDoc(deliveryDocRef);
+            if (deliverySnap.exists() && deliverySnap.data().status === 'approved') {
+                toast({ title: "Connexion réussie!", description: "Redirection en cours..." });
+                router.push('/delivery');
+            } else {
+                router.push('/signup/pending-approval');
+            }
+            return;
+        }
 
         if (role === 'admin') {
+            toast({ title: "Connexion réussie!", description: "Redirection en cours..." });
             router.push('/admin');
-        } else if (role === 'caterer') {
-            router.push('/caterer');
-        } else {
-            router.push('/home');
+            return;
         }
+
+        // Default to client
+        toast({ title: "Connexion réussie!", description: "Redirection en cours..." });
+        router.push('/home');
 
     } catch (error: any) {
         console.error("Login Error:", error);
