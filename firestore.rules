@@ -3,55 +3,91 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+  
+    // Helper functions to check user roles
+    function isClient(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId));
+    }
+    
+    function isCaterer(userId) {
+      return exists(/databases/$(database)/documents/caterers/$(userId));
+    }
 
-    // Users can only read/write their own data
+    function isDelivery(userId) {
+      return exists(/databases/$(database)/documents/deliveryPeople/$(userId));
+    }
+
+    function isAdmin(userId) {
+      return exists(/databases/$(database)/documents/admins/$(userId));
+    }
+
+    // Is the user authenticated?
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Rules for the 'users' (clients) collection
     match /users/{userId} {
-      allow read, update, delete: if request.auth.uid == userId;
-      allow create: if request.auth.uid != null;
-    }
-    
-    // Admins can read/write their own data
-    match /admins/{adminId} {
-       allow read, write: if request.auth.uid == adminId;
-    }
-    
-    // Caterers can read/write their own data
-    match /caterers/{catererId} {
-       allow read, write: if request.auth.uid == catererId;
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin(request.auth.uid));
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && request.auth.uid == userId;
+      allow delete: if isSignedIn() && (request.auth.uid == userId || isAdmin(request.auth.uid));
     }
 
-    // Orders:
-    // - Clients can create their own orders.
-    // - Caterers and Admins can read orders they are involved in.
-    // - Clients can read their own orders.
-    match /orders/{orderId} {
-      allow create: if request.auth.uid == request.resource.data.clientId;
-      allow read: if request.auth.uid == resource.data.clientId 
-                      || request.auth.uid in resource.data.catererIds
-                      || get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
-      allow update: if request.auth.uid in resource.data.catererIds
-                       || get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
+    // Rules for the 'caterers' collection
+    match /caterers/{catererId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == catererId && request.resource.data.status == 'pending';
+      allow update: if (isSignedIn() && request.auth.uid == catererId && request.resource.data.status == resource.data.status) || isAdmin(request.auth.uid);
+      allow delete: if isAdmin(request.auth.uid);
     }
     
-    // Meals: Public read, but only caterers/admins can create/update/delete.
+    // Rules for the 'deliveryPeople' collection
+    match /deliveryPeople/{deliveryId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == deliveryId && request.resource.data.status == 'pending';
+      allow update: if (isSignedIn() && request.auth.uid == deliveryId && request.resource.data.status == resource.data.status) || isAdmin(request.auth.uid);
+      allow delete: if isAdmin(request.auth.uid);
+    }
+    
+     // Rules for the 'admins' collection
+    match /admins/{adminId} {
+      allow read, write: if isAdmin(request.auth.uid);
+    }
+
+    // Rules for the 'meals' collection
     match /meals/{mealId} {
-      allow read: if true;
-      allow create, update: if get(/databases/$(database)/documents/caterers/$(request.auth.uid)).data.role == 'caterer' 
-                           || get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
-      allow delete: if get(/databases/$(database)/documents/caterers/$(request.auth.uid)).data.role == 'caterer' 
-                         && resource.data.createdBy == request.auth.uid
-                         || get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
+      allow read: if isSignedIn();
+      allow create: if isCaterer(request.auth.uid) && request.resource.data.createdBy == request.auth.uid;
+      allow update: if isCaterer(request.auth.uid) && resource.data.createdBy == request.auth.uid;
+      allow delete: if isCaterer(request.auth.uid) && resource.data.createdBy == request.auth.uid;
       
-      // Allow any authenticated user to read and write their own rating.
+      // Sub-collection for user ratings on a meal
       match /userRatings/{userId} {
-        allow read: if true;
-        allow write: if request.auth.uid == userId;
+        allow read: if isSignedIn();
+        allow write: if isSignedIn() && request.auth.uid == userId;
       }
     }
     
-    // Notifications can only be accessed by the target user
+    // Rules for the 'orders' collection
+    match /orders/{orderId} {
+      allow read: if isSignedIn() && 
+                    (request.auth.uid == resource.data.clientId || 
+                     request.auth.uid in resource.data.catererIds ||
+                     isAdmin(request.auth.uid) ||
+                     (isDelivery(request.auth.uid) && get(/databases/$(database)/documents/deliveryPeople/$(request.auth.uid)).data.region == resource.data.clientRegion));
+      allow create: if isClient(request.auth.uid) && request.resource.data.clientId == request.auth.uid;
+      allow update: if isSignedIn() && 
+                     (request.auth.uid in resource.data.catererIds || // Caterer can update status
+                      isDelivery(request.auth.uid) || // Delivery person can update status
+                      isAdmin(request.auth.uid)); // Admin can update
+    }
+    
+    // Rules for the 'notifications' collection
     match /notifications/{notificationId} {
-      allow read, write: if request.auth.uid == resource.data.userId;
+      allow read, update: if isSignedIn() && request.auth.uid == resource.data.userId;
+      // Creation is handled by backend services (e.g. placing an order)
+      allow create: if true; // Loosely coupled for server-side creation. Secure via function logic.
     }
   }
 }
