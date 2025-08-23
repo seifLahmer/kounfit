@@ -19,6 +19,7 @@ export default function ClientLayout({
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
+  const [isClient, setIsClient] = useState(false);
 
   const handleNewUserFromRedirect = useCallback(async (firebaseUser: FirebaseUser) => {
     try {
@@ -61,16 +62,16 @@ export default function ClientLayout({
           try {
             const role = await getUserRole(user.uid);
             
-            if (role === 'admin') {
-                router.replace('/admin');
-                return;
+            if (role !== 'client') {
+              // This is not a client, so this layout should not handle them.
+              // Another layout (caterer, admin, etc.) will take over.
+              // We set loading to false to prevent the spinner from showing indefinitely
+              // if no other layout matches and handles the redirect.
+              setIsLoading(false);
+              return;
             }
-            if (role === 'caterer') {
-                router.replace('/caterer');
-                return;
-            }
-            
-            // For client users, check if their profile is complete
+
+            setIsClient(true);
             const profile = await getUserProfile(user.uid);
             if (!profile?.age || !profile.mainGoal) { 
               router.replace('/signup/step2');
@@ -102,9 +103,16 @@ export default function ClientLayout({
     );
   }
 
-  return (
-    <MainLayout>
-      {children}
-    </MainLayout>
-  );
+  // Only render the client layout and its children if the user is a client.
+  if (isClient) {
+    return (
+      <MainLayout>
+        {children}
+      </MainLayout>
+    );
+  }
+
+  // If not a client and loading is finished, render nothing.
+  // This allows the correct layout for other roles to take over.
+  return null;
 }
