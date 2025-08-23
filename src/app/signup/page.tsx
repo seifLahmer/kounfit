@@ -74,15 +74,6 @@ export default function SignupPage() {
   });
 
   const onSubmit = async (data: SignupFormValues) => {
-    if (selectedRole !== 'client') {
-      toast({
-        title: "Bientôt disponible!",
-        description: "L'inscription pour les traiteurs et les livreurs sera bientôt disponible. Veuillez sélectionner 'Client' pour continuer.",
-        variant: "default",
-      });
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
@@ -91,7 +82,14 @@ export default function SignupPage() {
           displayName: data.fullName
       });
 
-      router.push('/signup/step2');
+      // Redirect based on selected role
+      if (selectedRole === 'client') {
+        router.push('/signup/step2');
+      } else if (selectedRole === 'caterer') {
+        router.push('/signup/caterer/step2');
+      } else if (selectedRole === 'delivery') {
+        router.push('/signup/delivery/step2');
+      }
 
     } catch (error: any) {
        console.error("Signup Error:", error);
@@ -149,7 +147,7 @@ export default function SignupPage() {
                 <Input 
                     type={isVisible ? 'text' : type}
                     placeholder={placeholder} {...field} 
-                    className="pl-12 pr-12 h-14 bg-gray-100 border-gray-200 rounded-xl text-base"
+                    className="pl-12 pr-12 h-14 bg-white border-gray-200 rounded-xl text-base"
                 />
                 {isPassword && (
                      <button type="button" onClick={onToggleVisibility} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
