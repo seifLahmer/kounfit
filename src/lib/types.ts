@@ -20,7 +20,7 @@ export type User = {
     fat: number;
   };
   favoriteMealIds?: string[];
-  role: "client" | "caterer" | "admin";
+  role: "client" | "caterer" | "admin" | "delivery";
   createdAt?: any;
   updatedAt?: any;
 };
@@ -70,7 +70,17 @@ export type Caterer = {
   name: string;
   email: string;
   region: string;
+  status: 'pending' | 'approved' | 'rejected';
   turnover?: number;
+};
+
+export type DeliveryPerson = {
+  uid: string;
+  name: string;
+  email: string;
+  region: string;
+  vehicleType: 'scooter' | 'car' | 'bicycle';
+  status: 'pending' | 'approved' | 'rejected';
 };
 
 export type Order = {

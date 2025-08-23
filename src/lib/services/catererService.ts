@@ -15,7 +15,8 @@ export async function addCaterer(catererData: Omit<Caterer, 'turnover'>): Promis
     const catererRef = doc(db, CATERERS_COLLECTION, catererData.uid);
     await setDoc(catererRef, {
       ...catererData,
-      role: 'caterer' // Ensure role is set
+      role: 'caterer', // Ensure role is set
+      status: catererData.status || 'pending', // Default status to pending if not provided
     });
   } catch (error) {
     console.error("Error adding caterer: ", error);

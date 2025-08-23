@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -22,13 +21,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { auth } from "@/lib/firebase";
-import { updateUserProfile } from "@/lib/services/userService";
+import { addCaterer } from "@/lib/services/catererService";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { onAuthStateChanged } from "firebase/auth";
 import { Loader2, Check, MapPin, Building } from "lucide-react";
 import { LeafPattern } from "@/components/icons";
 import Image from "next/image";
+import { updateUserProfile } from "@/lib/services/userService";
+
 
 const catererStep2Schema = z.object({
   restaurantName: z.string().min(2, "Le nom du restaurant est requis."),
@@ -75,23 +76,18 @@ export default function SignupCatererStep2Page() {
     }
 
     try {
-      const userProfileData = {
-          // You might want to store restaurantName in a different field
-          // for now, we add it to the user object, but a separate `caterers` collection is better
-          restaurantName: data.restaurantName, 
+      await addCaterer({
+          uid: currentUser.uid,
+          name: data.restaurantName,
+          email: currentUser.email,
           region: data.region,
-          role: 'caterer' as const,
-          // Add other caterer specific fields here
-      };
-
-      await updateUserProfile(currentUser.uid, userProfileData);
-
-      toast({
-        title: "Profil Traiteur Complété!",
-        description: "Bienvenue ! Vous allez être redirigé.",
+          status: 'pending' // Set default status
       });
 
-      router.push("/caterer"); // Redirect to caterer dashboard
+      // also update the user's role in the generic users collection for role checks
+      await updateUserProfile(currentUser.uid, { role: 'caterer' });
+
+      router.push("/signup/pending-approval");
 
     } catch (error: any) {
        console.error("Signup Caterer Step 2 Error:", error);

@@ -7,36 +7,42 @@ import { db } from "@/lib/firebase";
  * @param uid The user's UID from Firebase Auth.
  * @returns A promise that resolves to the user's role or 'unknown'.
  */
-export async function getUserRole(uid: string): Promise<'admin' | 'caterer' | 'client' | 'unknown'> {
+export async function getUserRole(uid: string): Promise<'admin' | 'caterer' | 'client' | 'delivery' | 'unknown'> {
   if (!uid) return 'unknown';
 
   try {
-    // 1. Check for admin role in 'admins' collection (highest priority)
+    // 1. Check for admin role
     const adminRef = doc(db, "admins", uid);
     const adminSnap = await getDoc(adminRef);
     if (adminSnap.exists()) {
       return 'admin';
     }
 
-    // 2. Check for caterer role in 'caterers' collection
+    // 2. Check for caterer role
     const catererRef = doc(db, "caterers", uid);
     const catererSnap = await getDoc(catererRef);
     if (catererSnap.exists()) {
       return 'caterer';
     }
     
-    // 3. Check for client role in 'users' collection
+    // 3. Check for delivery role
+    const deliveryRef = doc(db, "deliveryPeople", uid);
+    const deliverySnap = await getDoc(deliveryRef);
+    if (deliverySnap.exists()) {
+      return 'delivery';
+    }
+
+    // 4. Check for client role
     const userRef = doc(db, "users", uid);
     const userSnap = await getDoc(userRef);
     if (userSnap.exists()) {
       return 'client';
     }
 
-    // 4. If user is in Auth but not in any role collection (e.g., interrupted signup)
+    // 5. If user is in Auth but not in any role collection
     return 'unknown';
   } catch (error) {
     console.error("Error getting user role: ", error);
-    // Return 'unknown' on error to prevent total failure, allows for graceful handling
     return 'unknown';
   }
 }

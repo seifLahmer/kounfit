@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -21,13 +20,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { auth } from "@/lib/firebase";
-import { updateUserProfile } from "@/lib/services/userService";
+import { addDeliveryPerson } from "@/lib/services/deliveryService";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { onAuthStateChanged } from "firebase/auth";
 import { Loader2, Check, MapPin, Bike } from "lucide-react";
 import { LeafPattern } from "@/components/icons";
 import Image from "next/image";
+import { updateUserProfile } from "@/lib/services/userService";
 
 const deliveryStep2Schema = z.object({
   vehicleType: z.enum(["scooter", "car", "bicycle"], {
@@ -76,20 +76,18 @@ export default function SignupDeliveryStep2Page() {
     }
 
     try {
-      const userProfileData = {
+      await addDeliveryPerson({
+          uid: currentUser.uid,
+          name: currentUser.displayName || 'N/A',
+          email: currentUser.email,
           vehicleType: data.vehicleType,
           region: data.region,
-          role: 'delivery' as const,
-      };
-
-      await updateUserProfile(currentUser.uid, userProfileData);
-
-      toast({
-        title: "Profil Livreur Complété!",
-        description: "Bienvenue ! Vous allez être redirigé.",
+          status: 'pending' // Set default status
       });
 
-      router.push("/home"); // Redirect to a future delivery dashboard
+      await updateUserProfile(currentUser.uid, { role: 'delivery' });
+
+      router.push("/signup/pending-approval");
 
     } catch (error: any) {
        console.error("Signup Delivery Step 2 Error:", error);
