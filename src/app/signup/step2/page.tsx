@@ -30,6 +30,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { Loader2, Check, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LeafPattern, HeightIcon, WeightIcon, AgeIcon, ActivityIcon } from "@/components/icons";
+import Image from "next/image";
 
 const step2Schema = z.object({
   height: z.coerce.number().min(100, "La taille doit être un nombre positif."),
@@ -152,7 +153,7 @@ export default function SignupStep2Page() {
       <LeafPattern className="absolute inset-0 w-full h-full text-gray-400/50" />
       <div className="relative w-full max-w-lg bg-white/70 backdrop-blur-md rounded-3xl shadow-2xl flex flex-col">
         <div className="bg-gradient-to-b from-[#22C58B] to-[#0B7E58] rounded-t-3xl text-white text-center p-6 space-y-3 rounded-b-2xl">
-          <h1 className="text-xl font-semibold">Kounfit</h1>
+          <Image src="/kounfit.png" alt="Kounfit Logo" width={40} height={40} className="mx-auto" />
           <h2 className="text-2xl font-bold">Inscription Client</h2>
           <p className="text-lg font-medium">– Etape 2/2 –</p>
           <div className="flex items-center justify-center gap-2 pt-2">

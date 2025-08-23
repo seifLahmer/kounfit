@@ -160,7 +160,7 @@ export default function SignupPage() {
        <div className="relative bg-gradient-to-b from-[#22C58B] to-[#4FD6B3] text-white pb-10" style={{ clipPath: 'ellipse(100% 70% at 50% 30%)' }}>
             <div className="text-center pt-10 px-4 space-y-4">
                 <div className="flex items-center justify-between">
-                    <Image src="/kounfit-logo-white-s.png" alt="Kounfit Logo" width={40} height={40} />
+                    <Image src="/kounfit.png" alt="Kounfit Logo" width={40} height={40} />
                     <h2 className="text-2xl font-semibold absolute left-1/2 -translate-x-1/2">Inscription - Étape 1/2</h2>
                 </div>
                 <div className="w-full max-w-sm mx-auto pt-4">
