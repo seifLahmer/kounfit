@@ -12,7 +12,6 @@ import {
   Form,
   FormField,
   FormItem,
-  FormLabel,
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
@@ -21,9 +20,10 @@ import { signInWithEmailAndPassword, signInWithRedirect } from "firebase/auth";
 import { auth, db, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { getUserRole } from "@/lib/services/roleService";
-import { Loader2 } from "lucide-react";
-import { GoogleIcon } from "@/components/icons";
+import { Loader2, Mail, Eye, EyeOff } from "lucide-react";
+import { GoogleIcon, LockIcon } from "@/components/icons";
 import { doc, getDoc } from "firebase/firestore";
+import Image from "next/image";
 
 const loginSchema = z.object({
   email: z.string().email("Veuillez saisir une adresse e-mail valide."),
@@ -36,6 +36,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -55,24 +56,13 @@ export default function LoginPage() {
 
         const role = await getUserRole(user.uid);
         
-        if (role === 'caterer') {
-            const catererDocRef = doc(db, 'caterers', user.uid);
-            const catererSnap = await getDoc(catererDocRef);
-            if (catererSnap.exists() && catererSnap.data().status === 'approved') {
-                toast({ title: "Connexion réussie!", description: "Redirection en cours..." });
-                router.push('/caterer');
-            } else {
-                router.push('/signup/pending-approval');
-            }
-            return;
-        }
+        if (role === 'caterer' || role === 'delivery') {
+            const collectionName = role === 'caterer' ? 'caterers' : 'deliveryPeople';
+            const docRef = doc(db, collectionName, user.uid);
+            const docSnap = await getDoc(docRef);
 
-        if (role === 'delivery') {
-            const deliveryDocRef = doc(db, 'deliveryPeople', user.uid);
-            const deliverySnap = await getDoc(deliveryDocRef);
-            if (deliverySnap.exists() && deliverySnap.data().status === 'approved') {
-                toast({ title: "Connexion réussie!", description: "Redirection en cours..." });
-                router.push('/delivery');
+            if (docSnap.exists() && docSnap.data().status === 'approved') {
+                 router.push(`/${role}`);
             } else {
                 router.push('/signup/pending-approval');
             }
@@ -80,13 +70,11 @@ export default function LoginPage() {
         }
 
         if (role === 'admin') {
-            toast({ title: "Connexion réussie!", description: "Redirection en cours..." });
             router.push('/admin');
             return;
         }
 
         // Default to client
-        toast({ title: "Connexion réussie!", description: "Redirection en cours..." });
         router.push('/home');
 
     } catch (error: any) {
@@ -118,11 +106,24 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
-      <div className="w-full max-w-sm">
+    <div className="flex flex-col min-h-screen bg-background">
+        <div className="relative w-full h-1/3">
+            <Image 
+                src="https://placehold.co/600x400.png"
+                alt="Bol de nourriture saine"
+                layout="fill"
+                objectFit="cover"
+                data-ai-hint="healthy food bowl"
+            />
+             <div 
+                className="absolute bottom-0 left-0 w-full h-16 bg-background"
+                style={{ clipPath: 'ellipse(70% 100% at 50% 100%)' }}
+            ></div>
+        </div>
+
+      <div className="w-full max-w-sm mx-auto px-4 -mt-8 flex-1">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary">KOUNFIT</h1>
-          <p className="text-muted-foreground">Bon retour parmi nous !</p>
+          <h1 className="text-4xl font-bold text-tertiary">Kounfit</h1>
         </div>
         
         <Form {...form}>
@@ -132,9 +133,11 @@ export default function LoginPage() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="email@exemple.com" {...field} />
+                    <div className="relative">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <Input type="email" placeholder="Email au nom d'utilisateur" {...field} className="pl-12 h-14 rounded-xl" />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -145,16 +148,26 @@ export default function LoginPage() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Mot de passe</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="********" {...field} />
+                    <div className="relative">
+                        <LockIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <Input 
+                            type={passwordVisible ? 'text' : 'password'}
+                            placeholder="Mot de passe" 
+                            {...field} 
+                            className="pl-12 pr-12 h-14 rounded-xl"
+                        />
+                         <button type="button" onClick={() => setPasswordVisible(!passwordVisible)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
+                            {passwordVisible ? <EyeOff className="h-5 w-5"/> : <Eye className="h-5 w-5" />}
+                        </button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" className="w-full h-14 text-lg font-semibold rounded-xl bg-secondary hover:bg-secondary/90 text-white" disabled={isSubmitting}>
+               {isSubmitting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
               Se connecter
             </Button>
           </form>
@@ -164,13 +177,13 @@ export default function LoginPage() {
             <span className="w-full border-t" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-gray-50 px-2 text-muted-foreground">
-              Ou continuer avec
+            <span className="bg-background px-2 text-muted-foreground">
+              Ou se connecter avec
             </span>
           </div>
         </div>
-        <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isSubmitting}>
-          <GoogleIcon className="mr-2 h-4 w-4" /> Google
+        <Button variant="outline" className="w-full h-14 rounded-xl text-base font-semibold" onClick={handleGoogleSignIn} disabled={isSubmitting}>
+          <GoogleIcon className="mr-2 h-5 w-5" /> Google
         </Button>
         <p className="mt-8 text-center text-sm text-muted-foreground">
           Pas encore de compte?{" "}
