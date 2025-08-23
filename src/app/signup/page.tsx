@@ -74,6 +74,15 @@ export default function SignupPage() {
   });
 
   const onSubmit = async (data: SignupFormValues) => {
+    if (selectedRole !== 'client') {
+      toast({
+        title: "Bientôt disponible!",
+        description: "L'inscription pour les traiteurs et les livreurs sera bientôt disponible. Veuillez sélectionner 'Client' pour continuer.",
+        variant: "default",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
