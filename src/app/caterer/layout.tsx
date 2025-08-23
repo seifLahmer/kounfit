@@ -27,18 +27,16 @@ export default function CatererLayout({
         try {
           const role = await getUserRole(user.uid);
           if (role !== 'caterer') {
-             router.replace('/login');
+             setIsLoading(false);
              return;
           }
           
-          // Check for approval status
           const catererDocRef = doc(db, 'caterers', user.uid);
           const catererSnap = await getDoc(catererDocRef);
 
           if (catererSnap.exists() && catererSnap.data().status === 'approved') {
             setIsAuthorized(true);
           } else {
-            // If status is pending, rejected, or doc doesn't exist, redirect.
             router.replace('/signup/pending-approval');
             return;
           }

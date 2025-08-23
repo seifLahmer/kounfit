@@ -23,10 +23,8 @@ export default function ClientLayout({
 
   const handleNewUserFromRedirect = useCallback(async (firebaseUser: FirebaseUser) => {
     try {
-      // For Google sign-in, we assume the role is client
       const existingProfile = await getUserProfile(firebaseUser.uid);
       if (!existingProfile) {
-        // If profile doesn't exist, they need to complete it
         router.replace('/signup/step2');
         return true; 
       }
@@ -46,7 +44,6 @@ export default function ClientLayout({
       try {
         const result = await getRedirectResult(auth);
         if (result) {
-          // This handles users signing in with Google
           const isNew = await handleNewUserFromRedirect(result.user);
           if (isNew) return; 
         }
@@ -63,10 +60,6 @@ export default function ClientLayout({
             const role = await getUserRole(user.uid);
             
             if (role !== 'client') {
-              // This is not a client, so this layout should not handle them.
-              // Another layout (caterer, admin, etc.) will take over.
-              // We set loading to false to prevent the spinner from showing indefinitely
-              // if no other layout matches and handles the redirect.
               setIsLoading(false);
               return;
             }
@@ -103,7 +96,6 @@ export default function ClientLayout({
     );
   }
 
-  // Only render the client layout and its children if the user is a client.
   if (isClient) {
     return (
       <MainLayout>
@@ -112,7 +104,5 @@ export default function ClientLayout({
     );
   }
 
-  // If not a client and loading is finished, render nothing.
-  // This allows the correct layout for other roles to take over.
   return null;
 }
