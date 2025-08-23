@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Utensils, Loader2, LogOut, BarChart2 } from "lucide-react";
+import { Bike, Loader2, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -11,7 +11,7 @@ import { getUserRole } from "@/lib/services/roleService";
 import { cn } from "@/lib/utils";
 import { doc, getDoc } from "firebase/firestore";
 
-export default function CatererLayout({
+export default function DeliveryLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -26,16 +26,16 @@ export default function CatererLayout({
       if (user) {
         try {
           const role = await getUserRole(user.uid);
-          if (role !== 'caterer') {
+          if (role !== 'delivery') {
              router.replace('/login');
              return;
           }
           
           // Check for approval status
-          const catererDocRef = doc(db, 'caterers', user.uid);
-          const catererSnap = await getDoc(catererDocRef);
+          const deliveryDocRef = doc(db, 'deliveryPeople', user.uid);
+          const deliverySnap = await getDoc(deliveryDocRef);
 
-          if (catererSnap.exists() && catererSnap.data().status === 'approved') {
+          if (deliverySnap.exists() && deliverySnap.data().status === 'approved') {
             setIsAuthorized(true);
           } else {
             // If status is pending, rejected, or doc doesn't exist, redirect.
@@ -44,7 +44,7 @@ export default function CatererLayout({
           }
 
         } catch (error) {
-           console.error("Error verifying caterer role/status:", error);
+           console.error("Error verifying delivery role/status:", error);
            router.replace('/login');
            return;
         } finally {
@@ -63,7 +63,6 @@ export default function CatererLayout({
     router.push('/welcome');
   };
 
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -81,13 +80,9 @@ export default function CatererLayout({
       <main className="flex-1 pb-24">{children}</main>
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-50">
         <div className="flex justify-around items-center h-16">
-          <Link href="/caterer" className={cn("flex flex-col items-center gap-1", pathname === '/caterer' ? 'text-primary' : 'text-gray-500')}>
-            <Utensils />
+          <Link href="/delivery" className={cn("flex flex-col items-center gap-1", pathname === '/delivery' ? 'text-primary' : 'text-gray-500')}>
+            <Bike />
             <span className="text-xs">Dashboard</span>
-          </Link>
-          <Link href="/caterer/stats" className={cn("flex flex-col items-center gap-1", pathname === '/caterer/stats' ? 'text-primary' : 'text-gray-500')}>
-            <BarChart2 />
-            <span className="text-xs">Statistiques</span>
           </Link>
           <button onClick={handleLogout} className="flex flex-col items-center gap-1 text-gray-500">
             <LogOut />
