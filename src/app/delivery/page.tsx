@@ -37,19 +37,20 @@ export default function DeliveryDashboardPage() {
                         }
                     });
 
+                    const responseData = await response.json();
+
                     if (!response.ok) {
-                        throw new Error('Failed to fetch orders from API');
+                        throw new Error(responseData.error || 'Failed to fetch orders from API');
                     }
                     
-                    const fetchedOrders: Order[] = await response.json();
-                    setOrders(fetchedOrders);
+                    setOrders(responseData);
 
                 } else {
                     toast({ title: "Erreur", description: "Profil livreur non trouvé.", variant: "destructive" });
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error(error);
-                toast({ title: "Erreur", description: "Impossible de charger les données.", variant: "destructive" });
+                toast({ title: "Erreur", description: error.message || "Impossible de charger les données.", variant: "destructive" });
             } finally {
                 setLoading(false);
             }
