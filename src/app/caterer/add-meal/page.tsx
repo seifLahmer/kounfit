@@ -16,7 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Wand2, Upload, ChevronLeft, CheckCircle, Trash2, PlusCircle } from "lucide-react";
-import { type MealAnalysis } from "@/ai/flows/meal-analysis-flow";
+import { type MealAnalysis, analyzeMeal } from "@/ai/flows/meal-analysis-flow";
 import { addMeal } from "@/lib/services/mealService";
 import { uploadMealImage } from "@/lib/services/storageService";
 import { auth } from "@/lib/firebase";
@@ -76,24 +76,7 @@ export default function AddMealPage() {
     setAnalysisResult(null);
     setIngredients([]);
     try {
-      const response = await fetch('/api/analyze-meal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mealName: mealNameInput }),
-      });
-
-      const errorText = await response.text();
-      if (!response.ok) {
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch (e) {
-          throw new Error(`Erreur du serveur: ${response.statusText}. Détails: ${errorText.substring(0, 150)}...`);
-        }
-        throw new Error(errorData.error || `La requête a échoué: ${response.statusText}`);
-      }
-      
-      const mealAnalysis: MealAnalysis = JSON.parse(errorText);
+      const mealAnalysis = await analyzeMeal({ mealName: mealNameInput });
       
       setAnalysisResult(mealAnalysis);
       setIngredients(mealAnalysis.ingredients);
