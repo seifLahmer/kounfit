@@ -1,7 +1,3 @@
-
-import { config } from 'dotenv';
-config();
-
 import { mealAnalysisFlow } from './flows/meal-analysis-flow';
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
@@ -15,5 +11,3 @@ export default genkit({
   logLevel: 'debug',
   enableTracingAndMetrics: true,
 });
-
-    
