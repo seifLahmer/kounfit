@@ -18,6 +18,8 @@ import {
 import { useState, useEffect, useCallback } from "react";
 import { signInWithEmailAndPassword, signInWithRedirect, User as FirebaseUser, getRedirectResult } from "firebase/auth";
 import { auth, db, googleProvider } from "@/lib/firebase";
+import { Capacitor } from '@capacitor/core';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { useToast } from "@/hooks/use-toast";
 import { getUserRole } from "@/lib/services/roleService";
 import { Loader2, Mail, Eye, EyeOff } from "lucide-react";
@@ -37,6 +39,11 @@ export default function LoginPage() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -97,8 +104,9 @@ export default function LoginPage() {
     }
   }, [router, toast]);
   
-  // Handle redirect from Google
+  // Handle redirect from Google on web
   useEffect(() => {
+    if (!isMounted || Capacitor.isNativePlatform()) return;
     const handleRedirect = async () => {
         setIsSubmitting(true);
         try {
@@ -115,7 +123,7 @@ export default function LoginPage() {
         }
     };
     handleRedirect();
-  }, [handleUserLogin, toast]);
+  }, [isMounted, handleUserLogin, toast]);
 
 
   const onSubmit = async (data: LoginFormValues) => {
@@ -140,14 +148,22 @@ export default function LoginPage() {
 
    const handleGoogleSignIn = async () => {
     setIsSubmitting(true);
-    await signInWithRedirect(auth, googleProvider).catch((error) => {
-       toast({
-          title: "Erreur de connexion Google",
-          description: "Impossible de démarrer la connexion avec Google.",
-          variant: "destructive",
-       });
-       setIsSubmitting(false);
-    });
+    try {
+        if (Capacitor.isNativePlatform()) {
+            const result = await FirebaseAuthentication.signInWithGoogle();
+            await handleUserLogin(result.user);
+        } else {
+            await signInWithRedirect(auth, googleProvider);
+        }
+    } catch (error) {
+        console.error("Google Sign-In Error:", error);
+        toast({
+            title: "Erreur de connexion Google",
+            description: "Une erreur s'est produite lors de la tentative de connexion avec Google.",
+            variant: "destructive",
+        });
+        setIsSubmitting(false);
+    }
   };
 
   return (
