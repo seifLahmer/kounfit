@@ -24,19 +24,28 @@ export default function CatererLayout({
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        const role = await getUserRole(user.uid);
-        if (role === 'caterer') {
-            const catererDocRef = doc(db, 'caterers', user.uid);
-            const catererSnap = await getDoc(catererDocRef);
-            if(catererSnap.exists() && catererSnap.data().status === 'approved') {
-                setIsAuthorized(true);
-            } else {
-                router.replace('/login');
-            }
-        } else {
+        try {
+          const role = await getUserRole(user.uid);
+          if (role === 'caterer') {
+              const catererDocRef = doc(db, 'caterers', user.uid);
+              const catererSnap = await getDoc(catererDocRef);
+              if(catererSnap.exists() && catererSnap.data().status === 'approved') {
+                  setIsAuthorized(true);
+              } else {
+                  // This will catch pending or rejected caterers and send them away.
+                  // The login page handles the specific redirection to pending-approval page.
+                  router.replace('/login');
+              }
+          } else {
+              // If the user is not a caterer, kick them out.
+              router.replace('/login');
+          }
+        } catch (error) {
+            console.error("Caterer layout auth error:", error);
             router.replace('/login');
+        } finally {
+            setIsLoading(false);
         }
-        setIsLoading(false);
       } else {
         router.replace('/login');
       }
@@ -59,7 +68,7 @@ export default function CatererLayout({
   }
 
   if (!isAuthorized) {
-    return null;
+    return null; // Don't render anything if not authorized
   }
 
   return (
