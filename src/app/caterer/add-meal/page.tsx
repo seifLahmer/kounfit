@@ -83,17 +83,16 @@ export default function AddMealPage() {
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
         let errorData;
         try {
-          errorData = await response.json();
+          errorData = JSON.parse(errorText);
         } catch (e) {
-          // If parsing JSON fails, fall back to text to get more info
-          const errorText = await response.text();
-          throw new Error(`Erreur du serveur: ${response.statusText}. Détails: ${errorText.substring(0, 100)}...`);
+          throw new Error(`Erreur du serveur: ${response.statusText}. Détails: ${errorText.substring(0, 150)}...`);
         }
         throw new Error(errorData.error || `La requête a échoué: ${response.statusText}`);
       }
-
+      
       const mealAnalysis: MealAnalysis = await response.json();
       
       setAnalysisResult(mealAnalysis);
@@ -105,6 +104,7 @@ export default function AddMealPage() {
         category: "lunch",
         availability: true,
       });
+
     } catch (error: any) {
       console.error(error);
       toast({ 
