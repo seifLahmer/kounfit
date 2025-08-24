@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Loader2, MapPin, Frown, Bike } from "lucide-react";
-import { getReadyForDeliveryOrders, updateOrderStatus } from "@/lib/services/orderService";
+import { updateOrderStatus } from "@/lib/services/orderService";
 import type { Order, DeliveryPerson } from "@/lib/types";
 import { auth, db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
@@ -28,12 +28,27 @@ export default function DeliveryDashboardPage() {
                 if (deliverySnap.exists()) {
                     const person = deliverySnap.data() as DeliveryPerson;
                     setDeliveryPerson(person);
-                    const fetchedOrders = await getReadyForDeliveryOrders(person.region);
+
+                    // Fetch orders from the new API route
+                    const response = await fetch('/api/delivery/orders', {
+                        headers: {
+                            'X-User-Id': user.uid,
+                            'X-User-Region': person.region,
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch orders from API');
+                    }
+                    
+                    const fetchedOrders: Order[] = await response.json();
                     setOrders(fetchedOrders);
+
                 } else {
                     toast({ title: "Erreur", description: "Profil livreur non trouvé.", variant: "destructive" });
                 }
             } catch (error) {
+                console.error(error);
                 toast({ title: "Erreur", description: "Impossible de charger les données.", variant: "destructive" });
             } finally {
                 setLoading(false);
