@@ -43,12 +43,12 @@ export default function ClientLayout({
 
   useEffect(() => {
     const processAuth = async () => {
+      setIsLoading(true);
       try {
         const result = await getRedirectResult(auth);
         if (result) {
-          // User just signed in via redirect (e.g., Google)
           const isNew = await handleNewUserFromRedirect(result.user);
-          if (isNew) return; // Stop processing if it's a new user being redirected
+          if (isNew) return;
         }
       } catch (error: any) {
         console.error("Error processing redirect result:", error);
@@ -63,23 +63,17 @@ export default function ClientLayout({
             const role = await getUserRole(user.uid);
             
             if (role === 'client') {
-              // User is a 'client'. Proceed with client-specific logic.
               const profile = await getUserProfile(user.uid);
               if (!profile?.age || !profile.mainGoal) { 
-                // Client profile is incomplete, send to step 2
                 router.replace('/signup/step2');
               } else {
-                // Client is fully authorized
                 setIsAuthorizedClient(true);
               }
             } else if (role !== 'unknown') {
-              // This is a non-client user (admin, caterer, etc.).
-              // Do not authorize client layout. Another layout will handle them.
+              // This is a non-client user. Do not authorize. Let other layouts handle them.
               setIsAuthorizedClient(false);
             }
-            // If role is 'unknown', it might be a new user being handled by handleNewUserFromRedirect.
-            // We keep loading until their status is resolved.
-
+            // If role is 'unknown', we keep loading. It's likely a new user being redirected.
           } catch (error) {
              console.error("Authentication check failed:", error);
              toast({ title: "Erreur", description: "Impossible de vérifier votre session.", variant: "destructive" });
@@ -89,6 +83,7 @@ export default function ClientLayout({
             setIsLoading(false);
           }
         } else {
+          // No user, redirect to welcome page
           router.replace('/welcome');
         }
       });

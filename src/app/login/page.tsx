@@ -46,7 +46,29 @@ export default function LoginPage() {
     },
   });
   
-  const redirectToRole = (role: string) => {
+  const handleUserLogin = async (user: FirebaseUser) => {
+    const role = await getUserRole(user.uid);
+
+    // Specific check for partners (caterer or delivery)
+    if (role === 'caterer' || role === 'delivery') {
+        const collectionName = role === 'caterer' ? 'caterers' : 'deliveryPeople';
+        const docRef = doc(db, collectionName, user.uid);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            if (docSnap.data().status === 'pending') {
+                router.push('/signup/pending-approval');
+                return; // Stop further execution
+            }
+             if (docSnap.data().status === 'rejected') {
+                await auth.signOut();
+                toast({ title: "Accès refusé", description: "Votre compte a été rejeté.", variant: "destructive"});
+                return;
+            }
+        }
+    }
+
+    // Redirect based on role
     switch (role) {
       case 'admin':
         router.push('/admin');
@@ -73,21 +95,7 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
         const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-        const user = userCredential.user;
-        const role = await getUserRole(user.uid);
-
-        if (role === 'caterer' || role === 'delivery') {
-            const collectionName = role === 'caterer' ? 'caterers' : 'deliveryPeople';
-            const docRef = doc(db, collectionName, user.uid);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists() && docSnap.data().status === 'pending') {
-                 router.push('/signup/pending-approval');
-                 return;
-            }
-        }
-        
-        redirectToRole(role);
-
+        await handleUserLogin(userCredential.user);
     } catch (error: any) {
         console.error("Login Error:", error);
         let description = "Une erreur inconnue s'est produite. Veuillez réessayer.";
@@ -99,7 +107,6 @@ export default function LoginPage() {
             description: description,
             variant: "destructive",
         });
-    } finally {
         setIsSubmitting(false);
     }
   };

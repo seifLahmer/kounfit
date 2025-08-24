@@ -27,7 +27,7 @@ export default function DeliveryLayout({
         try {
           const role = await getUserRole(user.uid);
           if (role !== 'delivery') {
-             // If not a delivery person, let other layouts or pages handle it.
+             // Not a delivery person, so this layout shouldn't handle it.
              setIsLoading(false);
              return;
           }
@@ -38,8 +38,7 @@ export default function DeliveryLayout({
           if (deliverySnap.exists() && deliverySnap.data().status === 'approved') {
             setIsAuthorized(true);
           } else {
-            // This will be caught by the login page logic now,
-            // but as a fallback, we redirect to pending approval.
+            // Delivery person is pending or rejected, redirect them.
             router.replace('/signup/pending-approval');
             return;
           }

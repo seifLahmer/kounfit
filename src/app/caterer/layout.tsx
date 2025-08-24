@@ -27,7 +27,9 @@ export default function CatererLayout({
         try {
           const role = await getUserRole(user.uid);
           if (role !== 'caterer') {
-             // If not a caterer, let other layouts or pages handle it.
+             // Not a caterer, so this layout shouldn't handle it.
+             // Setting loading to false and not authorizing will
+             // let other layouts (or the login redirect) take over.
              setIsLoading(false);
              return;
           }
@@ -38,8 +40,7 @@ export default function CatererLayout({
           if (catererSnap.exists() && catererSnap.data().status === 'approved') {
             setIsAuthorized(true);
           } else {
-            // This will be caught by the login page logic now,
-            // but as a fallback, we redirect to pending approval.
+            // Caterer is pending or rejected, redirect them.
             router.replace('/signup/pending-approval');
             return;
           }
@@ -74,7 +75,6 @@ export default function CatererLayout({
   }
 
   // Only render the layout if the user is an authorized caterer.
-  // This prevents the layout from rendering for other roles and causing issues.
   if (!isAuthorized) {
     return null;
   }
