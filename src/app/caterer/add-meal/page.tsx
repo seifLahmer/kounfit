@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -45,7 +45,7 @@ export default function AddMealPage() {
   const [catererUid, setCatererUid] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useState(() => {
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
         if (user) {
             setCatererUid(user.uid);
@@ -54,7 +54,7 @@ export default function AddMealPage() {
         }
     });
     return () => unsubscribe();
-  });
+  }, [router]);
 
   const form = useForm<MealFormValues>({
     resolver: zodResolver(mealSchema),
@@ -82,8 +82,8 @@ export default function AddMealPage() {
         body: JSON.stringify({ mealName: mealNameInput }),
       });
 
+      const errorText = await response.text();
       if (!response.ok) {
-        const errorText = await response.text();
         let errorData;
         try {
           errorData = JSON.parse(errorText);
@@ -93,7 +93,7 @@ export default function AddMealPage() {
         throw new Error(errorData.error || `La requête a échoué: ${response.statusText}`);
       }
       
-      const mealAnalysis: MealAnalysis = await response.json();
+      const mealAnalysis: MealAnalysis = JSON.parse(errorText);
       
       setAnalysisResult(mealAnalysis);
       setIngredients(mealAnalysis.ingredients);
