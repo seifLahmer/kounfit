@@ -1,5 +1,5 @@
 
-import { collection, doc, getDocs, setDoc, deleteDoc } from "firebase/firestore";
+import { collection, doc, getDocs, setDoc, deleteDoc, updateDoc, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { Caterer } from "@/lib/types";
 
@@ -44,6 +44,38 @@ export async function getAllCaterers(): Promise<Caterer[]> {
     throw new Error("Could not fetch caterers.");
   }
 }
+
+/**
+ * Retrieves all caterers with a 'pending' status.
+ * @returns A promise that resolves to an array of pending caterers.
+ */
+export async function getPendingCaterers(): Promise<Caterer[]> {
+    try {
+        const q = query(collection(db, CATERERS_COLLECTION), where("status", "==", "pending"));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as Caterer));
+    } catch (error) {
+        console.error("Error fetching pending caterers:", error);
+        throw new Error("Could not fetch pending caterers.");
+    }
+}
+
+
+/**
+ * Updates the status of a specific caterer.
+ * @param uid The UID of the caterer to update.
+ * @param status The new status.
+ */
+export async function updateCatererStatus(uid: string, status: 'approved' | 'rejected'): Promise<void> {
+    try {
+        const catererRef = doc(db, CATERERS_COLLECTION, uid);
+        await updateDoc(catererRef, { status });
+    } catch (error) {
+        console.error("Error updating caterer status:", error);
+        throw new Error("Could not update caterer status.");
+    }
+}
+
 
 /**
  * Deletes a caterer from the 'caterers' collection.

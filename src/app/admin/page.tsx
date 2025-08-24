@@ -2,7 +2,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,24 +20,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Bell, Search, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Edit, TrendingUp } from "lucide-react";
-import { getAllCaterers, deleteCaterer } from "@/lib/services/catererService";
+import { Bell, Search, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Edit, UserCheck, UserX } from "lucide-react";
+import { getAllCaterers, updateCatererStatus } from "@/lib/services/catererService";
+import { getAllDeliveryPeople, updateDeliveryPersonStatus } from "@/lib/services/deliveryService";
 import { getUserCount } from "@/lib/services/userService";
 import { getAllOrders } from "@/lib/services/orderService";
-import type { Caterer, Order } from "@/lib/types";
+import type { Caterer, DeliveryPerson, Order } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 export default function AdminDashboardPage() {
   const { toast } = useToast();
-  const router = useRouter();
   const [caterers, setCaterers] = useState<Caterer[]>([]);
+  const [deliveryPeople, setDeliveryPeople] = useState<DeliveryPerson[]>([]);
   const [userCount, setUserCount] = useState(0);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,21 +48,12 @@ export default function AdminDashboardPage() {
   const itemsPerPage = 4;
   const [regionFilter, setRegionFilter] = useState("all");
 
-
-  const calculateTurnover = (allOrders: Order[], catererId: string): number => {
-    return allOrders.reduce((total, order) => {
-      const catererTurnoverInOrder = order.items
-        .filter(item => item.catererId === catererId)
-        .reduce((itemSum, item) => itemSum + (item.unitPrice * item.quantity), 0);
-      return total + catererTurnoverInOrder;
-    }, 0);
-  };
-
   const fetchAdminData = async () => {
     try {
       setLoading(true);
-      const [caterersData, ordersData, count] = await Promise.all([
+      const [caterersData, deliveryData, ordersData, count] = await Promise.all([
         getAllCaterers(),
+        getAllDeliveryPeople(),
         getAllOrders(),
         getUserCount(),
       ]);
@@ -72,6 +64,7 @@ export default function AdminDashboardPage() {
       }));
 
       setCaterers(caterersWithTurnover);
+      setDeliveryPeople(deliveryData);
       setOrders(ordersData);
       setUserCount(count);
     } catch (error) {
@@ -88,35 +81,35 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     fetchAdminData();
   }, []);
+
+  const calculateTurnover = (allOrders: Order[], catererId: string): number => {
+    return allOrders.reduce((total, order) => {
+      const catererTurnoverInOrder = order.items
+        .filter(item => item.catererId === catererId)
+        .reduce((itemSum, item) => itemSum + (item.unitPrice * item.quantity), 0);
+      return total + catererTurnoverInOrder;
+    }, 0);
+  };
   
-  const handleDeleteCaterer = async (uid: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer ce traiteur? Cette action est irréversible.")) return;
+  const handleCatererStatusChange = async (uid: string, status: 'approved' | 'rejected') => {
     try {
-      await deleteCaterer(uid);
-      toast({ title: "Succès", description: "Le traiteur a été supprimé." });
-      fetchAdminData(); // Refresh list
+      await updateCatererStatus(uid, status);
+      toast({ title: "Succès", description: `Le statut du traiteur a été mis à jour.` });
+      fetchAdminData();
     } catch (error) {
-      toast({ title: "Erreur", description: "Impossible de supprimer le traiteur.", variant: "destructive" });
+      toast({ title: "Erreur", description: "Impossible de mettre à jour le statut du traiteur.", variant: "destructive" });
     }
   };
-
-  const filteredCaterers = caterers.filter(caterer =>
-    caterer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    caterer.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const paginatedCaterers = filteredCaterers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  const totalPages = Math.ceil(filteredCaterers.length / itemsPerPage);
-
-  const totalOrdersValue = orders.reduce((sum, order) => sum + order.totalPrice, 0);
-
-  const filteredOrders = orders.filter(order => 
-    regionFilter === 'all' || order.clientRegion.toLowerCase() === regionFilter
-  );
+  
+  const handleDeliveryStatusChange = async (uid: string, status: 'approved' | 'rejected') => {
+    try {
+      await updateDeliveryPersonStatus(uid, status);
+      toast({ title: "Succès", description: `Le statut du livreur a été mis à jour.` });
+      fetchAdminData();
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible de mettre à jour le statut du livreur.", variant: "destructive" });
+    }
+  };
 
   const getStatusBadge = (status: Order['status']) => {
     switch (status) {
@@ -127,8 +120,23 @@ export default function AdminDashboardPage() {
       default: return <Badge>{status}</Badge>;
     }
   };
+  
+  const getPartnerStatusBadge = (status: Caterer['status'] | DeliveryPerson['status']) => {
+     switch (status) {
+      case 'pending': return <Badge variant="secondary">En attente</Badge>;
+      case 'approved': return <Badge className="bg-green-100 text-green-800">Approuvé</Badge>;
+      case 'rejected': return <Badge variant="destructive">Rejeté</Badge>;
+      default: return <Badge>{status}</Badge>;
+    }
+  }
 
-
+  const filteredOrders = orders.filter(order => 
+    regionFilter === 'all' || order.clientRegion.toLowerCase() === regionFilter
+  );
+  
+  const filteredCaterers = caterers.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredDelivery = deliveryPeople.filter(d => d.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="bg-gradient-to-br from-primary via-primary to-background/30 p-4 text-white">
@@ -145,118 +153,114 @@ export default function AdminDashboardPage() {
       </header>
       
       <main className="flex-1 p-4 -mt-8 space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card className="shadow-lg">
                 <CardContent className="p-4">
                     <p className="text-sm text-muted-foreground">Total Users</p>
                     <p className="text-2xl font-bold">{loading ? '...' : userCount}</p>
-                    <div className="flex items-center text-sm text-green-500 gap-1"><ArrowUp className="w-4 h-4" /> 2,7%</div>
                 </CardContent>
             </Card>
             <Card className="shadow-lg">
                 <CardContent className="p-4">
-                    <p className="text-sm text-muted-foreground">Active Traiteurs</p>
-                    <p className="text-2xl font-bold">{loading ? '...' : caterers.length}</p>
-                    <div className="flex items-center text-sm text-red-500 gap-1"><ArrowDown className="w-4 h-4" /> 1,2%</div>
+                    <p className="text-sm text-muted-foreground">Traiteurs Actifs</p>
+                    <p className="text-2xl font-bold">{loading ? '...' : caterers.filter(c => c.status === 'approved').length}</p>
                 </CardContent>
             </Card>
              <Card className="shadow-lg">
                 <CardContent className="p-4">
                     <p className="text-sm text-muted-foreground">Total Orders</p>
                     <p className="text-2xl font-bold">{loading ? '...' : orders.length}</p>
-                    <div className="flex items-center text-sm text-green-500 gap-1"><ArrowUp className="w-4 h-4" /> 8,4%</div>
                 </CardContent>
             </Card>
             <Card className="shadow-lg">
                 <CardContent className="p-4">
                     <p className="text-sm text-muted-foreground">Turnover</p>
-                    <p className="text-2xl font-bold">{loading ? '...' : totalOrdersValue.toFixed(2) + ' DT'}</p>
-                    <div className="flex items-center text-sm text-green-500 gap-1"><ArrowUp className="w-4 h-4" /> 5,1%</div>
+                    <p className="text-2xl font-bold">{loading ? '...' : orders.reduce((sum, order) => sum + order.totalPrice, 0).toFixed(2) + ' DT'}</p>
                 </CardContent>
             </Card>
         </div>
 
-        <Card>
-            <CardHeader>
-                <CardTitle>Liste des Traiteurs</CardTitle>
-                <div className="flex gap-2 pt-2">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input 
-                            placeholder="Search" 
-                            className="pl-9"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    <Button variant="outline">Filtre</Button>
-                </div>
-            </CardHeader>
-            <CardContent>
-                <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Traiteur</TableHead>
-                                <TableHead>Région</TableHead>
-                                <TableHead className="text-right">Chiffre d'affaires</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {paginatedCaterers.map(caterer => (
-                                <TableRow key={caterer.uid}>
-                                    <TableCell>
-                                        <div className="flex items-center gap-3">
-                                            <Avatar>
-                                                <AvatarImage src={`https://placehold.co/40x40.png`} alt={caterer.name} />
-                                                <AvatarFallback>{caterer.name.charAt(0)}</AvatarFallback>
-                                            </Avatar>
-                                            <div>
-                                                <p className="font-medium">{caterer.name}</p>
-                                                <p className="text-xs text-muted-foreground">{caterer.email}</p>
-                                            </div>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>{caterer.region}</TableCell>
-                                    <TableCell className="text-right font-semibold">{caterer.turnover?.toFixed(2) ?? '0.00'} €</TableCell>
-                                    <TableCell className="text-right">
-                                        <Button 
-                                          variant="destructive" 
-                                          size="sm" 
-                                          className="bg-red-100 text-red-600 hover:bg-red-200"
-                                          onClick={() => handleDeleteCaterer(caterer.uid)}
-                                        >
-                                          Supprimer
-                                        </Button>
-                                    </TableCell>
+        <Tabs defaultValue="caterers">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="caterers">Gestion des Traiteurs</TabsTrigger>
+                <TabsTrigger value="delivery">Gestion des Livreurs</TabsTrigger>
+            </TabsList>
+            <TabsContent value="caterers">
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Liste des Traiteurs</CardTitle>
+                        <div className="relative pt-2">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="Rechercher par nom..." className="pl-9" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                         <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Traiteur</TableHead>
+                                    <TableHead>Statut</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
-                <div className="flex justify-center items-center gap-2 mt-4">
-                    <Button 
-                        variant="outline" 
-                        size="icon" 
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                    >
-                        <ChevronLeft className="w-4 h-4" />
-                    </Button>
-                    <span className="text-sm font-medium">{currentPage}</span>
-                     <Button 
-                        variant="outline" 
-                        size="icon"
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
-                    >
-                        <ChevronRight className="w-4 h-4" />
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
-
+                            </TableHeader>
+                             <TableBody>
+                                {filteredCaterers.map(caterer => (
+                                    <TableRow key={caterer.uid}>
+                                        <TableCell>
+                                            <p className="font-medium">{caterer.name}</p>
+                                            <p className="text-xs text-muted-foreground">{caterer.email}</p>
+                                        </TableCell>
+                                        <TableCell>{getPartnerStatusBadge(caterer.status)}</TableCell>
+                                        <TableCell className="text-right space-x-1">
+                                            {caterer.status === 'pending' && <Button size="sm" className="bg-green-100 text-green-700 hover:bg-green-200" onClick={() => handleCatererStatusChange(caterer.uid, 'approved')}><UserCheck className="mr-1" /> Approuver</Button>}
+                                            {caterer.status !== 'rejected' && <Button size="sm" variant="destructive" className="bg-red-100 text-red-700 hover:bg-red-200" onClick={() => handleCatererStatusChange(caterer.uid, 'rejected')}><UserX className="mr-1" /> Rejeter</Button>}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                         </Table>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="delivery">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Liste des Livreurs</CardTitle>
+                        <div className="relative pt-2">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="Rechercher par nom..." className="pl-9" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                         <Table>
+                             <TableHeader>
+                                <TableRow>
+                                    <TableHead>Livreur</TableHead>
+                                    <TableHead>Statut</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredDelivery.map(person => (
+                                    <TableRow key={person.uid}>
+                                        <TableCell>
+                                            <p className="font-medium">{person.name}</p>
+                                            <p className="text-xs text-muted-foreground">{person.email}</p>
+                                        </TableCell>
+                                        <TableCell>{getPartnerStatusBadge(person.status)}</TableCell>
+                                        <TableCell className="text-right space-x-1">
+                                            {person.status === 'pending' && <Button size="sm" className="bg-green-100 text-green-700 hover:bg-green-200" onClick={() => handleDeliveryStatusChange(person.uid, 'approved')}><UserCheck className="mr-1" /> Approuver</Button>}
+                                            {person.status !== 'rejected' && <Button size="sm" variant="destructive" className="bg-red-100 text-red-700 hover:bg-red-200" onClick={() => handleDeliveryStatusChange(person.uid, 'rejected')}><UserX className="mr-1" /> Rejeter</Button>}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                         </Table>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        </Tabs>
+      
         <Card>
             <CardHeader>
               <CardTitle>Suivi des Commandes</CardTitle>
@@ -320,23 +324,6 @@ export default function AdminDashboardPage() {
               </div>
             </CardContent>
           </Card>
-
-        <Link href="/admin/manage">
-          <Card className="hover:bg-muted transition-colors">
-              <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                      <div className="bg-gray-100 p-3 rounded-lg">
-                          <Edit className="w-6 h-6 text-primary" />
-                      </div>
-                      <div>
-                          <p className="font-bold">Gestion des Rôles</p>
-                          <p className="text-sm text-muted-foreground">Ajouter ou gérer les traiteurs et administrateurs</p>
-                      </div>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-muted-foreground"/>
-              </CardContent>
-          </Card>
-        </Link>
       </main>
     </div>
   );
