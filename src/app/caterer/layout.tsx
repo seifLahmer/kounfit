@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Utensils, Loader2, LogOut, BarChart2 } from "lucide-react";
+import { Utensils, Loader2, LogOut, BarChart2, User } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -10,6 +10,17 @@ import { onAuthStateChanged } from "firebase/auth";
 import { getUserRole } from "@/lib/services/roleService";
 import { cn } from "@/lib/utils";
 import { doc, getDoc } from "firebase/firestore";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function CatererLayout({
   children,
@@ -32,12 +43,9 @@ export default function CatererLayout({
               if(catererSnap.exists() && catererSnap.data().status === 'approved') {
                   setIsAuthorized(true);
               } else {
-                  // This will catch pending or rejected caterers and send them away.
-                  // The login page handles the specific redirection to pending-approval page.
                   router.replace('/login');
               }
           } else {
-              // If the user is not a caterer, kick them out.
               router.replace('/login');
           }
         } catch (error) {
@@ -68,26 +76,53 @@ export default function CatererLayout({
   }
 
   if (!isAuthorized) {
-    return null; // Don't render anything if not authorized
+    return null;
   }
 
+  const navLinks = [
+    { href: "/caterer/profile", label: "Profil", icon: User },
+    { href: "/caterer", label: "Dashboard", icon: Utensils },
+    { href: "/caterer/stats", label: "Stats", icon: BarChart2 },
+  ];
+
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-[#FFFFFF]">
       <main className="flex-1 pb-24">{children}</main>
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-50">
-        <div className="flex justify-around items-center h-16">
-          <Link href="/caterer" className={cn("flex flex-col items-center gap-1", pathname === '/caterer' ? 'text-primary' : 'text-gray-500')}>
-            <Utensils />
-            <span className="text-xs">Dashboard</span>
-          </Link>
-          <Link href="/caterer/stats" className={cn("flex flex-col items-center gap-1", pathname === '/caterer/stats' ? 'text-primary' : 'text-gray-500')}>
-            <BarChart2 />
-            <span className="text-xs">Statistiques</span>
-          </Link>
-          <button onClick={handleLogout} className="flex flex-col items-center gap-1 text-gray-500">
-            <LogOut />
-            <span className="text-xs">Déconnexion</span>
-          </button>
+      <nav className="fixed bottom-4 left-4 right-4 z-50 md:hidden">
+         <div className="relative flex justify-around items-center h-16 bg-white/70 backdrop-blur-md rounded-full shadow-lg border border-white/30">
+            {navLinks.map((link) => {
+                const isActive = pathname === link.href || (link.href !== "/caterer" && pathname.startsWith(link.href));
+                return (
+                    <Link key={link.href} href={link.href} className="flex-1 flex justify-center items-center h-full">
+                         <div className={cn(
+                            "flex flex-col items-center justify-center gap-1 transition-colors",
+                            isActive ? "text-primary" : "text-gray-400 hover:text-primary"
+                        )}>
+                            <link.icon className="h-6 w-6" />
+                        </div>
+                    </Link>
+                )
+            })}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button className="flex-1 flex justify-center items-center h-full text-gray-400 hover:text-primary">
+                    <div className="flex flex-col items-center justify-center gap-1 transition-colors">
+                        <LogOut className="h-6 w-6" />
+                    </div>
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Êtes-vous sûr de vouloir vous déconnecter ?</AlertDialogTitle>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">
+                    Déconnexion
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
         </div>
       </nav>
     </div>
