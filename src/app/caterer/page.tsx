@@ -143,7 +143,7 @@ export default function CatererPage() {
     const { text, action, className, disabled } = getButtonAction();
 
     return (
-      <Card className="w-64 shrink-0">
+      <Card className="w-64 shrink-0 shadow-lg transition-transform duration-300 hover:scale-105">
         <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-3">
               <Avatar>
@@ -192,25 +192,25 @@ export default function CatererPage() {
              ) : (
              <>
               <div>
-                <h3 className="text-lg font-semibold mb-2">À préparer ({pendingOrders.length})</h3>
+                <h3 className="text-lg font-semibold mb-2">À préparer</h3>
                 <div className="flex gap-4 overflow-x-auto pb-4">
                   {pendingOrders.length > 0 ? pendingOrders.map(o => <OrderCard key={o.id} order={o} />) : <p className="text-sm text-muted-foreground">Aucune commande à préparer.</p>}
                 </div>
               </div>
               <div>
-                <h3 className="text-lg font-semibold mb-2">En cours ({inPreparationOrders.length})</h3>
+                <h3 className="text-lg font-semibold mb-2">En cours</h3>
                 <div className="flex gap-4 overflow-x-auto pb-4">
                   {inPreparationOrders.length > 0 ? inPreparationOrders.map(o => <OrderCard key={o.id} order={o} />) : <p className="text-sm text-muted-foreground">Aucune commande en cours.</p>}
                 </div>
               </div>
                <div>
-                <h3 className="text-lg font-semibold mb-2">Prêtes ({readyForDeliveryOrders.length})</h3>
+                <h3 className="text-lg font-semibold mb-2">Prêtes</h3>
                 <div className="flex gap-4 overflow-x-auto pb-4">
                   {readyForDeliveryOrders.length > 0 ? readyForDeliveryOrders.map(o => <OrderCard key={o.id} order={o} />) : <p className="text-sm text-muted-foreground">Aucune commande prête.</p>}
                 </div>
               </div>
               <div>
-                <h3 className="text-lg font-semibold mb-2">Livrées ({deliveredOrders.length})</h3>
+                <h3 className="text-lg font-semibold mb-2">Livrées</h3>
                 <div className="flex gap-4 overflow-x-auto pb-4">
                  {deliveredOrders.length > 0 ? deliveredOrders.map(o => <OrderCard key={o.id} order={o} />) : <p className="text-sm text-muted-foreground">Aucune commande livrée.</p>}
                 </div>
@@ -267,3 +267,5 @@ export default function CatererPage() {
     </div>
   );
 }
+
+    
