@@ -25,6 +25,8 @@ export default function ClientLayout({
     try {
       const existingProfile = await getUserProfile(firebaseUser.uid);
       if (!existingProfile) {
+        // This is a new user who just signed in with Google.
+        // Redirect them to step 2 to complete their profile.
         router.replace('/signup/step2');
         return true; 
       }
@@ -44,8 +46,9 @@ export default function ClientLayout({
       try {
         const result = await getRedirectResult(auth);
         if (result) {
+          // User just signed in via redirect (e.g., Google)
           const isNew = await handleNewUserFromRedirect(result.user);
-          if (isNew) return; 
+          if (isNew) return; // Stop processing if it's a new user being redirected
         }
       } catch (error: any) {
         console.error("Error processing redirect result:", error);
@@ -59,23 +62,24 @@ export default function ClientLayout({
           try {
             const role = await getUserRole(user.uid);
             
-            if (role !== 'client') {
-              // This is a non-client user. Do not proceed.
-              // This prevents other layouts (caterer, admin) from being blocked by this one.
-              // We stop loading and do not authorize rendering of the client layout.
+            if (role === 'client') {
+              // User is a 'client'. Proceed with client-specific logic.
+              const profile = await getUserProfile(user.uid);
+              if (!profile?.age || !profile.mainGoal) { 
+                // Client profile is incomplete, send to step 2
+                router.replace('/signup/step2');
+              } else {
+                // Client is fully authorized
+                setIsAuthorizedClient(true);
+              }
+            } else if (role !== 'unknown') {
+              // This is a non-client user (admin, caterer, etc.).
+              // Do not authorize client layout. Another layout will handle them.
               setIsAuthorizedClient(false);
-              setIsLoading(false);
-              // The correct layout for the user's role will handle the redirection.
-              return;
             }
+            // If role is 'unknown', it might be a new user being handled by handleNewUserFromRedirect.
+            // We keep loading until their status is resolved.
 
-            // User is a 'client'. Proceed with client-specific logic.
-            const profile = await getUserProfile(user.uid);
-            if (!profile?.age || !profile.mainGoal) { 
-              router.replace('/signup/step2');
-            } else {
-              setIsAuthorizedClient(true);
-            }
           } catch (error) {
              console.error("Authentication check failed:", error);
              toast({ title: "Erreur", description: "Impossible de vérifier votre session.", variant: "destructive" });

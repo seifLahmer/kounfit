@@ -16,7 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useState } from "react";
-import { signInWithEmailAndPassword, signInWithRedirect } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithRedirect, User as FirebaseUser } from "firebase/auth";
 import { auth, db, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { getUserRole } from "@/lib/services/roleService";
@@ -45,33 +45,47 @@ export default function LoginPage() {
       password: "",
     },
   });
+  
+  const redirectToRole = (role: string, user: FirebaseUser) => {
+    switch (role) {
+      case 'admin':
+        router.push('/admin');
+        break;
+      case 'caterer':
+        router.push('/caterer');
+        break;
+      case 'delivery':
+        router.push('/delivery');
+        break;
+      case 'client':
+        router.push('/home');
+        break;
+      default:
+        // Do nothing, let the layouts handle it, especially for new Google sign-ins
+        // This prevents redirection to /welcome
+        break;
+    }
+  };
+
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
     try {
         const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
         const user = userCredential.user;
-        
-        // Let the auth state change trigger redirection via layouts
-        // This is a more robust pattern in Next.js with concurrent rendering
         const role = await getUserRole(user.uid);
-        
-        switch (role) {
-            case 'admin':
-                router.push('/admin');
-                break;
-            case 'caterer':
-                router.push('/caterer');
-                break;
-            case 'delivery':
-                router.push('/delivery');
-                break;
-            case 'client':
-                router.push('/home');
-                break;
-            default:
-                router.push('/welcome'); // Fallback
+
+        if (role === 'caterer' || role === 'delivery') {
+            const collectionName = role === 'caterer' ? 'caterers' : 'deliveryPeople';
+            const docRef = doc(db, collectionName, user.uid);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists() && docSnap.data().status === 'pending') {
+                 router.push('/signup/pending-approval');
+                 return;
+            }
         }
+        
+        redirectToRole(role, user);
 
     } catch (error: any) {
         console.error("Login Error:", error);
