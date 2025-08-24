@@ -42,10 +42,9 @@ const nextConfig: NextConfig = {
     ],
   },
    webpack: (config, { isServer }) => {
-     config.module.rules.push({
-      test: /node_modules\/handlebars\//,
-      loader: 'ignore-loader',
-    });
+    if (isServer) {
+        config.externals.push('handlebars');
+    }
     return config;
   },
 };
