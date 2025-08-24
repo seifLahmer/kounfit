@@ -27,18 +27,19 @@ export default function DeliveryLayout({
         try {
           const role = await getUserRole(user.uid);
           if (role !== 'delivery') {
-             router.replace('/login');
+             // If not a delivery person, let other layouts or pages handle it.
+             setIsLoading(false);
              return;
           }
           
-          // Check for approval status
           const deliveryDocRef = doc(db, 'deliveryPeople', user.uid);
           const deliverySnap = await getDoc(deliveryDocRef);
 
           if (deliverySnap.exists() && deliverySnap.data().status === 'approved') {
             setIsAuthorized(true);
           } else {
-            // If status is pending, rejected, or doc doesn't exist, redirect.
+            // This will be caught by the login page logic now,
+            // but as a fallback, we redirect to pending approval.
             router.replace('/signup/pending-approval');
             return;
           }
@@ -71,6 +72,7 @@ export default function DeliveryLayout({
     );
   }
 
+  // Only render the layout if the user is an authorized delivery person.
   if (!isAuthorized) {
     return null;
   }

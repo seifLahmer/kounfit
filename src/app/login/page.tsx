@@ -46,7 +46,7 @@ export default function LoginPage() {
     },
   });
   
-  const redirectToRole = (role: string, user: FirebaseUser) => {
+  const redirectToRole = (role: string) => {
     switch (role) {
       case 'admin':
         router.push('/admin');
@@ -61,8 +61,9 @@ export default function LoginPage() {
         router.push('/home');
         break;
       default:
-        // Do nothing, let the layouts handle it, especially for new Google sign-ins
-        // This prevents redirection to /welcome
+        // This case handles new users (role 'unknown') who will be
+        // picked up by the /home layout and redirected to /signup/step2
+        router.push('/home');
         break;
     }
   };
@@ -85,7 +86,7 @@ export default function LoginPage() {
             }
         }
         
-        redirectToRole(role, user);
+        redirectToRole(role);
 
     } catch (error: any) {
         console.error("Login Error:", error);
