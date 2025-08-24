@@ -37,10 +37,9 @@ export default function ClientLayout({
               setIsAuthorized(true);
             }
           } else if (role !== 'unknown') {
-            // This is a user with a defined role that is NOT client.
-            // Do not authorize them here. This prevents the "insufficient permissions" error.
-            // The login page is responsible for redirecting them to the correct dashboard.
-            setIsAuthorized(false);
+            // This is a user with a defined role that is NOT client (e.g., caterer, admin).
+            // Do not authorize them here. Redirect them away from the client area.
+            router.replace('/login');
           } else {
             // Role is 'unknown'. This could be a new user from Google Sign-In.
             // Redirect them to step 2 to complete their profile.
@@ -50,13 +49,13 @@ export default function ClientLayout({
            console.error("ClientLayout auth check failed:", error);
            toast({ title: "Erreur", description: "Impossible de vérifier votre session.", variant: "destructive" });
            await auth.signOut();
-           router.replace('/welcome');
+           router.replace('/login');
         } finally {
           setIsLoading(false);
         }
       } else {
         // No user is logged in, send them to the welcome page.
-        router.replace('/welcome');
+        router.replace('/login');
       }
     });
 

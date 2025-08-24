@@ -86,7 +86,7 @@ export default function LoginPage() {
                 break;
             default:
                 // New user (from Google sign-in for example) or role not yet set
-                // Redirect to step2, which will handle role selection logic.
+                // Redirect to step2 to complete their profile.
                 router.replace('/signup/step2');
                 break;
         }
