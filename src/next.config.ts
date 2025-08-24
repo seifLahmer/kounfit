@@ -41,13 +41,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-   webpack: (config, { isServer }) => {
-     config.module.rules.push({
-      test: /node_modules\/handlebars\//,
-      loader: 'ignore-loader',
-    });
-    return config;
-  },
 };
 
 export default nextConfig;
