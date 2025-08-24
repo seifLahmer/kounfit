@@ -21,6 +21,7 @@ import { addMeal } from "@/lib/services/mealService";
 import { uploadMealImage } from "@/lib/services/storageService";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged } from 'firebase/auth';
+import type { Meal } from "@/lib/types";
 
 const mealSchema = z.object({
   name: z.string().min(1, "Le nom du repas est requis."),
@@ -153,15 +154,20 @@ export default function AddMealPage() {
             imagePath = result.imagePath;
         }
         
-        await addMeal({
+        const mealData: Omit<Meal, 'id' | 'createdAt'> = {
             ...data,
             imageUrl: imageUrl,
-            imageRef: imagePath,
             ingredients: ingredients, // Use the edited ingredients
             calories: analysisResult.totalMacros.calories,
             macros: analysisResult.totalMacros,
             createdBy: catererUid,
-        });
+        };
+
+        if (imagePath) {
+          mealData.imageRef = imagePath;
+        }
+        
+        await addMeal(mealData);
 
       toast({
         title: "Repas ajouté!",
