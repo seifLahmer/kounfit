@@ -83,7 +83,14 @@ export default function AddMealPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to parse error response' }));
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          // If parsing JSON fails, fall back to text to get more info
+          const errorText = await response.text();
+          throw new Error(`Erreur du serveur: ${response.statusText}. Détails: ${errorText.substring(0, 100)}...`);
+        }
         throw new Error(errorData.error || `La requête a échoué: ${response.statusText}`);
       }
 
@@ -100,7 +107,11 @@ export default function AddMealPage() {
       });
     } catch (error: any) {
       console.error(error);
-      toast({ title: "Erreur d'analyse", description: error.message || "L'IA n'a pas pu analyser ce repas. Essayez un autre nom.", variant: "destructive" });
+      toast({ 
+        title: "Erreur d'analyse", 
+        description: error.message || "L'IA n'a pas pu analyser ce repas. La clé API est peut-être invalide ou a atteint sa limite.", 
+        variant: "destructive" 
+      });
     } finally {
       setIsAnalyzing(false);
     }

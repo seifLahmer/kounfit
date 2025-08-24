@@ -8,7 +8,6 @@ runConfig:
   maxInstances: 1
   secrets:
     - GEMINI_API_KEY
-    - FOOD_DATA_API_KEY
 # Add a staticAssets configuration to serve the public directory
 staticAssets:
   - /_next/static
