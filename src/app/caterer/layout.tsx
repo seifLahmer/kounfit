@@ -24,34 +24,11 @@ export default function CatererLayout({
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        try {
-          const role = await getUserRole(user.uid);
-          if (role !== 'caterer') {
-             // Not a caterer, so this layout shouldn't handle it.
-             // Setting loading to false and not authorizing will
-             // let other layouts (or the login redirect) take over.
-             setIsLoading(false);
-             return;
-          }
-          
-          const catererDocRef = doc(db, 'caterers', user.uid);
-          const catererSnap = await getDoc(catererDocRef);
-
-          if (catererSnap.exists() && catererSnap.data().status === 'approved') {
+        const role = await getUserRole(user.uid);
+        if (role === 'caterer') {
             setIsAuthorized(true);
-          } else {
-            // Caterer is pending or rejected, redirect them.
-            router.replace('/signup/pending-approval');
-            return;
-          }
-
-        } catch (error) {
-           console.error("Error verifying caterer role/status:", error);
-           router.replace('/login');
-           return;
-        } finally {
-            setIsLoading(false);
         }
+        setIsLoading(false);
       } else {
         router.replace('/login');
       }
@@ -65,7 +42,6 @@ export default function CatererLayout({
     router.push('/welcome');
   };
 
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -74,7 +50,6 @@ export default function CatererLayout({
     );
   }
 
-  // Only render the layout if the user is an authorized caterer.
   if (!isAuthorized) {
     return null;
   }

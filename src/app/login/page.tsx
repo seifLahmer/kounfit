@@ -15,8 +15,8 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
-import { useState } from "react";
-import { signInWithEmailAndPassword, signInWithRedirect, User as FirebaseUser } from "firebase/auth";
+import { useState, useEffect, useCallback } from "react";
+import { signInWithEmailAndPassword, signInWithRedirect, User as FirebaseUser, getRedirectResult } from "firebase/auth";
 import { auth, db, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { getUserRole } from "@/lib/services/roleService";
@@ -45,50 +45,76 @@ export default function LoginPage() {
       password: "",
     },
   });
-  
-  const handleUserLogin = async (user: FirebaseUser) => {
-    const role = await getUserRole(user.uid);
 
-    // Specific check for partners (caterer or delivery)
-    if (role === 'caterer' || role === 'delivery') {
-        const collectionName = role === 'caterer' ? 'caterers' : 'deliveryPeople';
-        const docRef = doc(db, collectionName, user.uid);
-        const docSnap = await getDoc(docRef);
+  const handleUserLogin = useCallback(async (user: FirebaseUser) => {
+    setIsSubmitting(true);
+    try {
+        const role = await getUserRole(user.uid);
 
-        if (docSnap.exists()) {
-            if (docSnap.data().status === 'pending') {
-                router.push('/signup/pending-approval');
-                return; // Stop further execution
-            }
-             if (docSnap.data().status === 'rejected') {
-                await auth.signOut();
-                toast({ title: "Accès refusé", description: "Votre compte a été rejeté.", variant: "destructive"});
-                return;
+        if (role === 'caterer' || role === 'delivery') {
+            const collectionName = role === 'caterer' ? 'caterers' : 'deliveryPeople';
+            const docRef = doc(db, collectionName, user.uid);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                const status = docSnap.data().status;
+                if (status === 'pending') {
+                    router.replace('/signup/pending-approval');
+                    return;
+                }
+                if (status === 'rejected') {
+                    await auth.signOut();
+                    toast({ title: "Accès refusé", description: "Votre compte a été rejeté.", variant: "destructive"});
+                    setIsSubmitting(false);
+                    return;
+                }
             }
         }
+        
+        switch (role) {
+            case 'admin':
+                router.replace('/admin');
+                break;
+            case 'caterer':
+                router.replace('/caterer');
+                break;
+            case 'delivery':
+                router.replace('/delivery');
+                break;
+            case 'client':
+                router.replace('/home');
+                break;
+            default:
+                // New user (from Google sign-in for example)
+                router.replace('/signup/step2');
+                break;
+        }
+    } catch (error) {
+        console.error("Login handling error:", error);
+        toast({ title: "Erreur", description: "Impossible de vérifier votre rôle.", variant: "destructive" });
+        setIsSubmitting(false);
     }
-
-    // Redirect based on role
-    switch (role) {
-      case 'admin':
-        router.push('/admin');
-        break;
-      case 'caterer':
-        router.push('/caterer');
-        break;
-      case 'delivery':
-        router.push('/delivery');
-        break;
-      case 'client':
-        router.push('/home');
-        break;
-      default:
-        // This case handles new users (role 'unknown') who will be
-        // picked up by the /home layout and redirected to /signup/step2
-        router.push('/home');
-        break;
-    }
-  };
+  }, [router, toast]);
+  
+  // Handle redirect from Google
+  useEffect(() => {
+    const handleRedirect = async () => {
+        setIsSubmitting(true);
+        try {
+            const result = await getRedirectResult(auth);
+            if (result) {
+                await handleUserLogin(result.user);
+            } else {
+                setIsSubmitting(false);
+            }
+        } catch (error) {
+            console.error("Google Redirect Error:", error);
+            toast({ title: "Erreur Google", description: "La connexion avec Google a échoué.", variant: "destructive" });
+            setIsSubmitting(false);
+        }
+    };
+    handleRedirect();
+  }, [handleUserLogin, toast]);
 
 
   const onSubmit = async (data: LoginFormValues) => {

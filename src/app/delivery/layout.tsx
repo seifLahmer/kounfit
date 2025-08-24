@@ -24,32 +24,11 @@ export default function DeliveryLayout({
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        try {
-          const role = await getUserRole(user.uid);
-          if (role !== 'delivery') {
-             // Not a delivery person, so this layout shouldn't handle it.
-             setIsLoading(false);
-             return;
-          }
-          
-          const deliveryDocRef = doc(db, 'deliveryPeople', user.uid);
-          const deliverySnap = await getDoc(deliveryDocRef);
-
-          if (deliverySnap.exists() && deliverySnap.data().status === 'approved') {
-            setIsAuthorized(true);
-          } else {
-            // Delivery person is pending or rejected, redirect them.
-            router.replace('/signup/pending-approval');
-            return;
-          }
-
-        } catch (error) {
-           console.error("Error verifying delivery role/status:", error);
-           router.replace('/login');
-           return;
-        } finally {
-            setIsLoading(false);
+        const role = await getUserRole(user.uid);
+        if (role === 'delivery') {
+          setIsAuthorized(true);
         }
+        setIsLoading(false);
       } else {
         router.replace('/login');
       }
@@ -71,7 +50,6 @@ export default function DeliveryLayout({
     );
   }
 
-  // Only render the layout if the user is an authorized delivery person.
   if (!isAuthorized) {
     return null;
   }
