@@ -52,30 +52,26 @@ export default function LoginPage() {
         const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
         const user = userCredential.user;
         
-        await new Promise(resolve => setTimeout(resolve, 100));
-
+        // Let the auth state change trigger redirection via layouts
+        // This is a more robust pattern in Next.js with concurrent rendering
         const role = await getUserRole(user.uid);
         
-        if (role === 'caterer' || role === 'delivery') {
-            const collectionName = role === 'caterer' ? 'caterers' : 'deliveryPeople';
-            const docRef = doc(db, collectionName, user.uid);
-            const docSnap = await getDoc(docRef);
-
-            if (docSnap.exists() && docSnap.data().status === 'approved') {
-                 router.push(`/${role}`);
-            } else {
-                router.push('/signup/pending-approval');
-            }
-            return;
+        switch (role) {
+            case 'admin':
+                router.push('/admin');
+                break;
+            case 'caterer':
+                router.push('/caterer');
+                break;
+            case 'delivery':
+                router.push('/delivery');
+                break;
+            case 'client':
+                router.push('/home');
+                break;
+            default:
+                router.push('/welcome'); // Fallback
         }
-
-        if (role === 'admin') {
-            router.push('/admin');
-            return;
-        }
-
-        // Default to client
-        router.push('/home');
 
     } catch (error: any) {
         console.error("Login Error:", error);

@@ -19,7 +19,7 @@ export default function ClientLayout({
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
-  const [isClient, setIsClient] = useState(false);
+  const [isAuthorizedClient, setIsAuthorizedClient] = useState(false);
 
   const handleNewUserFromRedirect = useCallback(async (firebaseUser: FirebaseUser) => {
     try {
@@ -61,29 +61,28 @@ export default function ClientLayout({
             
             if (role !== 'client') {
               // This is a non-client user. Do not proceed.
-              // This prevents caterers/admins/delivery from seeing a blank /home page
-              // or getting permission errors. They will be handled by their own layouts.
-              // If they land here by mistake, their own layout should take over or login page will redirect.
+              // This prevents other layouts (caterer, admin) from being blocked by this one.
+              // We stop loading and do not authorize rendering of the client layout.
+              setIsAuthorizedClient(false);
               setIsLoading(false);
-              setIsClient(false);
-              // A non-client should not be in this layout. The login page should have redirected them.
-              // If they end up here, it's a transient state. We do nothing and let other layouts handle it.
+              // The correct layout for the user's role will handle the redirection.
               return;
             }
 
-            // User is a client, proceed with client-specific logic.
-            setIsClient(true);
+            // User is a 'client'. Proceed with client-specific logic.
             const profile = await getUserProfile(user.uid);
             if (!profile?.age || !profile.mainGoal) { 
               router.replace('/signup/step2');
             } else {
-              setIsLoading(false);
+              setIsAuthorizedClient(true);
             }
           } catch (error) {
              console.error("Authentication check failed:", error);
              toast({ title: "Erreur", description: "Impossible de vérifier votre session.", variant: "destructive" });
              await auth.signOut();
              router.replace('/welcome');
+          } finally {
+            setIsLoading(false);
           }
         } else {
           router.replace('/welcome');
@@ -104,8 +103,8 @@ export default function ClientLayout({
     );
   }
 
-  // Only render the layout if the user is a verified client.
-  if (isClient) {
+  // Only render the layout if the user is an authorized client.
+  if (isAuthorizedClient) {
     return (
       <MainLayout>
         {children}
@@ -113,6 +112,7 @@ export default function ClientLayout({
     );
   }
 
-  // If not loading and not a client, render nothing. This prevents flashing content.
+  // If not loading and not an authorized client, render nothing.
+  // This allows other layouts to take over without this one interfering.
   return null;
 }
