@@ -30,17 +30,21 @@ export default function ClientLayout({
           if (role === 'client') {
             const profile = await getUserProfile(user.uid);
             if (!profile?.age || !profile.mainGoal) { 
+              // Profile is incomplete, redirect to step 2
               router.replace('/signup/step2');
             } else {
+              // Profile is complete, authorize access
               setIsAuthorized(true);
             }
           } else if (role !== 'unknown') {
-            // Not a client, don't authorize and let other layouts handle it.
-            // This prevents the dreaded permission error.
+            // This is a user with a defined role that is NOT client.
+            // Do not authorize them here. This prevents the "insufficient permissions" error.
+            // The login page is responsible for redirecting them to the correct dashboard.
             setIsAuthorized(false);
           } else {
-            // Role is unknown, likely a new user being redirected by login page.
-            // Let them pass through to be handled by step2 or another page.
+            // Role is 'unknown'. This could be a new user from Google Sign-In.
+            // Redirect them to step 2 to complete their profile.
+            router.replace('/signup/step2');
           }
         } catch (error) {
            console.error("ClientLayout auth check failed:", error);
@@ -51,6 +55,7 @@ export default function ClientLayout({
           setIsLoading(false);
         }
       } else {
+        // No user is logged in, send them to the welcome page.
         router.replace('/welcome');
       }
     });
@@ -66,7 +71,7 @@ export default function ClientLayout({
     );
   }
 
-  // Only render the client layout if the user is authorized.
+  // Only render the client layout if the user is a fully onboarded client.
   if (isAuthorized) {
     return (
       <MainLayout>
@@ -75,5 +80,6 @@ export default function ClientLayout({
     );
   }
 
+  // If not authorized, render nothing. This prevents flicker and content flashes.
   return null;
 }

@@ -85,13 +85,14 @@ export default function LoginPage() {
                 router.replace('/home');
                 break;
             default:
-                // New user (from Google sign-in for example)
+                // New user (from Google sign-in for example) or role not yet set
+                // Redirect to step2, which will handle role selection logic.
                 router.replace('/signup/step2');
                 break;
         }
     } catch (error) {
         console.error("Login handling error:", error);
-        toast({ title: "Erreur", description: "Impossible de vérifier votre rôle.", variant: "destructive" });
+        toast({ title: "Erreur de connexion", description: "Impossible de vérifier votre rôle ou votre statut.", variant: "destructive" });
         setIsSubmitting(false);
     }
   }, [router, toast]);

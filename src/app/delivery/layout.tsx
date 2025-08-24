@@ -26,7 +26,15 @@ export default function DeliveryLayout({
       if (user) {
         const role = await getUserRole(user.uid);
         if (role === 'delivery') {
-          setIsAuthorized(true);
+          const deliveryDocRef = doc(db, 'deliveryPeople', user.uid);
+          const deliverySnap = await getDoc(deliveryDocRef);
+          if(deliverySnap.exists() && deliverySnap.data().status === 'approved') {
+              setIsAuthorized(true);
+          } else {
+              router.replace('/login');
+          }
+        } else {
+          router.replace('/login');
         }
         setIsLoading(false);
       } else {

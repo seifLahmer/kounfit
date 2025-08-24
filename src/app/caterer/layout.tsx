@@ -26,7 +26,15 @@ export default function CatererLayout({
       if (user) {
         const role = await getUserRole(user.uid);
         if (role === 'caterer') {
-            setIsAuthorized(true);
+            const catererDocRef = doc(db, 'caterers', user.uid);
+            const catererSnap = await getDoc(catererDocRef);
+            if(catererSnap.exists() && catererSnap.data().status === 'approved') {
+                setIsAuthorized(true);
+            } else {
+                router.replace('/login');
+            }
+        } else {
+            router.replace('/login');
         }
         setIsLoading(false);
       } else {
