@@ -29,7 +29,7 @@ export default function DeliveryDashboardPage() {
                     const person = deliverySnap.data() as DeliveryPerson;
                     setDeliveryPerson(person);
 
-                    // Fetch orders from the new API route
+                    // Fetch orders from the new API route, now with headers
                     const response = await fetch('/api/delivery/orders', {
                         headers: {
                             'X-User-Id': user.uid,
