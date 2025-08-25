@@ -1,6 +1,5 @@
 
 
-
 import {
   collection,
   addDoc,
@@ -197,10 +196,12 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
 export async function getMyDeliveries(deliveryPersonId: string): Promise<Order[]> {
     try {
         const ordersCollection = collection(db, ORDERS_COLLECTION);
+        // This is the corrected query. It fetches orders assigned to the delivery person
+        // that are not yet delivered or cancelled.
         const q = query(
             ordersCollection,
             where("deliveryPersonId", "==", deliveryPersonId),
-            where("status", "==", "ready_for_delivery"),
+            where("status", "in", ["ready_for_delivery", "in_delivery"]),
             orderBy("orderDate", "desc")
         );
 
@@ -223,5 +224,3 @@ export async function getMyDeliveries(deliveryPersonId: string): Promise<Order[]
         throw new Error("Could not fetch assigned deliveries.");
     }
 }
-
-    
