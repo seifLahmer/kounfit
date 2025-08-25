@@ -1,94 +1,55 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // --- Helper Functions ---
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
     
-    // Admin check is now based on a custom token claim, not a document read.
     function isAdmin() {
-      return request.auth.token.admin == true;
+      // Check if the admin token exists and is true.
+      // This prevents errors for users who don't have the token at all.
+      return request.auth.token.get('admin', false) == true;
     }
 
-    // --- Users (Clients) Collection ---
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow create, update: if isOwner(userId);
-      // No one should delete a user profile directly
-      allow delete: if isAdmin();
+      allow read, write: if request.auth.uid == userId || isAdmin();
     }
     
-    // --- Caterers Collection ---
     match /caterers/{catererId} {
-      // Anyone can read caterer profiles (to see restaurant names, etc.)
-      allow read: if true;
-      allow create: if isOwner(catererId);
-      // A caterer can update their own profile, or an admin can
-      allow update: if isOwner(catererId) || isAdmin();
+      allow read: if true; // Publicly readable for clients to see caterer info
+      allow create: if request.auth.uid == catererId;
+      allow update: if request.auth.uid == catererId || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /deliveryPeople/{deliveryPersonId} {
+      allow read: if request.auth.uid == deliveryPersonId || isAdmin();
+      allow create: if request.auth.uid == deliveryPersonId;
+      allow update: if request.auth.uid == deliveryPersonId || isAdmin();
       allow delete: if isAdmin();
     }
     
-     // --- Delivery People Collection ---
-    match /deliveryPeople/{deliveryId} {
-      allow read: if true;
-      allow create: if isOwner(deliveryId);
-      // A delivery person can update their own profile, or an admin can
-      allow update: if isOwner(deliveryId) || isAdmin();
-      allow delete: if isAdmin();
-    }
-
-    // --- Meals Collection ---
     match /meals/{mealId} {
-      // Anyone can read meal details
-      allow read: if true;
-      // Only caterers can create meals
-      allow create: if exists(/databases/$(database)/documents/caterers/$(request.auth.uid));
-      // Only the creating caterer or an admin can update/delete
-      allow update, delete: if request.auth.uid == resource.data.createdBy || isAdmin();
+      allow read: if true; // Meals are public for clients to see
+      allow create, update: if request.auth.uid == request.resource.data.createdBy || isAdmin();
+      allow delete: if request.auth.uid == resource.data.createdBy || isAdmin();
 
-      // Subcollection for user ratings
       match /userRatings/{userId} {
-        // A user can only write to their own rating document
-        allow read, write: if isOwner(userId);
+        allow read, write: if request.auth.uid == userId;
       }
     }
-
-    // --- Orders Collection ---
+    
     match /orders/{orderId} {
-      // An order can be read by the client who placed it, the caterers involved,
-      // the assigned delivery person, or an admin.
-      allow read: if isOwner(resource.data.clientId) 
-                  || request.auth.uid in resource.data.catererIds 
-                  || isOwner(resource.data.deliveryPersonId) 
-                  || isAdmin();
-                  
-      // Only authenticated users can create orders.
-      allow create: if request.auth != null;
-      
-      // An order can be updated by the client (to cancel), the caterer (to change status),
-      // the delivery person (to mark as delivered), or an admin.
-      allow update: if isOwner(resource.data.clientId) 
-                    || request.auth.uid in resource.data.catererIds 
-                    || isOwner(resource.data.deliveryPersonId) 
-                    || isAdmin();
+      allow create: if request.auth.uid == request.resource.data.clientId;
+      allow read: if request.auth.uid == resource.data.clientId || request.auth.uid in resource.data.catererIds || request.auth.uid == resource.data.deliveryPersonId || isAdmin();
+      allow update: if request.auth.uid in resource.data.catererIds || request.auth.uid == resource.data.deliveryPersonId || isAdmin();
     }
-    
-    // --- Notifications Collection ---
-    match /notifications/{notificationId} {
-        // A user can only read or update their own notifications.
-        allow read, update, delete: if isOwner(resource.data.userId) || isAdmin();
-        // Creation is handled by backend services (e.g., Cloud Functions or Admin SDK)
-        allow create: if request.auth != null;
-    }
-    
-    // --- Admins collection ---
-    // This collection is just for record-keeping. The actual privilege comes from the custom claim.
+
     match /admins/{adminId} {
         allow read, write: if isAdmin();
+    }
+
+    match /notifications/{notificationId} {
+        allow read, update: if request.auth.uid == resource.data.userId;
+        allow create: if true; // Allow services to create notifications
     }
   }
 }
