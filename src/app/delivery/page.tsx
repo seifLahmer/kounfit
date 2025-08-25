@@ -14,7 +14,6 @@ import { doc, getDoc } from 'firebase/firestore';
 import { Separator } from "@/components/ui/separator";
 
 export default function DeliveryDashboardPage() {
-    const [availableOrders, setAvailableOrders] = useState<Order[]>([]);
     const [myDeliveries, setMyDeliveries] = useState<Order[]>([]);
     const [deliveryPerson, setDeliveryPerson] = useState<DeliveryPerson | null>(null);
     const [loading, setLoading] = useState(true);
@@ -35,17 +34,15 @@ export default function DeliveryDashboardPage() {
                     const response = await fetch('/api/delivery/orders', {
                         headers: {
                             'X-User-Id': user.uid,
-                            'X-User-Region': person.region,
                         }
                     });
 
                     const responseData = await response.json();
 
                     if (!response.ok) {
-                        throw new Error(responseData.error || 'Failed to fetch orders from API');
+                        throw new Error(responseData.error || 'Failed to fetch orders.');
                     }
                     
-                    setAvailableOrders(responseData.availableOrders);
                     setMyDeliveries(responseData.myDeliveries);
 
                 } else {
@@ -68,18 +65,6 @@ export default function DeliveryDashboardPage() {
         });
         return () => unsubscribe();
     }, []);
-
-    const handleAcceptDelivery = async (orderId: string) => {
-        const user = auth.currentUser;
-        if (!user) return;
-        try {
-            await updateOrderStatus(orderId, 'in_delivery', user.uid);
-            toast({ title: "Livraison acceptée", description: "La commande est maintenant dans votre liste 'Mes Livraisons'." });
-            fetchDeliveryData(); // Refresh list
-        } catch (error) {
-            toast({ title: "Erreur", description: "Impossible de mettre à jour la commande.", variant: "destructive" });
-        }
-    };
 
      const handleCompleteDelivery = async (orderId: string) => {
         try {
@@ -143,36 +128,19 @@ export default function DeliveryDashboardPage() {
                                 />
                             ))
                         ) : (
-                            <p className="text-sm text-muted-foreground">Vous n'avez aucune livraison en cours.</p>
-                        )}
-                    </div>
-                    
-                    <Separator />
-                    
-                    <div>
-                        <h2 className="text-xl font-bold mb-3">Commandes Disponibles</h2>
-                         {availableOrders.length > 0 ? (
-                            availableOrders.map(order => (
-                               <OrderCard 
-                                    key={order.id} 
-                                    order={order} 
-                                    onAction={handleAcceptDelivery} 
-                                    buttonText="Accepter la livraison"
-                                    buttonIcon={<Package className="mr-2 h-4 w-4" />}
-                                />
-                            ))
-                         ) : (
                             <Card>
                                 <CardContent className="flex flex-col items-center justify-center h-48 text-muted-foreground">
                                     <Frown className="w-12 h-12 mb-4"/>
-                                    <p className="text-lg font-semibold">Aucune commande disponible</p>
-                                    <p className="text-center text-sm">Il n'y a pas de commandes prêtes pour la livraison dans votre région pour le moment.</p>
+                                    <p className="text-lg font-semibold">Aucune commande assignée</p>
+                                    <p className="text-center text-sm">Vous n'avez pas de livraison en cours pour le moment.</p>
                                 </CardContent>
                             </Card>
-                         )}
+                        )}
                     </div>
                 </div>
             )}
         </div>
     )
 }
+
+    

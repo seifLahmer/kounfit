@@ -138,9 +138,10 @@ export async function getOrdersByCaterer(catererUid: string): Promise<Order[]> {
 
 
 /**
- * Updates the status of a specific order and notifies the client.
+ * Updates the status of a specific order and notifies the appropriate parties.
  * @param orderId The ID of the order to update.
  * @param status The new status for the order.
+ * @param deliveryPersonId Optional. The UID of the delivery person being assigned.
  */
 export async function updateOrderStatus(orderId: string, status: Order['status'], deliveryPersonId?: string): Promise<void> {
   const orderRef = doc(db, ORDERS_COLLECTION, orderId);
@@ -154,25 +155,32 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
     const orderData = orderSnap.data() as Order;
     
     const updatePayload: any = { status };
-    if (status === 'in_delivery' && deliveryPersonId) {
+    if (status === 'ready_for_delivery' && deliveryPersonId) {
         updatePayload.deliveryPersonId = deliveryPersonId;
     }
 
     // Update the status in Firestore
     await updateDoc(orderRef, updatePayload);
 
-    // Create a notification for the client
-    const statusMessages = {
-        pending: "est en attente de confirmation",
+    // --- Notifications Logic ---
+    const statusMessages: { [key in Order['status']]?: string } = {
         in_preparation: "est en cours de préparation",
-        ready_for_delivery: "est prête pour la livraison",
-        in_delivery: "est en cours de livraison",
+        ready_for_delivery: "est prête et a été assignée à un livreur.",
         delivered: "a été livrée",
         cancelled: "a été annulée",
     };
+
+    // Notify Client
+    if (status in statusMessages) {
+        const clientMessage = `Votre commande #${orderId.substring(0, 5)}... ${statusMessages[status]}.`;
+        await createNotification(orderData.clientId, clientMessage);
+    }
     
-    const message = `Votre commande #${orderId.substring(0, 5)}... ${statusMessages[status]}.`;
-    await createNotification(orderData.clientId, message);
+    // Notify Delivery Person when assigned
+    if (status === 'ready_for_delivery' && deliveryPersonId) {
+        const deliveryMessage = `Une nouvelle livraison vous a été assignée : Commande #${orderId.substring(0, 5)}...`;
+        await createNotification(deliveryPersonId, deliveryMessage);
+    }
 
   } catch (error) {
     console.error("Error updating order status: ", error);
@@ -180,45 +188,9 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
   }
 }
 
-/**
- * Retrieves all orders in a specific region that are ready for delivery.
- * @param region The region of the delivery person.
- * @returns A promise that resolves to an array of orders ready for delivery.
- */
-export async function getReadyForDeliveryOrders(region: string): Promise<Order[]> {
-    try {
-        const ordersCollection = collection(db, ORDERS_COLLECTION);
-        const q = query(
-            ordersCollection,
-            where("clientRegion", "==", region),
-            where("status", "==", "ready_for_delivery"),
-            orderBy("orderDate", "desc")
-        );
-        
-        const querySnapshot = await getDocs(q);
-        
-        const orders: Order[] = [];
-        querySnapshot.forEach((docSnap) => {
-            const data = docSnap.data();
-            const order: Order = {
-                id: docSnap.id,
-                ...data,
-                orderDate: data.orderDate instanceof Timestamp ? data.orderDate.toDate() : new Date(),
-                deliveryDate: data.deliveryDate instanceof Timestamp ? data.deliveryDate.toDate() : new Date(),
-            } as Order;
-            orders.push(order);
-        });
-        
-        return orders;
-    } catch (error) {
-        console.error("Error fetching ready for delivery orders: ", error);
-        throw new Error("Could not fetch orders for delivery.");
-    }
-}
-
 
 /**
- * Retrieves all orders assigned to a specific delivery person that are currently in delivery.
+ * Retrieves all orders assigned to a specific delivery person that are currently ready or in delivery.
  * @param deliveryPersonId The UID of the delivery person.
  * @returns A promise that resolves to an array of orders.
  */
@@ -228,7 +200,7 @@ export async function getMyDeliveries(deliveryPersonId: string): Promise<Order[]
         const q = query(
             ordersCollection,
             where("deliveryPersonId", "==", deliveryPersonId),
-            where("status", "==", "in_delivery"),
+            where("status", "==", "ready_for_delivery"),
             orderBy("orderDate", "desc")
         );
 
@@ -251,3 +223,5 @@ export async function getMyDeliveries(deliveryPersonId: string): Promise<Order[]
         throw new Error("Could not fetch assigned deliveries.");
     }
 }
+
+    

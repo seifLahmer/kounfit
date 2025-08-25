@@ -12,10 +12,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Bell, ChefHat, PlusCircle, Loader2, Trash2, CheckCircle, Edit2, MoreHorizontal, Utensils, ClipboardList } from "lucide-react";
+import { Bell, ChefHat, PlusCircle, Loader2, Trash2, CheckCircle, Edit2, MoreHorizontal, Utensils, ClipboardList, Bike } from "lucide-react";
 import { getMealsByCaterer, deleteMeal } from "@/lib/services/mealService";
 import { getOrdersByCaterer, updateOrderStatus } from "@/lib/services/orderService";
-import type { Meal, Order, Caterer } from "@/lib/types";
+import { getAllDeliveryPeople } from "@/lib/services/deliveryService";
+import type { Meal, Order, Caterer, DeliveryPerson } from "@/lib/types";
 import { auth, db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -37,6 +38,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose
+} from "@/components/ui/dialog"
 import { Badge } from '@/components/ui/badge';
 import { doc, getDoc } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -47,6 +58,8 @@ export default function CatererPage() {
   const [caterer, setCaterer] = useState<Caterer | null>(null);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [availableDeliveryPeople, setAvailableDeliveryPeople] = useState<DeliveryPerson[]>([]);
+  const [selectedDeliveryPerson, setSelectedDeliveryPerson] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const router = useRouter();
@@ -57,20 +70,29 @@ export default function CatererPage() {
         setLoading(true);
         try {
             const catererDocRef = doc(db, 'caterers', user.uid);
-            const [fetchedMeals, receivedOrders, catererSnap] = await Promise.all([
+            const catererSnap = await getDoc(catererDocRef);
+             if (!catererSnap.exists()) {
+                throw new Error("Profil traiteur non trouvé.");
+            }
+            const catererData = catererSnap.data() as Caterer;
+            setCaterer(catererData);
+
+            const [fetchedMeals, receivedOrders, allDeliveryPeople] = await Promise.all([
               getMealsByCaterer(user.uid),
               getOrdersByCaterer(user.uid),
-              getDoc(catererDocRef)
+              getAllDeliveryPeople(),
             ]);
             
-            if (catererSnap.exists()) {
-                setCaterer(catererSnap.data() as Caterer);
-            }
-
             setMeals(fetchedMeals);
             setOrders(receivedOrders);
-        } catch (error) {
-            toast({ title: "Erreur", description: "Impossible de charger vos données.", variant: "destructive" });
+
+            const deliveryInRegion = allDeliveryPeople.filter(
+                person => person.region === catererData.region && person.status === 'approved'
+            );
+            setAvailableDeliveryPeople(deliveryInRegion);
+
+        } catch (error: any) {
+            toast({ title: "Erreur", description: error.message || "Impossible de charger vos données.", variant: "destructive" });
         } finally {
             setLoading(false);
         }
@@ -104,15 +126,25 @@ export default function CatererPage() {
     }
   };
   
-  const handleStatusChange = async (orderId: string, newStatus: Order['status']) => {
+  const handleStatusChange = async (orderId: string, newStatus: Order['status'], deliveryPersonId?: string) => {
     try {
-        await updateOrderStatus(orderId, newStatus);
-        setOrders(prevOrders => prevOrders.map(o => o.id === orderId ? {...o, status: newStatus} : o));
+        await updateOrderStatus(orderId, newStatus, deliveryPersonId);
+        setOrders(prevOrders => prevOrders.map(o => o.id === orderId ? {...o, status: newStatus, deliveryPersonId} : o));
         toast({ title: "Statut mis à jour", description: `La commande est maintenant "${newStatus}".` });
     } catch(error) {
         toast({ title: "Erreur", description: "Impossible de mettre à jour le statut.", variant: "destructive" });
     }
   };
+  
+  const handleAssignDelivery = (orderId: string) => {
+    if (!selectedDeliveryPerson) {
+        toast({ title: "Aucun livreur sélectionné", description: "Veuillez choisir un livreur.", variant: "destructive"});
+        return;
+    }
+    handleStatusChange(orderId, 'ready_for_delivery', selectedDeliveryPerson);
+    setSelectedDeliveryPerson(null);
+  };
+
 
   const { pendingOrders, inPreparationOrders, readyForDeliveryOrders, deliveredOrders } = useMemo(() => {
     return {
@@ -128,19 +160,45 @@ export default function CatererPage() {
     const getButtonAction = () => {
       switch(order.status) {
         case 'pending':
-          return { text: 'Préparer', action: () => handleStatusChange(order.id, 'in_preparation'), className: 'bg-primary hover:bg-primary/90' };
+          return { 
+            text: 'Préparer', 
+            action: () => handleStatusChange(order.id, 'in_preparation'), 
+            className: 'bg-primary hover:bg-primary/90' 
+          };
         case 'in_preparation':
-          return { text: 'Prêt pour livraison', action: () => handleStatusChange(order.id, 'ready_for_delivery'), className: 'bg-blue-500 hover:bg-blue-600' };
+          return { 
+            text: 'Prêt (Choisir livreur)', 
+            action: () => {}, // Handled by Dialog trigger
+            className: 'bg-blue-500 hover:bg-blue-600',
+            isDialog: true
+          };
         case 'ready_for_delivery':
-          return { text: 'En attente du livreur', action: () => {}, className: 'bg-yellow-500', disabled: true };
+          return { 
+            text: 'En attente du livreur', 
+            action: () => {}, 
+            className: 'bg-yellow-500', 
+            disabled: true 
+          };
         case 'delivered':
-           return { text: 'Détails', action: () => {}, className: 'bg-gray-500 hover:bg-gray-600' };
+           return { 
+             text: 'Détails', 
+             action: () => {}, 
+             className: 'bg-gray-500 hover:bg-gray-600' 
+            };
         default:
-          return { text: 'Détails', action: () => {}, className: 'bg-gray-500 hover:bg-gray-600' };
+          return { 
+            text: 'Détails', 
+            action: () => {}, 
+            className: 'bg-gray-500 hover:bg-gray-600' 
+          };
       }
     };
     
-    const { text, action, className, disabled } = getButtonAction();
+    const { text, action, className, disabled, isDialog } = getButtonAction();
+
+    const cardButton = (
+        <Button onClick={action} className={`w-full ${className} text-white rounded-lg`} disabled={disabled}>{text}</Button>
+    );
 
     return (
       <Card className="w-64 shrink-0 shadow-lg transition-transform duration-300 hover:scale-105">
@@ -164,7 +222,46 @@ export default function CatererPage() {
             {order.status === 'delivered' && <Badge className="bg-green-100 text-green-800 flex items-center gap-1"><CheckCircle className="w-3 h-3"/> Livrée</Badge>}
             
             <p className="font-bold text-lg">{order.totalPrice.toFixed(2)} DT</p>
-            <Button onClick={action} className={`w-full ${className} text-white rounded-lg`} disabled={disabled}>{text}</Button>
+
+            {isDialog ? (
+                <Dialog onOpenChange={(isOpen) => !isOpen && setSelectedDeliveryPerson(null)}>
+                    <DialogTrigger asChild>{cardButton}</DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                        <DialogTitle>Assigner un livreur</DialogTitle>
+                        <DialogDescription>
+                            Choisissez un livreur disponible pour la commande #{order.id.substring(0, 5)}.
+                        </DialogDescription>
+                        </DialogHeader>
+                        {availableDeliveryPeople.length > 0 ? (
+                        <Select onValueChange={setSelectedDeliveryPerson}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Sélectionner un livreur..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {availableDeliveryPeople.map(person => (
+                                    <SelectItem key={person.uid} value={person.uid}>
+                                        {person.name} ({person.vehicleType})
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        ) : (
+                            <p className="text-sm text-muted-foreground text-center py-4">
+                                Aucun livreur approuvé trouvé dans votre région.
+                            </p>
+                        )}
+                        <DialogFooter>
+                            <DialogClose asChild>
+                                <Button onClick={() => handleAssignDelivery(order.id)} disabled={!selectedDeliveryPerson || availableDeliveryPeople.length === 0}>
+                                    <Bike className="mr-2 h-4 w-4" /> Assigner
+                                </Button>
+                            </DialogClose>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            ) : cardButton}
+
         </CardContent>
       </Card>
     )
