@@ -25,6 +25,22 @@ export async function addCaterer(catererData: Omit<Caterer, 'turnover'>): Promis
 }
 
 /**
+ * Updates a caterer's profile data.
+ * @param uid The UID of the caterer to update.
+ * @param data The data to update.
+ */
+export async function updateCaterer(uid: string, data: Partial<Caterer>): Promise<void> {
+  try {
+    const catererRef = doc(db, CATERERS_COLLECTION, uid);
+    await updateDoc(catererRef, data);
+  } catch (error) {
+    console.error("Error updating caterer profile: ", error);
+    throw new Error("Could not update caterer profile.");
+  }
+}
+
+
+/**
  * Retrieves all caterers from the 'caterers' collection.
  * @returns A promise that resolves to an array of caterers.
  */

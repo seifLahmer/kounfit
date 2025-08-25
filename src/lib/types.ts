@@ -72,6 +72,7 @@ export type Caterer = {
   email: string;
   region: string;
   status: 'pending' | 'approved' | 'rejected';
+  preferredDeliveryPeople?: string[]; // Array of delivery person UIDs
   turnover?: number;
 };
 

@@ -58,7 +58,7 @@ export default function CatererPage() {
   const [caterer, setCaterer] = useState<Caterer | null>(null);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [availableDeliveryPeople, setAvailableDeliveryPeople] = useState<DeliveryPerson[]>([]);
+  const [preferredDeliveryPeople, setPreferredDeliveryPeople] = useState<DeliveryPerson[]>([]);
   const [selectedDeliveryPerson, setSelectedDeliveryPerson] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -86,10 +86,12 @@ export default function CatererPage() {
             setMeals(fetchedMeals);
             setOrders(receivedOrders);
 
+            // Filter delivery people based on the caterer's preferred list
+            const preferredIds = catererData.preferredDeliveryPeople || [];
             const deliveryInRegion = allDeliveryPeople.filter(
-                person => person.region === catererData.region && person.status === 'approved'
+                person => preferredIds.includes(person.uid) && person.status === 'approved'
             );
-            setAvailableDeliveryPeople(deliveryInRegion);
+            setPreferredDeliveryPeople(deliveryInRegion);
 
         } catch (error: any) {
             toast({ title: "Erreur", description: error.message || "Impossible de charger vos données.", variant: "destructive" });
@@ -230,16 +232,16 @@ export default function CatererPage() {
                         <DialogHeader>
                         <DialogTitle>Assigner un livreur</DialogTitle>
                         <DialogDescription>
-                            Choisissez un livreur disponible pour la commande #{order.id.substring(0, 5)}.
+                            Choisissez un livreur de votre liste pour la commande #{order.id.substring(0, 5)}.
                         </DialogDescription>
                         </DialogHeader>
-                        {availableDeliveryPeople.length > 0 ? (
+                        {preferredDeliveryPeople.length > 0 ? (
                         <Select onValueChange={setSelectedDeliveryPerson}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Sélectionner un livreur..." />
                             </SelectTrigger>
                             <SelectContent>
-                                {availableDeliveryPeople.map(person => (
+                                {preferredDeliveryPeople.map(person => (
                                     <SelectItem key={person.uid} value={person.uid}>
                                         {person.name} ({person.vehicleType})
                                     </SelectItem>
@@ -247,13 +249,16 @@ export default function CatererPage() {
                             </SelectContent>
                         </Select>
                         ) : (
-                            <p className="text-sm text-muted-foreground text-center py-4">
-                                Aucun livreur approuvé trouvé dans votre région.
-                            </p>
+                            <div className="text-sm text-muted-foreground text-center py-4">
+                                <p>Aucun livreur préféré trouvé.</p>
+                                <Button variant="link" onClick={() => router.push('/caterer/profile')}>
+                                    Gérer ma liste de livreurs
+                                </Button>
+                            </div>
                         )}
                         <DialogFooter>
                             <DialogClose asChild>
-                                <Button onClick={() => handleAssignDelivery(order.id)} disabled={!selectedDeliveryPerson || availableDeliveryPeople.length === 0}>
+                                <Button onClick={() => handleAssignDelivery(order.id)} disabled={!selectedDeliveryPerson || preferredDeliveryPeople.length === 0}>
                                     <Bike className="mr-2 h-4 w-4" /> Assigner
                                 </Button>
                             </DialogClose>
@@ -364,5 +369,3 @@ export default function CatererPage() {
     </div>
   );
 }
-
-    
