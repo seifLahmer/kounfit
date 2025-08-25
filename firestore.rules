@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -7,12 +6,6 @@ service cloud.firestore {
     // Helper function to check if a user is an admin
     function isAdmin() {
       return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
-    }
-    
-    // Helper function to check if the requester is an approved delivery person
-    function isApprovedDeliveryPerson() {
-        return exists(/databases/$(database)/documents/deliveryPeople/$(request.auth.uid)) &&
-               get(/databases/$(database)/documents/deliveryPeople/$(request.auth.uid)).data.status == 'approved';
     }
 
     // USERS: Only signed-in users can access their own profile.
@@ -25,7 +18,8 @@ service cloud.firestore {
     match /caterers/{catererId} {
       allow read: if request.auth != null;
       allow create: if request.auth.uid == catererId;
-      allow update: if isAdmin(); // Only admins can approve/reject.
+      // Allow caterer to update their own profile, or an admin to update any.
+      allow update: if request.auth.uid == catererId || isAdmin();
       allow delete: if isAdmin();
     }
 
@@ -33,7 +27,8 @@ service cloud.firestore {
     match /deliveryPeople/{deliveryId} {
       allow read: if request.auth != null;
       allow create: if request.auth.uid == deliveryId;
-      allow update: if isAdmin(); // Only admins can approve/reject.
+      // Allow delivery person to update their own profile, or an admin to update any.
+      allow update: if request.auth.uid == deliveryId || isAdmin();
       allow delete: if isAdmin();
     }
     
@@ -57,29 +52,15 @@ service cloud.firestore {
     
     // ORDERS: Clients can create orders. Caterers and Admins can read/update.
     match /orders/{orderId} {
-      function isOrderClient() {
-        return request.auth.uid == resource.data.clientId;
-      }
-      function isOrderCaterer() {
-        return request.auth.uid in resource.data.catererIds;
-      }
-      function isAssignedDeliveryPerson() {
-        return request.auth.uid == resource.data.deliveryPersonId;
-      }
-      function canReadAvailableDelivery() {
-        let deliveryPersonProfile = get(/databases/$(database)/documents/deliveryPeople/$(request.auth.uid)).data;
-        return resource.data.status == 'ready_for_delivery' && resource.data.clientRegion == deliveryPersonProfile.region;
-      }
-
-      allow read: if isOrderClient() || isOrderCaterer() || isAdmin() || isAssignedDeliveryPerson() || (isApprovedDeliveryPerson() && canReadAvailableDelivery());
-      allow create: if request.auth.uid == request.resource.data.clientId;
-      allow update: if isOrderCaterer() || isAdmin() || isApprovedDeliveryPerson();
+       allow read: if request.auth != null && (request.auth.uid == resource.data.clientId || request.auth.uid in resource.data.catererIds || request.auth.uid == resource.data.deliveryPersonId || isAdmin());
+       allow create: if request.auth.uid == request.resource.data.clientId;
+       allow update: if request.auth != null && (request.auth.uid in resource.data.catererIds || request.auth.uid == resource.data.deliveryPersonId || isAdmin());
     }
 
     // NOTIFICATIONS: Users can only see their own notifications.
     match /notifications/{notificationId} {
       allow read: if request.auth.uid == resource.data.userId;
-      // Notifications are created server-side (or by trusted roles like caterers via backend functions)
+      // Notifications are created server-side (or by trusted roles via backend functions)
       allow write: if false;
     }
   }
