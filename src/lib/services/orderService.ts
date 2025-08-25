@@ -196,13 +196,12 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
 export async function getMyDeliveries(deliveryPersonId: string): Promise<Order[]> {
     try {
         const ordersCollection = collection(db, ORDERS_COLLECTION);
-        // This is the corrected query. It fetches orders assigned to the delivery person
-        // that are not yet delivered or cancelled.
+        // This query fetches orders assigned to the delivery person that are not yet delivered or cancelled.
+        // The orderBy was removed to simplify the query and avoid composite index requirements.
         const q = query(
             ordersCollection,
             where("deliveryPersonId", "==", deliveryPersonId),
-            where("status", "in", ["ready_for_delivery", "in_delivery"]),
-            orderBy("orderDate", "desc")
+            where("status", "in", ["ready_for_delivery", "in_delivery"])
         );
 
         const querySnapshot = await getDocs(q);
@@ -217,6 +216,9 @@ export async function getMyDeliveries(deliveryPersonId: string): Promise<Order[]
                 deliveryDate: data.deliveryDate instanceof Timestamp ? data.deliveryDate.toDate() : new Date(),
             } as Order);
         });
+        
+        // Manual sort after fetching
+        orders.sort((a, b) => b.orderDate.getTime() - a.orderDate.getTime());
 
         return orders;
     } catch (error) {
