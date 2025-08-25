@@ -92,7 +92,7 @@ export default function DeliveryDashboardPage() {
     };
     
     const OrderCard = ({ order, onAction, buttonText, buttonIcon }: { order: Order, onAction: (id: string) => void, buttonText: string, buttonIcon: React.ReactNode }) => (
-         <Card key={order.id}>
+         <Card key={order.id} className="mb-4">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-lg">Commande #{order.id.substring(0, 5)}</CardTitle>
                 <span className="font-bold text-primary">{order.totalPrice.toFixed(2)} DT</span>
