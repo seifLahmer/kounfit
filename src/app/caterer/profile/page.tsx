@@ -77,14 +77,25 @@ export default function CatererProfilePage() {
   }, [router, toast, form]);
 
   useEffect(() => {
-    fetchProfileData();
-  }, [fetchProfileData]);
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+        if(user) {
+            fetchProfileData();
+        } else {
+            router.push('/login');
+        }
+    });
+    return () => unsubscribe();
+  }, [fetchProfileData, router]);
 
   const onSubmit = async (data: ProfileFormValues) => {
-    if (!caterer) return;
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+        toast({ title: "Erreur", description: "Vous n'êtes pas connecté.", variant: "destructive" });
+        return;
+    }
     setIsSaving(true);
     try {
-      await updateCaterer(caterer.uid, {
+      await updateCaterer(currentUser.uid, {
         name: data.name,
         preferredDeliveryPeople: data.preferredDeliveryPeople || [],
       });
@@ -92,7 +103,6 @@ export default function CatererProfilePage() {
         title: "Profil mis à jour",
         description: "Vos informations ont été enregistrées avec succès.",
       });
-      // Refetch data to ensure UI is consistent
       await fetchProfileData();
     } catch (error) {
       toast({ title: "Erreur", description: "Impossible de mettre à jour le profil.", variant: "destructive" });
