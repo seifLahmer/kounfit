@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'User information is missing' }, { status: 400 });
     }
 
-    const deliveryPersonRef = doc(db, 'deliveryPeople', userId);
+    const deliveryPersonRef = doc(db, 'deliveryPerson', userId);
     const deliveryPersonSnap = await getDoc(deliveryPersonRef);
 
     if (!deliveryPersonSnap.exists() || deliveryPersonSnap.data().status !== 'approved') {
