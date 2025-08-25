@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { updateCaterer } from "@/lib/services/catererService";
 import { getAllDeliveryPeople } from "@/lib/services/deliveryService";
 import type { Caterer, DeliveryPerson } from "@/lib/types";
+import { FormField } from "@/components/ui/form";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Le nom est requis."),
