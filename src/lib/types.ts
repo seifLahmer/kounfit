@@ -1,5 +1,6 @@
 
 
+
 export type User = {
   uid: string;
   email: string;
@@ -96,8 +97,9 @@ export type Order = {
     catererId: string;
   }[];
   catererIds: string[]; // List of caterer UIDs involved in the order
+  deliveryPersonId?: string; // The UID of the assigned delivery person
   totalPrice: number;
-  status: "pending" | "in_preparation" | "ready_for_delivery" | "delivered" | "cancelled";
+  status: "pending" | "in_preparation" | "ready_for_delivery" | "in_delivery" | "delivered" | "cancelled";
   orderDate: any;
   deliveryDate: any;
   deliveryTime?: number; // Estimated delivery time in minutes

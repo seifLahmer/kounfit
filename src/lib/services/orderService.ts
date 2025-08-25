@@ -1,5 +1,6 @@
 
 
+
 import {
   collection,
   addDoc,
@@ -141,7 +142,7 @@ export async function getOrdersByCaterer(catererUid: string): Promise<Order[]> {
  * @param orderId The ID of the order to update.
  * @param status The new status for the order.
  */
-export async function updateOrderStatus(orderId: string, status: Order['status']): Promise<void> {
+export async function updateOrderStatus(orderId: string, status: Order['status'], deliveryPersonId?: string): Promise<void> {
   const orderRef = doc(db, ORDERS_COLLECTION, orderId);
   
   try {
@@ -152,14 +153,20 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
 
     const orderData = orderSnap.data() as Order;
     
+    const updatePayload: any = { status };
+    if (status === 'in_delivery' && deliveryPersonId) {
+        updatePayload.deliveryPersonId = deliveryPersonId;
+    }
+
     // Update the status in Firestore
-    await updateDoc(orderRef, { status });
+    await updateDoc(orderRef, updatePayload);
 
     // Create a notification for the client
     const statusMessages = {
         pending: "est en attente de confirmation",
         in_preparation: "est en cours de préparation",
         ready_for_delivery: "est prête pour la livraison",
+        in_delivery: "est en cours de livraison",
         delivered: "a été livrée",
         cancelled: "a été annulée",
     };
@@ -206,5 +213,41 @@ export async function getReadyForDeliveryOrders(region: string): Promise<Order[]
     } catch (error) {
         console.error("Error fetching ready for delivery orders: ", error);
         throw new Error("Could not fetch orders for delivery.");
+    }
+}
+
+
+/**
+ * Retrieves all orders assigned to a specific delivery person that are currently in delivery.
+ * @param deliveryPersonId The UID of the delivery person.
+ * @returns A promise that resolves to an array of orders.
+ */
+export async function getMyDeliveries(deliveryPersonId: string): Promise<Order[]> {
+    try {
+        const ordersCollection = collection(db, ORDERS_COLLECTION);
+        const q = query(
+            ordersCollection,
+            where("deliveryPersonId", "==", deliveryPersonId),
+            where("status", "==", "in_delivery"),
+            orderBy("orderDate", "desc")
+        );
+
+        const querySnapshot = await getDocs(q);
+
+        const orders: Order[] = [];
+        querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            orders.push({
+                id: docSnap.id,
+                ...data,
+                orderDate: data.orderDate instanceof Timestamp ? data.orderDate.toDate() : new Date(),
+                deliveryDate: data.deliveryDate instanceof Timestamp ? data.deliveryDate.toDate() : new Date(),
+            } as Order);
+        });
+
+        return orders;
+    } catch (error) {
+        console.error("Error fetching 'my deliveries':", error);
+        throw new Error("Could not fetch assigned deliveries.");
     }
 }
