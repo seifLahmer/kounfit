@@ -1,55 +1,68 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    // Helper Functions
     function isAdmin() {
-      // Check if the admin token exists and is true.
-      // This prevents errors for users who don't have the token at all.
+      // Safely check for admin claim on the user's token.
+      // This is more secure and performant than reading a document.
       return request.auth.token.get('admin', false) == true;
     }
-
+    
+    // USERS collection (client profiles)
     match /users/{userId} {
-      allow read, write: if request.auth.uid == userId || isAdmin();
+      allow read: if request.auth.uid == userId || isAdmin();
+      allow write: if request.auth.uid == userId || isAdmin();
     }
     
+    // CATERERS collection
     match /caterers/{catererId} {
-      allow read: if true; // Publicly readable for clients to see caterer info
-      allow create: if request.auth.uid == catererId;
-      allow update: if request.auth.uid == catererId || isAdmin();
+      allow read: if request.auth != null; // Allow any authenticated user to read caterer profiles (e.g., to see their meals)
+      allow create: if request.auth.uid == catererId; // A caterer can create their own profile
+      allow update: if request.auth.uid == catererId || isAdmin(); // A caterer can update their own profile, or an admin can
       allow delete: if isAdmin();
     }
-
+    
+    // DELIVERY_PEOPLE collection
     match /deliveryPeople/{deliveryPersonId} {
-      allow read: if request.auth.uid == deliveryPersonId || isAdmin();
+      allow read: if request.auth != null; // Allow any authenticated user to read profiles (e.g., for caterer selection)
       allow create: if request.auth.uid == deliveryPersonId;
       allow update: if request.auth.uid == deliveryPersonId || isAdmin();
       allow delete: if isAdmin();
     }
     
+    // MEALS collection
     match /meals/{mealId} {
-      allow read: if true; // Meals are public for clients to see
-      allow create, update: if request.auth.uid == request.resource.data.createdBy || isAdmin();
+      allow read: if request.auth != null;
+      allow create: if request.auth.uid == request.resource.data.createdBy; // Only the caterer can create their own meal
+      allow update: if request.auth.uid == resource.data.createdBy || isAdmin(); // Only the creator or an admin can update
       allow delete: if request.auth.uid == resource.data.createdBy || isAdmin();
-
+      
+      // Ratings sub-collection
       match /userRatings/{userId} {
-        allow read, write: if request.auth.uid == userId;
+        allow read: if request.auth != null;
+        allow write: if request.auth.uid == userId; // A user can only write their own rating
       }
     }
     
+    // ORDERS collection
     match /orders/{orderId} {
-      allow create: if request.auth.uid == request.resource.data.clientId;
       allow read: if request.auth.uid == resource.data.clientId || request.auth.uid in resource.data.catererIds || request.auth.uid == resource.data.deliveryPersonId || isAdmin();
+      allow create: if request.auth.uid == request.resource.data.clientId; // Only the client can create an order for themselves
       allow update: if request.auth.uid in resource.data.catererIds || request.auth.uid == resource.data.deliveryPersonId || isAdmin();
     }
-
-    match /admins/{adminId} {
-        allow read, write: if isAdmin();
-    }
-
+    
+    // NOTIFICATIONS collection
     match /notifications/{notificationId} {
-        allow read, update: if request.auth.uid == resource.data.userId;
-        allow create: if true; // Allow services to create notifications
+      allow read, update: if request.auth.uid == resource.data.userId; // User can only read/update their own notifications
+      allow create: if request.auth != null; // Allow any authenticated service/function to create notifications
+    }
+    
+    // ADMINS collection - very restrictive
+    match /admins/{adminId} {
+      allow read, write: if isAdmin();
     }
   }
 }

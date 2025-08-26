@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Bike, Loader2, LogOut, Wallet } from "lucide-react";
+import { Bike, Loader2, LogOut, Wallet, User } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -80,6 +80,7 @@ export default function DeliveryLayout({
   }
   
   const navLinks = [
+    { href: "/delivery/profile", label: "Profil", icon: User },
     { href: "/delivery", label: "Dashboard", icon: Bike },
     { href: "/delivery/wallet", label: "Wallet", icon: Wallet },
   ];
@@ -90,7 +91,7 @@ export default function DeliveryLayout({
        <nav className="fixed bottom-4 left-4 right-4 z-50 md:hidden">
          <div className="relative flex justify-around items-center h-16 bg-white/70 backdrop-blur-md rounded-full shadow-lg border border-white/30">
             {navLinks.map((link) => {
-                const isActive = pathname === link.href;
+                const isActive = pathname === link.href || (link.href !== "/delivery" && pathname.startsWith(link.href));
                 return (
                     <Link key={link.href} href={link.href} className="flex-1 flex justify-center items-center h-full">
                          <div className={cn(

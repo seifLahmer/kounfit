@@ -23,6 +23,21 @@ export async function addDeliveryPerson(deliveryPersonData: DeliveryPerson): Pro
   }
 }
 
+/**
+ * Updates a delivery person's profile data.
+ * @param uid The UID of the delivery person to update.
+ * @param data The data to update.
+ */
+export async function updateDeliveryPerson(uid: string, data: Partial<DeliveryPerson>): Promise<void> {
+  try {
+    const deliveryPersonRef = doc(db, DELIVERY_PEOPLE_COLLECTION, uid);
+    await updateDoc(deliveryPersonRef, data);
+  } catch (error) {
+    console.error("Error updating delivery person profile: ", error);
+    throw new Error("Could not update delivery person profile.");
+  }
+}
+
 
 /**
  * Retrieves all delivery people from the 'deliveryPeople' collection.
