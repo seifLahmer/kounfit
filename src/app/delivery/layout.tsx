@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Bike, Loader2, LogOut } from "lucide-react";
+import { Bike, Loader2, LogOut, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -32,12 +32,9 @@ export default function DeliveryLayout({
             if(deliverySnap.exists() && deliverySnap.data().status === 'approved') {
                 setIsAuthorized(true);
             } else {
-                // This will catch pending or rejected users and send them away.
-                // The login page handles the specific redirection to pending-approval page.
                 router.replace('/login');
             }
           } else {
-            // If the user is not a delivery person, kick them out.
             router.replace('/login');
           }
         } catch (error) {
@@ -68,7 +65,7 @@ export default function DeliveryLayout({
   }
 
   if (!isAuthorized) {
-    return null; // Don't render anything if not authorized
+    return null;
   }
 
   return (
@@ -79,6 +76,10 @@ export default function DeliveryLayout({
           <Link href="/delivery" className={cn("flex flex-col items-center gap-1", pathname === '/delivery' ? 'text-primary' : 'text-gray-500')}>
             <Bike />
             <span className="text-xs">Dashboard</span>
+          </Link>
+          <Link href="/delivery/wallet" className={cn("flex flex-col items-center gap-1", pathname === '/delivery/wallet' ? 'text-primary' : 'text-gray-500')}>
+            <Wallet />
+            <span className="text-xs">Wallet</span>
           </Link>
           <button onClick={handleLogout} className="flex flex-col items-center gap-1 text-gray-500">
             <LogOut />

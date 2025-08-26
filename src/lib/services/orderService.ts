@@ -189,19 +189,21 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
 
 
 /**
- * Retrieves all orders assigned to a specific delivery person that are currently ready or in delivery.
+ * Retrieves orders assigned to a specific delivery person, filtered by status.
  * @param deliveryPersonId The UID of the delivery person.
+ * @param statuses An array of statuses to filter by.
  * @returns A promise that resolves to an array of orders.
  */
-export async function getMyDeliveries(deliveryPersonId: string): Promise<Order[]> {
+export async function getMyDeliveries(deliveryPersonId: string, statuses: Order['status'][]): Promise<Order[]> {
+    if (!statuses || statuses.length === 0) {
+        return [];
+    }
     try {
         const ordersCollection = collection(db, ORDERS_COLLECTION);
-        // This query fetches orders assigned to the delivery person that are not yet delivered or cancelled.
-        // The orderBy was removed to simplify the query and avoid composite index requirements.
         const q = query(
             ordersCollection,
             where("deliveryPersonId", "==", deliveryPersonId),
-            where("status", "in", ["ready_for_delivery", "in_delivery"])
+            where("status", "in", statuses)
         );
 
         const querySnapshot = await getDocs(q);
@@ -217,7 +219,6 @@ export async function getMyDeliveries(deliveryPersonId: string): Promise<Order[]
             } as Order);
         });
         
-        // Manual sort after fetching
         orders.sort((a, b) => b.orderDate.getTime() - a.orderDate.getTime());
 
         return orders;

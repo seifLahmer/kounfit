@@ -5,16 +5,15 @@ import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, MapPin, Frown, Bike, Check, Package } from "lucide-react";
+import { Loader2, MapPin, Frown, Bike, Check } from "lucide-react";
 import { updateOrderStatus, getMyDeliveries } from "@/lib/services/orderService";
 import type { Order, DeliveryPerson } from "@/lib/types";
 import { auth, db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { doc, getDoc } from 'firebase/firestore';
-import { Separator } from "@/components/ui/separator";
 
 export default function DeliveryDashboardPage() {
-    const [myDeliveries, setMyDeliveries] = useState<Order[]>([]);
+    const [activeDeliveries, setActiveDeliveries] = useState<Order[]>([]);
     const [deliveryPerson, setDeliveryPerson] = useState<DeliveryPerson | null>(null);
     const [loading, setLoading] = useState(true);
     const { toast } = useToast();
@@ -30,9 +29,9 @@ export default function DeliveryDashboardPage() {
                     const person = { uid: deliverySnap.id, ...deliverySnap.data() } as DeliveryPerson;
                     setDeliveryPerson(person);
 
-                    // Call the service directly instead of using fetch
-                    const deliveries = await getMyDeliveries(user.uid);
-                    setMyDeliveries(deliveries);
+                    // Fetch only active deliveries for the dashboard
+                    const deliveries = await getMyDeliveries(user.uid, ["ready_for_delivery", "in_delivery"]);
+                    setActiveDeliveries(deliveries);
 
                 } else {
                     toast({ title: "Erreur", description: "Profil livreur non trouvé.", variant: "destructive" });
@@ -65,7 +64,7 @@ export default function DeliveryDashboardPage() {
         }
     };
     
-    const OrderCard = ({ order, onAction, buttonText, buttonIcon }: { order: Order, onAction: (id: string) => void, buttonText: string, buttonIcon: React.ReactNode }) => (
+    const OrderCard = ({ order }: { order: Order }) => (
          <Card key={order.id} className="mb-4">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-lg">Commande #{order.id.substring(0, 5)}</CardTitle>
@@ -84,8 +83,8 @@ export default function DeliveryDashboardPage() {
                         </div>
                     </div>
                 </div>
-                <Button className="w-full mt-4 bg-secondary hover:bg-secondary/90" onClick={() => onAction(order.id)}>
-                   {buttonIcon} {buttonText}
+                <Button className="w-full mt-4 bg-secondary hover:bg-secondary/90" onClick={() => handleCompleteDelivery(order.id)}>
+                   <Check className="mr-2 h-4 w-4" /> Marquer comme livrée
                 </Button>
             </CardContent>
         </Card>
@@ -94,7 +93,7 @@ export default function DeliveryDashboardPage() {
     return (
         <div className="p-4 space-y-6">
              <header className="p-4 flex justify-between items-center bg-primary text-white rounded-lg">
-                <h1 className="text-2xl font-bold font-heading">Interface Livreur</h1>
+                <h1 className="text-2xl font-bold font-heading">Mes Livraisons</h1>
                 <Bike />
             </header>
             
@@ -105,17 +104,8 @@ export default function DeliveryDashboardPage() {
             ) : (
                 <div className="space-y-6">
                     <div>
-                        <h2 className="text-xl font-bold mb-3">Mes Livraisons</h2>
-                        {myDeliveries.length > 0 ? (
-                             myDeliveries.map(order => (
-                                <OrderCard 
-                                    key={order.id} 
-                                    order={order} 
-                                    onAction={handleCompleteDelivery} 
-                                    buttonText="Marquer comme livrée"
-                                    buttonIcon={<Check className="mr-2 h-4 w-4" />}
-                                />
-                            ))
+                        {activeDeliveries.length > 0 ? (
+                             activeDeliveries.map(order => <OrderCard key={order.id} order={order} />)
                         ) : (
                             <Card>
                                 <CardContent className="flex flex-col items-center justify-center h-48 text-muted-foreground">
