@@ -214,8 +214,8 @@ export default function StatsPage() {
   return (
     <div className="bg-primary">
        <header className="p-4 pt-8 text-white bg-gradient-to-br from-primary via-primary to-background/30">
-        <p className="font-semibold text-lg">Kounfit</p>
-        <h1 className="text-3xl font-bold font-serif">Statistiques</h1>
+        <Image src="/kounfit-white.png" alt="Kounfit Logo" width={100} height={25} />
+        <h1 className="text-3xl font-bold font-serif mt-2">Statistiques</h1>
       </header>
 
       <main className="bg-background rounded-t-3xl p-4 space-y-6">

@@ -192,7 +192,7 @@ export default function ShoppingCartPage() {
     <MainLayout>
       <div className="flex flex-col h-full bg-tertiary text-white">
         <header className="p-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold font-heading">Kounfit</h1>
+          <Image src="/kounfit-white.png" alt="Kounfit Logo" width={120} height={30} />
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M5 12H19" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>

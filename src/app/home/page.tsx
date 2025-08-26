@@ -137,10 +137,10 @@ export default function HomePage() {
             />
             
             <div className="grid grid-cols-2 gap-4 pb-24">
-                <MealCard title="Petit déjeuner" meals={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} defaultImage="/petit-dejeuner.png" />
-                <MealCard title="Déjeuner" meals={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} defaultImage="/dejeuner.png" />
-                <MealCard title="Dîner" meals={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} defaultImage="/dinner.png" />
-                <MealCard title="Collation" meals={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} defaultImage="/snacks.png" />
+                <MealCard title="Petit déjeuner" meals={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} defaultImage="/img home/petit-dejeuner.png" />
+                <MealCard title="Déjeuner" meals={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} defaultImage="/img home/dejeuner.png" />
+                <MealCard title="Dîner" meals={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} defaultImage="/img home/dinner.png" />
+                <MealCard title="Collation" meals={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} defaultImage="/img home/snacks.png" />
             </div>
           </CardContent>
         </Card>

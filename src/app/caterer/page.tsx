@@ -275,7 +275,7 @@ export default function CatererPage() {
   return (
     <div className="bg-primary min-h-screen">
       <header className="p-4 flex justify-between items-center text-white">
-        <h1 className="text-2xl font-bold font-heading">KOUNFIT</h1>
+        <Image src="/kounfit-white.png" alt="Kounfit Logo" width={120} height={30} />
         <Button variant="ghost" size="icon">
           <Bell />
         </Button>

@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -142,8 +143,7 @@ export default function AdminDashboardPage() {
       <header className="bg-gradient-to-br from-primary via-primary to-background/30 p-4 text-white">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <div className="bg-white text-primary font-bold rounded-md p-2 h-8 w-8 flex items-center justify-center">K</div>
-            <h1 className="text-xl font-bold">Kounfit</h1>
+            <Image src="/kounfit-white.png" alt="Kounfit Logo" width={100} height={25} />
           </div>
           <Button variant="ghost" size="icon">
             <Bell />
