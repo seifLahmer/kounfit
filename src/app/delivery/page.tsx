@@ -65,7 +65,7 @@ export default function DeliveryDashboardPage() {
     };
     
     const OrderCard = ({ order }: { order: Order }) => (
-         <Card key={order.id} className="mb-4">
+         <Card key={order.id} className="mb-4 shadow-lg transition-transform duration-300 hover:scale-105">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-lg">Commande #{order.id.substring(0, 5)}</CardTitle>
                 <span className="font-bold text-primary">{order.totalPrice.toFixed(2)} DT</span>
@@ -107,7 +107,7 @@ export default function DeliveryDashboardPage() {
                         {activeDeliveries.length > 0 ? (
                              activeDeliveries.map(order => <OrderCard key={order.id} order={order} />)
                         ) : (
-                            <Card>
+                            <Card className="shadow-lg transition-transform duration-300 hover:scale-105">
                                 <CardContent className="flex flex-col items-center justify-center h-48 text-muted-foreground">
                                     <Frown className="w-12 h-12 mb-4"/>
                                     <p className="text-lg font-semibold">Aucune commande assignée</p>

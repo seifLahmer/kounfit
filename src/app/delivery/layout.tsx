@@ -10,6 +10,17 @@ import { onAuthStateChanged } from "firebase/auth";
 import { getUserRole } from "@/lib/services/roleService";
 import { cn } from "@/lib/utils";
 import { doc, getDoc } from "firebase/firestore";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function DeliveryLayout({
   children,
@@ -67,24 +78,50 @@ export default function DeliveryLayout({
   if (!isAuthorized) {
     return null;
   }
+  
+  const navLinks = [
+    { href: "/delivery", label: "Dashboard", icon: Bike },
+    { href: "/delivery/wallet", label: "Wallet", icon: Wallet },
+  ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-[#FFFFFF]">
       <main className="flex-1 pb-24">{children}</main>
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-50">
-        <div className="flex justify-around items-center h-16">
-          <Link href="/delivery" className={cn("flex flex-col items-center gap-1", pathname === '/delivery' ? 'text-primary' : 'text-gray-500')}>
-            <Bike />
-            <span className="text-xs">Dashboard</span>
-          </Link>
-          <Link href="/delivery/wallet" className={cn("flex flex-col items-center gap-1", pathname === '/delivery/wallet' ? 'text-primary' : 'text-gray-500')}>
-            <Wallet />
-            <span className="text-xs">Wallet</span>
-          </Link>
-          <button onClick={handleLogout} className="flex flex-col items-center gap-1 text-gray-500">
-            <LogOut />
-            <span className="text-xs">Déconnexion</span>
-          </button>
+       <nav className="fixed bottom-4 left-4 right-4 z-50 md:hidden">
+         <div className="relative flex justify-around items-center h-16 bg-white/70 backdrop-blur-md rounded-full shadow-lg border border-white/30">
+            {navLinks.map((link) => {
+                const isActive = pathname === link.href;
+                return (
+                    <Link key={link.href} href={link.href} className="flex-1 flex justify-center items-center h-full">
+                         <div className={cn(
+                            "flex flex-col items-center justify-center gap-1 transition-colors",
+                            isActive ? "text-primary" : "text-gray-400 hover:text-primary"
+                        )}>
+                            <link.icon className="h-6 w-6" />
+                        </div>
+                    </Link>
+                )
+            })}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button className="flex-1 flex justify-center items-center h-full text-gray-400 hover:text-primary">
+                    <div className="flex flex-col items-center justify-center gap-1 transition-colors">
+                        <LogOut className="h-6 w-6" />
+                    </div>
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Êtes-vous sûr de vouloir vous déconnecter ?</AlertDialogTitle>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">
+                    Déconnexion
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
         </div>
       </nav>
     </div>

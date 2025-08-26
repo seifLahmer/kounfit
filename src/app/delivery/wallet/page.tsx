@@ -59,7 +59,7 @@ export default function DeliveryWalletPage() {
             ) : (
                 <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
-                        <Card>
+                        <Card className="shadow-lg transition-transform duration-300 hover:scale-105">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">Chiffre d'affaires</CardTitle>
                                 <Wallet className="h-4 w-4 text-muted-foreground" />
@@ -69,7 +69,7 @@ export default function DeliveryWalletPage() {
                                 <p className="text-xs text-muted-foreground">Basé sur {deliveredOrders.length} livraisons</p>
                             </CardContent>
                         </Card>
-                         <Card>
+                         <Card className="shadow-lg transition-transform duration-300 hover:scale-105">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium">Livraisons terminées</CardTitle>
                                 <Package className="h-4 w-4 text-muted-foreground" />
@@ -86,7 +86,7 @@ export default function DeliveryWalletPage() {
                         {deliveredOrders.length > 0 ? (
                             <div className="space-y-4">
                                 {deliveredOrders.map(order => (
-                                    <Card key={order.id}>
+                                    <Card key={order.id} className="shadow-lg transition-transform duration-300 hover:scale-105">
                                         <CardContent className="p-4">
                                             <div className="flex justify-between items-start">
                                                 <div>
@@ -105,7 +105,7 @@ export default function DeliveryWalletPage() {
                                 ))}
                             </div>
                         ) : (
-                             <Card>
+                             <Card className="shadow-lg transition-transform duration-300 hover:scale-105">
                                 <CardContent className="p-8 text-center text-muted-foreground">
                                     <p>Aucune livraison terminée pour le moment.</p>
                                 </CardContent>
