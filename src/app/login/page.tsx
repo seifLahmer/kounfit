@@ -92,8 +92,6 @@ export default function LoginPage() {
                 router.replace('/home');
                 break;
             default:
-                // New user (from Google sign-in for example) or role not yet set
-                // Redirect to step2 to complete their profile.
                 router.replace('/signup/step2');
                 break;
         }
@@ -104,7 +102,6 @@ export default function LoginPage() {
     }
   }, [router, toast]);
   
-  // Handle redirect from Google on web
   useEffect(() => {
     if (!isMounted || Capacitor.isNativePlatform()) return;
     const handleRedirect = async () => {
@@ -170,19 +167,16 @@ export default function LoginPage() {
     <div className="flex flex-col min-h-screen bg-background">
         <div className="relative w-full h-1/3">
             <Image 
-                src="https://placehold.co/600x400.png"
+                src="https://picsum.photos/600/400"
                 alt="Bol de nourriture saine"
-                layout="fill"
-                objectFit="cover"
+                width={600}
+                height={400}
+                className="w-full h-full object-cover"
                 data-ai-hint="healthy food bowl"
             />
-             <div 
-                className="absolute bottom-0 left-0 w-full h-16 bg-background"
-                style={{ clipPath: 'ellipse(70% 100% at 50% 100%)' }}
-            ></div>
         </div>
 
-      <div className="w-full max-w-sm mx-auto px-4 -mt-8 flex-1">
+      <div className="w-full max-w-sm mx-auto px-4 py-8 flex-1">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-tertiary">Kounfit</h1>
         </div>
@@ -197,7 +191,7 @@ export default function LoginPage() {
                   <FormControl>
                     <div className="relative">
                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        <Input type="email" placeholder="Email au nom d'utilisateur" {...field} className="pl-12 h-14 rounded-xl" />
+                        <Input type="email" placeholder="Email/nom d'utilisateur" {...field} className="pl-12 h-14 rounded-full border-gray-200" />
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -216,7 +210,7 @@ export default function LoginPage() {
                             type={passwordVisible ? 'text' : 'password'}
                             placeholder="Mot de passe" 
                             {...field} 
-                            className="pl-12 pr-12 h-14 rounded-xl"
+                            className="pl-12 pr-12 h-14 rounded-full border-gray-200"
                         />
                          <button type="button" onClick={() => setPasswordVisible(!passwordVisible)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
                             {passwordVisible ? <EyeOff className="h-5 w-5"/> : <Eye className="h-5 w-5" />}
@@ -227,31 +221,20 @@ export default function LoginPage() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full h-14 text-lg font-semibold rounded-xl bg-secondary hover:bg-secondary/90 text-white" disabled={isSubmitting}>
+            <Button type="submit" className="w-full h-14 text-lg font-semibold rounded-full bg-primary hover:bg-primary/90 text-white" disabled={isSubmitting}>
                {isSubmitting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
               Se connecter
             </Button>
           </form>
         </Form>
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              Ou se connecter avec
-            </span>
-          </div>
+        <div className="text-center my-4">
+            <Link href="#" className="text-sm font-semibold text-gray-600 hover:text-primary">
+                Mot de passe oublié ?
+            </Link>
         </div>
-        <Button variant="outline" className="w-full h-14 rounded-xl text-base font-semibold" onClick={handleGoogleSignIn} disabled={isSubmitting}>
-          <GoogleIcon className="mr-2 h-5 w-5" /> Google
+        <Button variant="outline" className="w-full h-14 rounded-full text-base font-semibold border-gray-200" onClick={handleGoogleSignIn} disabled={isSubmitting}>
+          <GoogleIcon className="mr-2 h-5 w-5" /> Continuer avec Google
         </Button>
-        <p className="mt-8 text-center text-sm text-muted-foreground">
-          Pas encore de compte?{" "}
-          <Link href="/signup" className="underline font-semibold text-primary">
-            S'inscrire
-          </Link>
-        </p>
       </div>
     </div>
   );
