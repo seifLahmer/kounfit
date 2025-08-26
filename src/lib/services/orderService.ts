@@ -157,6 +157,10 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
     if (status === 'ready_for_delivery' && deliveryPersonId) {
         updatePayload.deliveryPersonId = deliveryPersonId;
     }
+    if(status === 'delivered') {
+        updatePayload.deliveryDate = serverTimestamp();
+    }
+
 
     // Update the status in Firestore
     await updateDoc(orderRef, updatePayload);
@@ -203,7 +207,7 @@ export async function getMyDeliveries(deliveryPersonId: string, statuses: Order[
         const q = query(
             ordersCollection,
             where("deliveryPersonId", "==", deliveryPersonId),
-            where("status", "in", statuses)
+            where("status", "in", statuses),
         );
 
         const querySnapshot = await getDocs(q);
