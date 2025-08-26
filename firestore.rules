@@ -1,64 +1,76 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    function isOwner(uid) {
-      return request.auth.uid == uid;
+
+    // Helper functions
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
     }
     
     function isAdmin() {
-      // Safely check for admin claim. Returns false if the claim doesn't exist.
-      return request.auth.token.get('admin', false) == true;
+      // Check for the admin custom claim on the user's auth token.
+      // This is more secure and efficient than reading a document.
+      return request.auth != null && request.auth.token.get('admin', false) == true;
     }
 
+    // Rules for the 'users' (clients) collection
     match /users/{userId} {
       allow create: if isOwner(userId);
       allow read, update: if isOwner(userId) || isAdmin();
       allow delete: if isAdmin();
     }
-    
+
+    // Rules for the 'caterers' collection
     match /caterers/{catererId} {
-      allow read: if true; // Anyone can read caterer info
-      allow create: if isOwner(catererId);
+      allow create: if isOwner(catererId); // A caterer can create their own profile.
+      allow read: if true; // Allow anyone to read caterer profiles (e.g., for listing).
       allow update: if isOwner(catererId) || isAdmin();
       allow delete: if isAdmin();
     }
-    
-    match /deliveryPeople/{deliveryPersonId} {
-      allow read: if true; // Anyone can read delivery person info
-      allow create: if isOwner(deliveryPersonId);
-      allow update: if isOwner(deliveryPersonId) || isAdmin();
+
+    // Rules for the 'deliveryPeople' collection
+    match /deliveryPeople/{deliveryId} {
+      allow create: if isOwner(deliveryId); // A delivery person can create their own profile.
+      allow read: if isOwner(deliveryId) || isAdmin(); // Only owner and admin can read details.
+      allow update: if isOwner(deliveryId) || isAdmin();
       allow delete: if isAdmin();
     }
     
+    // Rules for the 'admins' collection
     match /admins/{adminId} {
         allow read, write: if isAdmin();
     }
-    
-    match /meals/{mealId} {
-      allow read: if true; // Anyone can read meal details
-      allow create, update: if request.auth.uid == request.resource.data.createdBy || isAdmin();
-      allow delete: if request.auth.uid == resource.data.createdBy || isAdmin();
 
-      // Allow any authenticated user to add/update their rating
+    // Rules for the 'meals' collection
+    match /meals/{mealId} {
+      // Anyone can read meal details (e.g., clients browsing)
+      allow read: if true;
+      
+      // Only the caterer who created it or an admin can create, update, or delete it
+      allow create, update, delete: if request.auth != null && (request.resource.data.createdBy == request.auth.uid || isAdmin());
+      
+       // Allow anyone authenticated to add a rating
       match /userRatings/{userId} {
-        allow read, write: if isOwner(userId);
+        allow read, write: if request.auth != null;
       }
     }
-    
+
+    // Rules for the 'orders' collection
     match /orders/{orderId} {
-      allow create: if request.auth.uid == request.resource.data.clientId;
-      allow read, update: if request.auth.uid == resource.data.clientId
-                         || request.auth.uid in resource.data.catererIds
-                         || request.auth.uid == resource.data.deliveryPersonId
-                         || isAdmin();
-      allow delete: if isAdmin();
+        allow create: if request.auth.uid == request.resource.data.clientId;
+        allow read, update: if request.auth.uid == resource.data.clientId 
+                              || request.auth.uid in resource.data.catererIds 
+                              || request.auth.uid == resource.data.deliveryPersonId 
+                              || isAdmin();
+        allow delete: if isAdmin();
     }
     
+    // Rules for the 'notifications' collection
     match /notifications/{notificationId} {
-        allow read, update: if request.auth.uid == resource.data.userId;
-        allow create: if true; // Allow services to create notifications
+      allow read, create, update: if request.auth.uid == resource.data.userId;
+      allow delete: if isAdmin();
     }
   }
 }
