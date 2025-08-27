@@ -112,7 +112,7 @@ export default function SignupDeliveryStep2Page() {
       <LeafPattern className="absolute inset-0 w-full h-full text-gray-400/50" />
       <div className="relative w-full max-w-lg bg-white/70 backdrop-blur-md rounded-3xl shadow-2xl flex flex-col">
         <div className="bg-gradient-to-b from-[#22C58B] to-[#0B7E58] rounded-t-3xl text-white text-center p-6 space-y-3 rounded-b-2xl">
-          <Image src="/kounfit.png" alt="Kounfit Logo" width={40} height={40} className="mx-auto" />
+          <Image src="/kounfit/kounfit white.png" alt="Kounfit Logo" width={40} height={40} className="mx-auto" />
           <h2 className="text-2xl font-bold">Inscription Livreur</h2>
           <p className="text-lg font-medium">– Etape 2/2 –</p>
           <div className="flex items-center justify-center gap-2 pt-2">
