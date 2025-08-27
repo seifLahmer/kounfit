@@ -45,7 +45,7 @@ export default function WelcomePage() {
 
         {/* Animated Content */}
         <motion.div 
-            className="flex-1 flex flex-col items-center justify-start text-center p-8"
+            className="flex-1 flex flex-col items-center justify-start text-center p-8 pt-4"
             initial={{ y: "100%", opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 1, ease: "circOut", delay: 0.3 }}
@@ -55,7 +55,7 @@ export default function WelcomePage() {
             Mangez sain, vivez mieux
             </p>
             
-            <div className="w-full max-w-sm h-28 flex items-center justify-center">
+            <div className="w-full max-w-sm h-28 flex items-center justify-center mt-4">
                 <AnimatePresence>
                 {!isUnlocked ? (
                     <motion.div
