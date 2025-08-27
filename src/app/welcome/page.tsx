@@ -50,8 +50,8 @@ export default function WelcomePage() {
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 1, ease: "circOut", delay: 0.3 }}
         >
-            <Image src="/kounfit/kounfit black.png" alt="Kounfit Logo" width={180} height={45} className="mb-2" />
-            <p className="text-2xl font-semibold text-gray-700 mt-2 mb-4">
+            <Image src="/kounfit/kounfit black.png" alt="Kounfit Logo" width={180} height={45} />
+            <p className="text-2xl font-semibold text-gray-700 -mt-2 mb-4">
             Mangez sain, vivez mieux
             </p>
             
