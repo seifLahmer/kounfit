@@ -27,7 +27,7 @@ export default function WelcomePage() {
     <div className="flex flex-col h-screen w-screen bg-white overflow-hidden">
         {/* Animated Image */}
         <motion.div
-            className="relative w-full h-3/5 flex items-center justify-center"
+            className="relative w-full h-1/2 flex items-center justify-center"
             initial={{ y: "-100%", opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 1, ease: "circOut" }}
@@ -51,7 +51,7 @@ export default function WelcomePage() {
             transition={{ duration: 1, ease: "circOut", delay: 0.3 }}
         >
             <Image src="/kounfit/kounfit black.png" alt="Kounfit Logo" width={180} height={45} className="mb-2" />
-            <p className="text-2xl font-semibold text-gray-700 mt-2 mb-8">
+            <p className="text-2xl font-semibold text-gray-700 mt-2 mb-4">
             Mangez sain, vivez mieux
             </p>
             
