@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef } from "react";
@@ -24,19 +23,17 @@ export default function WelcomePage() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-background">
-      <div className="relative w-full h-3/5">
-        <Image
-          src="/welcome.png"
-          alt="Bol de nourriture saine avec quinoa, pois chiches, concombre et tomates"
-          layout="fill"
-          objectFit="cover"
-          className="z-0"
-          data-ai-hint="healthy food bowl"
-          priority
-        />
-      </div>
-      <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+    <div className="relative flex flex-col h-screen w-screen bg-background">
+      <Image
+        src="/welcome.png"
+        alt="Bol de nourriture saine avec quinoa, pois chiches, concombre et tomates"
+        layout="fill"
+        objectFit="cover"
+        className="z-0"
+        data-ai-hint="healthy food bowl"
+        priority
+      />
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-end text-center p-8 pb-16">
         <Image src="/kounfit/kounfit black.png" alt="Kounfit Logo" width={180} height={45} className="mb-2" />
         <p className="text-2xl font-semibold text-gray-700 mt-2 mb-8">
           Mangez sain, vivez mieux
