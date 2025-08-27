@@ -36,7 +36,7 @@ export default function WelcomePage() {
         priority
       />
       <div className="absolute bottom-0 left-0 right-0 z-10 p-8 pb-12 flex flex-col items-center text-center">
-        <Image src="/kounfit-black.png" alt="Kounfit Logo" width={180} height={45} className="mb-2" />
+        <Image src="/kounfit/kounfit black.png" alt="Kounfit Logo" width={180} height={45} className="mb-2" />
         <p className="text-2xl font-semibold text-gray-700 mt-2 mb-8">
           Mangez sain, vivez mieux
         </p>

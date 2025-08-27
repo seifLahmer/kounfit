@@ -15,7 +15,7 @@ export default function PendingApprovalPage() {
       <LeafPattern className="absolute inset-0 w-full h-full text-primary/10" />
       <div className="relative w-full max-w-md bg-card shadow-xl rounded-3xl mx-4">
         <div className="bg-gradient-to-b from-[#22C58B] to-[#0B7E58] rounded-t-3xl text-white text-center p-8">
-            <Image src="/kounfit-white.png" alt="Kounfit Logo" width={120} height={30} className="mx-auto" />
+            <Image src="/kounfit/kounfit white.png" alt="Kounfit Logo" width={120} height={30} className="mx-auto" />
         </div>
 
         <div className="relative bg-card rounded-b-3xl px-6 pb-8 text-center -mt-8 pt-12">

@@ -1,42 +1,44 @@
-# Firebase Studio
+# Kounfit - Plateforme de Nutrition Intelligente
 
-This is a NextJS starter in Firebase Studio.
+Kounfit est une application complète qui connecte intelligemment trois types d'utilisateurs : les **Clients**, les **Traiteurs** et les **Livreurs**, le tout supervisé par des **Administrateurs**.
 
 ## Fonctionnement de l'application
-
-Kounfit est une plateforme complète qui connecte intelligemment trois types d'utilisateurs : les **Clients**, les **Traiteurs** et les **Livreurs**, le tout supervisé par des **Administrateurs**.
 
 ### 1. Inscription et Rôles
 
 *   **Choix du rôle :** Tout commence par une page d'inscription unique où l'utilisateur choisit son rôle (Client, Traiteur ou Livreur).
 *   **Processus en deux étapes :**
     *   **Étape 1 :** L'utilisateur crée son compte avec un nom, un email et un mot de passe.
-    *   **Étape 2 :** Il est ensuite redirigé vers un formulaire spécifique à son rôle pour compléter son profil (objectifs nutritionnels pour le client, nom du restaurant pour le traiteur, etc.).
-*   **Approbation des partenaires :** Les comptes des **Traiteurs** et **Livreurs** sont mis "en attente". Ils ne peuvent pas accéder à leur interface tant qu'un **Administrateur** n'a pas manuellement approuvé leur compte. Pendant cette période, s'ils tentent de se connecter, ils sont redirigés vers une page leur expliquant que leur compte est en cours de validation.
+    *   **Étape 2 :** Il est ensuite redirigé vers un formulaire spécifique à son rôle pour compléter son profil (objectifs nutritionnels pour le client, nom du restaurant pour le traiteur, type de véhicule pour le livreur, etc.).
+*   **Approbation des partenaires :** Les comptes des **Traiteurs** et **Livreurs** sont mis "en attente". Ils ne peuvent pas accéder à leur interface tant qu'un **Administrateur** n'a pas manuellement approuvé leur compte. S'ils tentent de se connecter, ils sont redirigés vers une page leur expliquant que leur compte est en cours de validation.
 
 ### 2. L'Interface Client
 
 *   **Objectif principal :** Aider les clients à atteindre leurs objectifs nutritionnels (perte de poids, maintien, etc.).
-*   **Tableau de bord (`/home`) :** Affiche un résumé des calories et des macros consommées pour la journée par rapport à leurs objectifs personnels, qui sont calculés automatiquement lors de l'inscription.
+*   **Tableau de bord (`/home`) :** Affiche un résumé des calories et des macros consommées pour la journée par rapport à leurs objectifs personnels, qui sont calculés automatiquement lors de l'inscription et ajustables depuis le profil.
 *   **Plan de repas quotidien :** Le client peut ajouter des repas (petit-déjeuner, déjeuner, etc.) à son plan du jour. Ces repas sont choisis parmi une liste de plats proposés par les traiteurs de **la même région que le client**.
 *   **Panier et Commande (`/shopping-list`) :** Les repas ajoutés au plan du jour apparaissent automatiquement dans le panier. Le client peut alors passer une commande, qui est envoyée aux traiteurs concernés.
-*   **Profil personnalisable (`/profile`) :** Le client peut mettre à jour ses informations personnelles, ses objectifs et ses données physiques, ce qui recalcule automatiquement ses besoins nutritionnels.
+*   **Profil personnalisable (`/profile`) :** Le client peut mettre à jour ses informations personnelles, ses objectifs et ses données physiques, ce qui recalcule automatiquement ses besoins nutritionnels. Les modifications sont sauvegardées automatiquement.
+*   **Favoris (`/meal-plans`) :** Une page dédiée où le client retrouve tous les repas qu'il a marqués comme favoris.
 
 ### 3. L'Interface Traiteur
 
 *   **Objectif principal :** Gérer les repas et les commandes de sa région.
-*   **Ajout de repas avec IA (`/caterer/add-meal`) :** Le traiteur peut simplement taper le nom d'un plat (ex: "Couscous au poulet"). L'IA analyse ce nom et génère automatiquement une description marketing, une liste d'ingrédients estimée et un calcul complet des calories et des macros. Le traiteur peut ensuite ajuster ces informations, fixer un prix et ajouter une photo avant de publier le repas.
-*   **Gestion des commandes (`/caterer`) :** Il peut voir les nouvelles commandes des clients de sa région, les marquer comme "en préparation" puis "prêtes pour la livraison". Chaque changement de statut envoie une notification au client.
+*   **Tableau de bord (`/caterer`) :** Il peut voir les nouvelles commandes des clients de sa région, les marquer comme "en préparation" puis "prêtes pour la livraison" en assignant un livreur.
+*   **Ajout de repas avec IA (`/caterer/add-meal`) :** Le traiteur peut simplement taper le nom d'un plat (ex: "Couscous au poulet"). L'IA génère automatiquement une description, une liste d'ingrédients et un calcul des calories/macros. Le traiteur peut ajuster ces informations, fixer un prix et ajouter une photo avant de publier le repas.
 *   **Statistiques (`/caterer/stats`) :** Un tableau de bord visuel lui montre son chiffre d'affaires, les repas les plus populaires et les mieux notés.
+*   **Profil (`/caterer/profile`) :** Permet au traiteur de modifier le nom de son restaurant et de gérer sa liste de livreurs préférés. Les modifications sont enregistrées automatiquement.
 
 ### 4. L'Interface Livreur
 
-*   **Objectif principal :** Gérer les livraisons dans sa zone géographique.
-*   **Tableau de bord (`/delivery`) :** Le livreur voit toutes les commandes de sa région qui ont été marquées comme "prêtes pour la livraison" par les traiteurs. Il peut alors prendre en charge une livraison et mettre à jour son statut (en cours, livrée).
+*   **Objectif principal :** Gérer les livraison dans sa zone géographique.
+*   **Tableau de bord (`/delivery`) :** Le livreur voit toutes les commandes de sa région qui lui ont été assignées et qui sont prêtes. Il peut les marquer comme "livrées" une fois la livraison effectuée.
+*   **Portefeuille (`/delivery/wallet`) :** Affiche le chiffre d'affaires total (basé sur 7 DT par livraison) et l'historique de toutes les commandes livrées.
+*   **Profil (`/delivery/profile`) :** Permet au livreur de mettre à jour son nom et son type de véhicule. Les modifications sont enregistrées automatiquement.
 
 ### 5. L'Interface Administrateur
 
 *   **Supervision totale :** L'administrateur a une vue d'ensemble de toute l'activité.
-*   **Gestion des utilisateurs :** Il peut voir la liste des traiteurs, leur chiffre d'affaires et supprimer un partenaire si nécessaire.
+*   **Gestion des utilisateurs :** Il peut voir la liste des traiteurs et des livreurs, leur statut (approuvé, en attente, rejeté) et leurs informations de base.
 *   **Suivi des commandes :** Il peut consulter toutes les commandes passées sur la plateforme et les filtrer par région.
-*   **Gestion des rôles (`/admin/manage`) :** C'est ici que l'administrateur approuve les nouveaux comptes de traiteurs et de livreurs. Il peut également assigner le rôle d'administrateur à d'autres utilisateurs.
+*   **Gestion des comptes (`/admin`) :** C'est ici que l'administrateur approuve ou rejette les nouveaux comptes de traiteurs et de livreurs.
