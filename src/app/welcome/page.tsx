@@ -15,8 +15,7 @@ export default function WelcomePage() {
   const handleDragEnd = (event: any, info: any) => {
     if (constraintsRef.current) {
       const railWidth = constraintsRef.current.offsetWidth;
-      // The handle is not a fixed width anymore, so let's estimate or get it dynamically if possible
-      const handleWidth = 140; // Approximate width of the "Get started" handle
+      const handleWidth = 140; 
       const travelDistance = railWidth - handleWidth;
       if (info.offset.x > travelDistance * 0.8) {
         setIsUnlocked(true);
@@ -25,17 +24,19 @@ export default function WelcomePage() {
   };
 
   return (
-    <div className="relative h-screen w-screen">
-      <Image
-        src="/welcome.png"
-        alt="Bol de nourriture saine avec quinoa, pois chiches, concombre et tomates"
-        layout="fill"
-        objectFit="cover"
-        className="z-0"
-        data-ai-hint="healthy food bowl"
-        priority
-      />
-      <div className="absolute bottom-0 left-0 right-0 z-10 p-8 pb-12 flex flex-col items-center text-center">
+    <div className="flex flex-col h-screen w-screen bg-background">
+      <div className="relative w-full h-3/5">
+        <Image
+          src="/welcome.png"
+          alt="Bol de nourriture saine avec quinoa, pois chiches, concombre et tomates"
+          layout="fill"
+          objectFit="cover"
+          className="z-0"
+          data-ai-hint="healthy food bowl"
+          priority
+        />
+      </div>
+      <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
         <Image src="/kounfit/kounfit black.png" alt="Kounfit Logo" width={180} height={45} className="mb-2" />
         <p className="text-2xl font-semibold text-gray-700 mt-2 mb-8">
           Mangez sain, vivez mieux
