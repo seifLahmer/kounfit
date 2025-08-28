@@ -44,11 +44,10 @@ export async function createNotification(userId: string, message: string): Promi
 export async function getNotifications(userId: string): Promise<Notification[]> {
   try {
     const notificationsCollection = collection(db, NOTIFICATIONS_COLLECTION);
+    // Query only by userId to avoid needing a composite index.
     const q = query(
       notificationsCollection,
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc'),
-      limit(20)
+      where('userId', '==', userId)
     );
 
     const querySnapshot = await getDocs(q);
@@ -62,7 +61,12 @@ export async function getNotifications(userId: string): Promise<Notification[]> 
       } as Notification);
     });
 
-    return notifications;
+    // Sort the notifications manually in the code.
+    notifications.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    
+    // Apply the limit after sorting.
+    return notifications.slice(0, 20);
+
   } catch (error) {
     console.error('Error fetching notifications: ', error);
     throw new Error('Could not fetch notifications.');
