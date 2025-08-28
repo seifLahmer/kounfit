@@ -131,7 +131,7 @@ export default function CatererProfilePage() {
   }
 
   return (
-    <div className="bg-primary">
+    <div className="bg-primary pb-8">
        <div className="p-4 pt-8">
             <div className="flex justify-between items-center text-white mb-6">
                 <h1 className="text-xl font-bold">MON PROFIL</h1>
