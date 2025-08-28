@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Bell, ChefHat, PlusCircle, Loader2, Trash2, CheckCircle, Edit2, MoreHorizontal, Utensils, ClipboardList, Bike } from "lucide-react";
+import { Bell, ChefHat, PlusCircle, Loader2, Trash2, CheckCircle, Edit2, MoreHorizontal, Utensils, ClipboardList, Bike, MapPin } from "lucide-react";
 import { getMealsByCaterer, deleteMeal } from "@/lib/services/mealService";
 import { getOrdersByCaterer, updateOrderStatus } from "@/lib/services/orderService";
 import { getAllDeliveryPeople } from "@/lib/services/deliveryService";
@@ -212,7 +212,11 @@ export default function CatererPage() {
               </Avatar>
               <span className="font-semibold">{order.clientName}</span>
             </div>
-            <div className="text-sm text-muted-foreground min-h-[40px]">
+            <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                <MapPin className="w-4 h-4 mt-0.5 shrink-0"/>
+                <span>{order.deliveryAddress}</span>
+            </div>
+            <div className="text-sm text-muted-foreground min-h-[40px] border-t pt-2">
               {order.items.slice(0, 2).map(item => (
                 <p key={item.mealId}>{item.quantity}x {item.mealName}</p>
               ))}
@@ -369,6 +373,3 @@ export default function CatererPage() {
     </div>
   );
 }
-
-    
-    
