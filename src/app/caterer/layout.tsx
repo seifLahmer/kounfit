@@ -88,7 +88,7 @@ export default function CatererLayout({
 
   return (
     <div className="flex flex-col min-h-screen bg-[#FFFFFF]">
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 pb-24">{children}</main>
       <nav className="fixed bottom-4 left-4 right-4 z-50 md:hidden">
          <div className="relative flex justify-around items-center h-16 bg-white/70 backdrop-blur-md rounded-full shadow-lg border border-white/30">
             {navLinks.map((link) => {
