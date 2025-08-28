@@ -178,7 +178,7 @@ export default function LoginPage() {
 
       <div className="w-full max-w-sm mx-auto px-4 py-8 flex-1">
         <div className="text-center mb-8">
-            <Image src="/koufnit/kounfit green.png" alt="Kounfit Logo" width={160} height={40} className="mx-auto" />
+            <Image src="/kounfit/kounfit green.png" alt="Kounfit Logo" width={160} height={40} className="mx-auto" />
         </div>
         
         <Form {...form}>
