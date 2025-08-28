@@ -45,7 +45,7 @@ export default function WelcomePage() {
 
         {/* Animated Content */}
         <motion.div 
-            className="flex-1 flex flex-col items-center justify-center text-center p-8 -mt-16"
+            className="flex-1 flex flex-col items-center justify-center text-center p-8 -mt-24"
             initial={{ y: "100%", opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 1, ease: "circOut", delay: 0.3 }}
