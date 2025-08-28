@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { NutritionSummary, MealCard } from "@/components/home-page-components";
+import Link from "next/link";
 
 const emptyPlan: DailyPlan = { breakfast: [], lunch: [], snack: [], dinner: [] };
 
@@ -124,8 +125,10 @@ export default function HomePage() {
                         </p>
                     </div>
                 </div>
-                <Button variant="ghost" size="icon">
+                <Button asChild variant="ghost" size="icon">
+                  <Link href="/notifications">
                     <Bell />
+                  </Link>
                 </Button>
             </div>
           
