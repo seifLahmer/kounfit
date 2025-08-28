@@ -48,21 +48,17 @@ export async function addMeal(mealData: Omit<Meal, 'id' | 'createdAt'>): Promise
 export async function deleteMeal(mealId: string, imageRefPath?: string): Promise<void> {
   const mealDocRef = doc(db, MEALS_COLLECTION, mealId);
 
-  // First, try to delete the image from Firebase Storage if a path is provided.
   if (imageRefPath) {
     try {
       const imageRef = ref(storage, imageRefPath);
       await deleteObject(imageRef);
     } catch (error: any) {
-      // We can ignore the "object-not-found" error, as it means the image is already gone.
-      // For other storage errors, we log them but proceed to delete the database entry.
       if (error.code !== 'storage/object-not-found') {
         console.error("Error deleting image from Storage: ", error);
       }
     }
   }
 
-  // Then, always attempt to delete the meal document from Firestore.
   try {
     await deleteDoc(mealDocRef);
   } catch (error) {
@@ -95,7 +91,6 @@ export async function getMealsByCaterer(catererUid: string): Promise<Meal[]> {
             meals.push(meal);
         });
 
-        // Sort meals by creation date, newest first
         meals.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
         
         return meals;
@@ -113,18 +108,16 @@ export async function getMealsByCaterer(catererUid: string): Promise<Meal[]> {
  */
 export async function getAvailableMealsByCategory(category: Meal['category'], region: string): Promise<Meal[]> {
     try {
-        // 1. Find all caterers in the specified region
         const caterersRef = collection(db, CATERERS_COLLECTION);
         const regionQuery = query(caterersRef, where("region", "==", region), where("status", "==", "approved"));
         const catererSnapshot = await getDocs(regionQuery);
         
         if (catererSnapshot.empty) {
-            return []; // No caterers in this region, so no meals
+            return []; 
         }
         
         const catererIds = catererSnapshot.docs.map(doc => doc.id);
 
-        // 2. Find all meals created by those caterers in the specified category
         const mealsCollection = collection(db, MEALS_COLLECTION);
         const mealsQuery = query(
             mealsCollection,
@@ -244,22 +237,17 @@ export async function addMealRating(mealId: string, userId: string, rating: numb
       let newRatingCount = currentRatings.count;
 
       if (userRatingDoc.exists()) {
-        // User is updating their rating
         const oldRating = userRatingDoc.data().rating;
         newTotalRating = newTotalRating - oldRating + rating;
-        // Rating count does not change
       } else {
-        // New rating
         newTotalRating += rating;
         newRatingCount++;
       }
       
       const newAverageRating = newTotalRating / newRatingCount;
 
-      // Update the user's specific rating
       transaction.set(ratingRef, { rating, ratedAt: serverTimestamp() });
       
-      // Update the aggregated rating on the meal document
       transaction.update(mealRef, {
         "ratings.average": newAverageRating,
         "ratings.count": newRatingCount

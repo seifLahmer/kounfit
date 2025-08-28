@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Bell, ChefHat, PlusCircle, Loader2, Trash2, CheckCircle, Edit2, MoreHorizontal, Utensils, ClipboardList, Bike, MapPin } from "lucide-react";
-import { getMealsByCaterer, deleteMeal } from "@/lib/services/mealService";
+import { getMealsByCaterer, deleteMeal, getMealById } from "@/lib/services/mealService";
 import { getOrdersByCaterer, updateOrderStatus } from "@/lib/services/orderService";
 import { getAllDeliveryPeople } from "@/lib/services/deliveryService";
 import type { Meal, Order, Caterer, DeliveryPerson } from "@/lib/types";
@@ -53,6 +53,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useRouter } from 'next/navigation';
+import { Separator } from '@/components/ui/separator';
 
 export default function CatererPage() {
   const [caterer, setCaterer] = useState<Caterer | null>(null);
@@ -61,6 +62,8 @@ export default function CatererPage() {
   const [preferredDeliveryPeople, setPreferredDeliveryPeople] = useState<DeliveryPerson[]>([]);
   const [selectedDeliveryPerson, setSelectedDeliveryPerson] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedOrderMeals, setSelectedOrderMeals] = useState<Meal[]>([]);
+  const [isMealDetailsLoading, setIsMealDetailsLoading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -86,7 +89,6 @@ export default function CatererPage() {
             setMeals(fetchedMeals);
             setOrders(receivedOrders);
 
-            // Filter delivery people based on the caterer's preferred list
             const preferredIds = catererData.preferredDeliveryPeople || [];
             const deliveryInRegion = allDeliveryPeople.filter(
                 person => preferredIds.includes(person.uid) && person.status === 'approved'
@@ -146,7 +148,19 @@ export default function CatererPage() {
     handleStatusChange(orderId, 'ready_for_delivery', selectedDeliveryPerson);
     setSelectedDeliveryPerson(null);
   };
-
+  
+  const handleViewDetails = async (order: Order) => {
+    setIsMealDetailsLoading(true);
+    try {
+        const mealPromises = order.items.map(item => getMealById(item.mealId));
+        const meals = await Promise.all(mealPromises);
+        setSelectedOrderMeals(meals.filter((m): m is Meal => m !== null));
+    } catch (error) {
+        toast({ title: "Erreur", description: "Impossible de charger les détails des repas.", variant: "destructive" });
+    } finally {
+        setIsMealDetailsLoading(false);
+    }
+  };
 
   const { pendingOrders, inPreparationOrders, readyForDeliveryOrders, deliveredOrders } = useMemo(() => {
     return {
@@ -164,115 +178,141 @@ export default function CatererPage() {
         case 'pending':
           return { 
             text: 'Préparer', 
-            action: () => handleStatusChange(order.id, 'in_preparation'), 
+            action: (e: React.MouseEvent) => { e.stopPropagation(); handleStatusChange(order.id, 'in_preparation'); },
             className: 'bg-primary hover:bg-primary/90' 
           };
         case 'in_preparation':
           return { 
             text: 'Prêt (Choisir livreur)', 
-            action: () => {}, // Handled by Dialog trigger
+            action: (e: React.MouseEvent) => e.stopPropagation(), // Let DialogTrigger handle it
             className: 'bg-blue-500 hover:bg-blue-600',
             isDialog: true
           };
         case 'ready_for_delivery':
           return { 
             text: 'En attente du livreur', 
-            action: () => {}, 
+            action: (e: React.MouseEvent) => e.stopPropagation(), 
             className: 'bg-yellow-500', 
             disabled: true 
           };
-        case 'delivered':
-           return { 
-             text: 'Détails', 
-             action: () => {}, 
-             className: 'bg-gray-500 hover:bg-gray-600' 
-            };
         default:
-          return { 
-            text: 'Détails', 
-            action: () => {}, 
-            className: 'bg-gray-500 hover:bg-gray-600' 
-          };
+          return null;
       }
     };
     
-    const { text, action, className, disabled, isDialog } = getButtonAction();
-
-    const cardButton = (
-        <Button onClick={action} className={`w-full ${className} text-white rounded-lg`} disabled={disabled}>{text}</Button>
+    const buttonProps = getButtonAction();
+    
+    const actionButton = buttonProps && (
+         <Button onClick={buttonProps.action} className={`w-full ${buttonProps.className} text-white rounded-lg`} disabled={buttonProps.disabled}>{buttonProps.text}</Button>
     );
 
     return (
-      <Card className="w-64 shrink-0 shadow-lg transition-transform duration-300 hover:scale-105">
-        <CardContent className="p-4 space-y-3">
-            <div className="flex items-center gap-3">
-              <Avatar>
-                <AvatarImage src={`https://placehold.co/40x40.png`} />
-                <AvatarFallback>{order.clientName.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <span className="font-semibold">{order.clientName}</span>
-            </div>
-            <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                <MapPin className="w-4 h-4 mt-0.5 shrink-0"/>
-                <span>{order.deliveryAddress}</span>
-            </div>
-            <div className="text-sm text-muted-foreground min-h-[40px] border-t pt-2">
-              {order.items.slice(0, 2).map(item => (
-                <p key={item.mealId}>{item.quantity}x {item.mealName}</p>
-              ))}
-            </div>
-            
-            {order.status === 'pending' && <Badge variant="secondary">À préparer</Badge>}
-            {order.status === 'in_preparation' && <Badge className="bg-blue-100 text-blue-800">En cours</Badge>}
-            {order.status === 'ready_for_delivery' && <Badge className="bg-yellow-100 text-yellow-800">Prêt</Badge>}
-            {order.status === 'delivered' && <Badge className="bg-green-100 text-green-800 flex items-center gap-1"><CheckCircle className="w-3 h-3"/> Livrée</Badge>}
-            
-            <p className="font-bold text-lg">{order.totalPrice.toFixed(2)} DT</p>
+        <Dialog onOpenChange={(isOpen) => { if (!isOpen) setSelectedOrderMeals([]) }}>
+            <DialogTrigger asChild>
+                <Card 
+                    className="w-64 shrink-0 shadow-lg transition-transform duration-300 hover:scale-105 cursor-pointer"
+                    onClick={() => handleViewDetails(order)}
+                >
+                    <CardContent className="p-4 space-y-3">
+                        <div className="flex items-center gap-3">
+                        <Avatar>
+                            <AvatarImage src={`https://placehold.co/40x40.png`} />
+                            <AvatarFallback>{order.clientName.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <span className="font-semibold">{order.clientName}</span>
+                        </div>
+                        <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                            <MapPin className="w-4 h-4 mt-0.5 shrink-0"/>
+                            <span>{order.deliveryAddress}</span>
+                        </div>
+                        <div className="text-sm text-muted-foreground min-h-[40px] border-t pt-2">
+                        {order.items.slice(0, 2).map(item => (
+                            <p key={item.mealId}>{item.quantity}x {item.mealName}</p>
+                        ))}
+                        </div>
+                        
+                        {order.status === 'pending' && <Badge variant="secondary">À préparer</Badge>}
+                        {order.status === 'in_preparation' && <Badge className="bg-blue-100 text-blue-800">En cours</Badge>}
+                        {order.status === 'ready_for_delivery' && <Badge className="bg-yellow-100 text-yellow-800">Prêt</Badge>}
+                        {order.status === 'delivered' && <Badge className="bg-green-100 text-green-800 flex items-center gap-1"><CheckCircle className="w-3 h-3"/> Livrée</Badge>}
+                        
+                        <p className="font-bold text-lg">{order.totalPrice.toFixed(2)} DT</p>
 
-            {isDialog ? (
-                <Dialog onOpenChange={(isOpen) => !isOpen && setSelectedDeliveryPerson(null)}>
-                    <DialogTrigger asChild>{cardButton}</DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                        <DialogTitle>Assigner un livreur</DialogTitle>
-                        <DialogDescription>
-                            Choisissez un livreur de votre liste pour la commande #{order.id.substring(0, 5)}.
-                        </DialogDescription>
-                        </DialogHeader>
-                        {preferredDeliveryPeople.length > 0 ? (
-                        <Select onValueChange={setSelectedDeliveryPerson}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Sélectionner un livreur..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {preferredDeliveryPeople.map(person => (
-                                    <SelectItem key={person.uid} value={person.uid}>
-                                        {person.name} ({person.vehicleType})
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        ) : (
-                            <div className="text-sm text-muted-foreground text-center py-4">
-                                <p>Aucun livreur préféré trouvé.</p>
-                                <Button variant="link" onClick={() => router.push('/caterer/profile')}>
-                                    Gérer ma liste de livreurs
-                                </Button>
+                        {buttonProps?.isDialog ? (
+                            <Dialog onOpenChange={(isOpen) => !isOpen && setSelectedDeliveryPerson(null)}>
+                                <DialogTrigger asChild onClick={(e) => e.stopPropagation()}>{actionButton}</DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                    <DialogTitle>Assigner un livreur</DialogTitle>
+                                    <DialogDescription>
+                                        Choisissez un livreur pour la commande #{order.id.substring(0, 5)}.
+                                    </DialogDescription>
+                                    </DialogHeader>
+                                    {preferredDeliveryPeople.length > 0 ? (
+                                    <Select onValueChange={setSelectedDeliveryPerson}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Sélectionner un livreur..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {preferredDeliveryPeople.map(person => (
+                                                <SelectItem key={person.uid} value={person.uid}>
+                                                    {person.name} ({person.vehicleType})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    ) : (
+                                        <div className="text-sm text-muted-foreground text-center py-4">
+                                            <p>Aucun livreur préféré trouvé.</p>
+                                            <Button variant="link" onClick={() => router.push('/caterer/profile')}>
+                                                Gérer ma liste de livreurs
+                                            </Button>
+                                        </div>
+                                    )}
+                                    <DialogFooter>
+                                        <DialogClose asChild>
+                                            <Button onClick={() => handleAssignDelivery(order.id)} disabled={!selectedDeliveryPerson || preferredDeliveryPeople.length === 0}>
+                                                <Bike className="mr-2 h-4 w-4" /> Assigner
+                                            </Button>
+                                        </DialogClose>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                        ) : actionButton}
+                    </CardContent>
+                </Card>
+            </DialogTrigger>
+             <DialogContent className="max-h-[80svh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle>Détails de la Commande #{order.id.substring(0,5)}</DialogTitle>
+                    <DialogDescription>
+                        Liste des repas et ingrédients pour la préparation.
+                    </DialogDescription>
+                </DialogHeader>
+                {isMealDetailsLoading ? (
+                     <div className="flex justify-center items-center h-48">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {selectedOrderMeals.map(meal => (
+                            <div key={meal.id} className="space-y-2">
+                                <h3 className="font-semibold text-lg text-primary">{order.items.find(i => i.mealId === meal.id)?.quantity}x {meal.name}</h3>
+                                <div className="pl-4 border-l-2 border-primary/50 space-y-1 text-sm">
+                                    {meal.ingredients.map(ing => (
+                                        <div key={ing.name} className="flex justify-between">
+                                            <span>{ing.name}</span>
+                                            <span className="text-muted-foreground">{ing.grams}g</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <Separator className="my-2"/>
                             </div>
-                        )}
-                        <DialogFooter>
-                            <DialogClose asChild>
-                                <Button onClick={() => handleAssignDelivery(order.id)} disabled={!selectedDeliveryPerson || preferredDeliveryPeople.length === 0}>
-                                    <Bike className="mr-2 h-4 w-4" /> Assigner
-                                </Button>
-                            </DialogClose>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-            ) : cardButton}
-
-        </CardContent>
-      </Card>
+                        ))}
+                    </div>
+                )}
+            </DialogContent>
+        </Dialog>
     )
   };
 
