@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import Image from "next/image"
 
 const links = [
   { href: "/profile", label: "Profil", icon: User },
@@ -72,20 +73,22 @@ export function BottomNav() {
                 </div>
             </button>
           </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Êtes-vous sûr de vouloir vous déconnecter ?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Vous devrez vous reconnecter pour accéder à nouveau à votre compte.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Annuler</AlertDialogCancel>
-              <AlertDialogAction onClick={handleLogout} className="bg-destructive hover:bg-destructive/90">
-                Déconnexion
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
+           <AlertDialogContent className="w-11/12 max-w-sm rounded-3xl">
+              <AlertDialogHeader className="text-center space-y-4">
+                <Image src="/kounfit/kounfit black.png" alt="Kounfit Logo" width={100} height={25} className="mx-auto" />
+                <AlertDialogTitle className="text-2xl font-bold">Déconnexion</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Êtes-vous sûr de vouloir vous déconnecter ?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="flex-col-reverse sm:flex-col-reverse gap-2">
+                <AlertDialogCancel className="w-full h-12 rounded-full border-gray-300">Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleLogout} className="w-full h-12 rounded-full bg-secondary hover:bg-secondary/90">
+                  Déconnexion
+                </AlertDialogAction>
+              </AlertDialogFooter>
+               <p className="text-center text-sm text-muted-foreground mt-4">À bientôt sur Kounfit !</p>
+            </AlertDialogContent>
         </AlertDialog>
       </div>
     </nav>
