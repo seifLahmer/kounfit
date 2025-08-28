@@ -21,10 +21,10 @@ export default function SplashPage() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-white overflow-hidden">
       <motion.div
         className="flex items-center"
-        initial={{ y: "50vh", x: "0%", scale: 0.8, opacity: 0 }} // Start off-screen at the bottom
+        initial={{ y: "50vh", x: "20%", scale: 0.8, opacity: 0 }} // Start off-screen at the bottom, shifted right
         animate={{
           y: [null, "0vh", "0vh", "0vh", "0vh"],      // Jump to center-y
-          x: [null, "0%", "0%", "-20%", "-20%"],      // Stay center-x then move left
+          x: [null, "20%", "20%", "0%", "0%"],      // Stay right-shifted then move to center
           scale: [null, 1, 1, 1, 1],                  // Scale up to 1
           opacity: [null, 1, 1, 1, 1]                 // Become visible
         }}
