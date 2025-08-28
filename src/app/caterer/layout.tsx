@@ -112,7 +112,7 @@ export default function CatererLayout({
                     </div>
                 </button>
               </AlertDialogTrigger>
-              <AlertDialogContent className="w-11/12 max-w-sm rounded-3xl">
+              <AlertDialogContent className="w-11/12 max-w-sm rounded-3xl bg-white">
                 <AlertDialogHeader className="text-center space-y-4">
                   <Image src="/kounfit/kounfit black.png" alt="Kounfit Logo" width={100} height={25} className="mx-auto" />
                   <AlertDialogTitle className="text-2xl font-bold">Déconnexion</AlertDialogTitle>
