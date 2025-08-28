@@ -16,7 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useState, useEffect, useCallback } from "react";
-import { signInWithEmailAndPassword, signInWithRedirect, User as FirebaseUser, getRedirectResult } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithRedirect, User as FirebaseUser, getRedirectResult, OAuthProvider } from "firebase/auth";
 import { auth, db, googleProvider } from "@/lib/firebase";
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
@@ -34,15 +34,26 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+const AppleIcon = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" {...props}>
+        <path d="M12.01,16.23c-1.2,0-2.33-.6-3.43-1.81a5.45,5.45,0,0,1-1.6-4,5.17,5.17,0,0,1,3.13-4.88,5.13,5.13,0,0,1,5.18,1.3,1,1,0,0,0,1.32.13,1,1,0,0,0,.14-1.32A7.14,7.14,0,0,0,12,3.5a7.41,7.41,0,0,0-5.83,3.1,7.2,7.2,0,0,0,1.43,10.29,4.92,4.92,0,0,0,3.3,1.44A5.2,5.2,0,0,0,16.29,17a1,1,0,0,0-.12-1.32,1,1,0,0,0-1.32.13A3.13,3.13,0,0,1,12.01,16.23Z"/>
+        <path d="M14.5,3.61a5.24,5.24,0,0,0-2.69.73,5.43,5.43,0,0,0-2.3,2.4,1,1,0,0,0,1.74.9,3.39,3.39,0,0,1,1.52-1.55,3.24,3.24,0,0,1,3.26-.08,1,1,0,0,0,1-1.74A5.23,5.23,0,0,0,14.5,3.61Z"/>
+    </svg>
+);
+
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [isIos, setIsIos] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
+    if(Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
+      setIsIos(true);
+    }
   }, []);
 
   const form = useForm<LoginFormValues>({
@@ -163,6 +174,27 @@ export default function LoginPage() {
     }
   };
 
+   const handleAppleSignIn = async () => {
+    setIsSubmitting(true);
+    try {
+        if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
+            const result = await FirebaseAuthentication.signInWithApple();
+            await handleUserLogin(result.user);
+        } else {
+             const provider = new OAuthProvider('apple.com');
+             await signInWithRedirect(auth, provider);
+        }
+    } catch (error) {
+        console.error("Apple Sign-In Error:", error);
+        toast({
+            title: "Erreur de connexion Apple",
+            description: "Une erreur s'est produite lors de la tentative de connexion avec Apple.",
+            variant: "destructive",
+        });
+        setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <div className="w-full max-w-sm mx-auto px-4 py-4 flex-1">
@@ -221,9 +253,16 @@ export default function LoginPage() {
                 Mot de passe oublié ?
             </Link>
         </div>
-        <Button variant="outline" className="w-full h-14 rounded-full text-base font-semibold border-gray-200" onClick={handleGoogleSignIn} disabled={isSubmitting}>
-          <GoogleIcon className="mr-2 h-5 w-5" /> Continuer avec Google
-        </Button>
+        <div className="space-y-2">
+            <Button variant="outline" className="w-full h-14 rounded-full text-base font-semibold border-gray-200" onClick={handleGoogleSignIn} disabled={isSubmitting}>
+            <GoogleIcon className="mr-2 h-5 w-5" /> Continuer avec Google
+            </Button>
+            {isIos && (
+                 <Button variant="outline" className="w-full h-14 rounded-full text-base font-semibold border-gray-200 bg-black text-white hover:bg-gray-800 hover:text-white" onClick={handleAppleSignIn} disabled={isSubmitting}>
+                    <AppleIcon className="mr-2 h-5 w-5" /> Continuer avec Apple
+                </Button>
+            )}
+        </div>
       </div>
     </div>
   );
