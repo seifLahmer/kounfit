@@ -19,7 +19,7 @@ import { useState, useEffect, useCallback } from "react";
 import { signInWithEmailAndPassword, signInWithRedirect, User as FirebaseUser, getRedirectResult, OAuthProvider } from "firebase/auth";
 import { auth, db, googleProvider } from "@/lib/firebase";
 import { Capacitor } from '@capacitor/core';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
+import { FirebaseAuthentication, User as CapacitorFirebaseUser } from '@capacitor-firebase/authentication';
 import { useToast } from "@/hooks/use-toast";
 import { getUserRole } from "@/lib/services/roleService";
 import { Loader2, Mail, Eye, EyeOff } from "lucide-react";
@@ -64,7 +64,7 @@ export default function LoginPage() {
     },
   });
 
-  const handleUserLogin = useCallback(async (user: FirebaseUser) => {
+  const handleUserLogin = useCallback(async (user: FirebaseUser | CapacitorFirebaseUser) => {
     setIsSubmitting(true);
     try {
         const role = await getUserRole(user.uid);

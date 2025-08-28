@@ -34,7 +34,7 @@ export default function ShoppingCartPage() {
                 return;
             }
             
-            const mealsFromPlan: Meal[] = Object.values(plan).flat();
+            const mealsFromPlan: Meal[] = Object.values(plan).flat() as Meal[];
             
             const items: { [id: string]: CartItem } = {};
             mealsFromPlan.forEach(meal => {
