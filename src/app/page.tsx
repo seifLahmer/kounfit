@@ -12,7 +12,7 @@ export default function SplashPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       router.replace('/welcome');
-    }, 4000); // Increased duration to accommodate the new animation sequence
+    }, 4000); 
 
     return () => clearTimeout(timer);
   }, [router]);
@@ -21,17 +21,17 @@ export default function SplashPage() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-white overflow-hidden">
       <motion.div
         className="flex items-center"
-        initial={{ y: "50vh", x: "20%", scale: 0.8, opacity: 0 }} // Start off-screen at the bottom, shifted right
+        initial={{ y: "50vh", x: "20%", scale: 0.8, opacity: 0 }} 
         animate={{
-          y: [null, 0, -25, 0, -10, 0],      // Jump to center-y and bounce
-          x: [null, "20%", "20%", "0%", "0%", "0%"],      // Stay right-shifted then move to center
-          scale: [null, 1, 1, 1, 1, 1],                  // Scale up to 1
-          opacity: [null, 1, 1, 1, 1, 1]                 // Become visible
+          y: [null, 0, -25, 0, -10, 0],      
+          x: [null, "20%", "20%", "0%", "0%", "0%"],      
+          scale: [null, 1, 1, 1, 1, 1],                  
+          opacity: [null, 1, 1, 1, 1, 1]                 
         }}
         transition={{
           duration: 2.5,
           ease: "easeOut",
-          times: [0, 0.4, 0.6, 0.8, 0.9, 1], // Timing for each keyframe
+          times: [0, 0.4, 0.6, 0.8, 0.9, 1], 
           delay: 0.2
         }}
       >
