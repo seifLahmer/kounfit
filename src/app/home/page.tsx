@@ -136,7 +136,7 @@ export default function HomePage() {
               macroGoals={macroGoals}
             />
             
-            <div className="grid grid-cols-2 gap-4 pb-20">
+            <div className="grid grid-cols-2 gap-4 pb-16">
                 <MealCard title="Petit déjeuner" meals={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} defaultImage="/img home/petit-dejeuner.png" />
                 <MealCard title="Déjeuner" meals={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} defaultImage="/img home/dejeuner.png" />
                 <MealCard title="Dîner" meals={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} defaultImage="/img home/dinner.png" />
