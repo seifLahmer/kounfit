@@ -22,10 +22,10 @@ export default function SplashPage() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-white overflow-hidden">
       <motion.div
         className="flex items-center"
-        initial={{ y: "50vh", x: "20%", scale: 0.8, opacity: 0 }} 
+        initial={{ y: "50vh", x: "0%", scale: 0.8, opacity: 0 }} 
         animate={{
           y: [null, 0, -25, 0, -10, 0],      
-          x: [null, "20%", "20%", "0%", "0%", "0%"],      
+          x: [null, "-5%", "-5%", "-20%", "-20%", "-20%"],      
           scale: [null, 1, 1, 1, 1, 1],                  
           opacity: [null, 1, 1, 1, 1, 1]                 
         }}
