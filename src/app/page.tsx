@@ -12,7 +12,7 @@ export default function SplashPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       router.replace('/welcome');
-    }, 3000); // Total animation duration + a small buffer
+    }, 4000); // Increased duration to accommodate the new animation sequence
 
     return () => clearTimeout(timer);
   }, [router]);
@@ -21,27 +21,30 @@ export default function SplashPage() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-white overflow-hidden">
       <motion.div
         className="flex items-center"
-        initial={{ y: "50vh", x: 0, scale: 0.8 }} // Start from bottom
-        animate={{ y: 0, x: "-20%", scale: 1 }} // Move to middle-left
+        initial={{ y: "50vh", x: "0%", scale: 0.8, opacity: 0 }} // Start off-screen at the bottom
+        animate={{
+          y: [null, "0vh", "0vh", "0vh", "0vh"],      // Jump to center-y
+          x: [null, "0%", "0%", "-20%", "-20%"],      // Stay center-x then move left
+          scale: [null, 1, 1, 1, 1],                  // Scale up to 1
+          opacity: [null, 1, 1, 1, 1]                 // Become visible
+        }}
         transition={{
-          type: "spring",
-          damping: 8,
-          stiffness: 80,
-          mass: 0.8,
-          delay: 0.5,
-          restDelta: 0.001
+          duration: 2.5,
+          ease: "easeOut",
+          times: [0, 0.4, 0.7, 0.9, 1], // Timing for each keyframe
+          delay: 0.2
         }}
       >
         <motion.div
-            // This inner div handles the bounce without affecting the final position
+            // This inner div handles the bounce on the y-axis
             animate={{
-              y: [0, -30, 0, -15, 0] // Bouncing effect
+              y: [null, 0, -25, 0, -10, 0]
             }}
             transition={{
-              duration: 1,
+              duration: 1.2,
               ease: "easeInOut",
-              delay: 1.2, // Start bouncing after it arrives
-              times: [0, 0.3, 0.6, 0.8, 1]
+              delay: 1.0, // Start bouncing after it arrives at the center
+              times: [0, 0.4, 0.6, 0.8, 0.9, 1]
             }}
         >
             <Image 
@@ -57,8 +60,8 @@ export default function SplashPage() {
              <AnimatePresence>
                 <motion.div
                     initial={{ x: "-100%", opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 2.2, duration: 0.5, ease: "easeOut" }}
+                    animate={{ x: "0%", opacity: 1 }}
+                    transition={{ delay: 2.8, duration: 0.5, ease: "easeOut" }}
                 >
                     <span className="text-6xl font-bold text-[#0B7E58]">ounfit</span>
                 </motion.div>
