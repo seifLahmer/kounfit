@@ -167,7 +167,7 @@ export default function LoginPage() {
     <div className="flex flex-col min-h-screen bg-background">
         <div className="relative w-full h-1/3">
             <Image 
-                src="https://picsum.photos/600/400"
+                src="login image.png"
                 alt="Bol de nourriture saine"
                 width={600}
                 height={400}
@@ -178,7 +178,7 @@ export default function LoginPage() {
 
       <div className="w-full max-w-sm mx-auto px-4 py-8 flex-1">
         <div className="text-center mb-8">
-            <Image src="/kounfit-green.png" alt="Kounfit Logo" width={160} height={40} className="mx-auto" />
+            <Image src="/koufnit/kounfit green.png" alt="Kounfit Logo" width={160} height={40} className="mx-auto" />
         </div>
         
         <Form {...form}>
