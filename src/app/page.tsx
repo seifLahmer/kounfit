@@ -1,13 +1,14 @@
 
 "use client"
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 
 export default function SplashPage() {
   const router = useRouter();
+  const [animationComplete, setAnimationComplete] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -34,6 +35,7 @@ export default function SplashPage() {
           times: [0, 0.4, 0.6, 0.8, 0.9, 1], 
           delay: 0.2
         }}
+        onAnimationComplete={() => setAnimationComplete(true)}
       >
         <motion.div>
             <Image 
@@ -47,13 +49,15 @@ export default function SplashPage() {
         
         <div className="relative overflow-hidden">
              <AnimatePresence>
-                <motion.div
-                    initial={{ x: "-100%", opacity: 0 }}
-                    animate={{ x: "0%", opacity: 1 }}
-                    transition={{ delay: 2.8, duration: 0.5, ease: "easeOut" }}
-                >
-                    <span className="text-6xl font-bold text-[#0B7E58]">ounfit</span>
-                </motion.div>
+                {animationComplete && (
+                    <motion.div
+                        initial={{ x: "-100%", opacity: 0 }}
+                        animate={{ x: "0%", opacity: 1 }}
+                        transition={{ delay: 0.3, duration: 0.5, ease: "easeOut" }}
+                    >
+                        <span className="text-6xl font-bold text-[#0B7E58]">ounfit</span>
+                    </motion.div>
+                )}
             </AnimatePresence>
         </div>
 
