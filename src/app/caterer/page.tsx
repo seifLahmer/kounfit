@@ -280,7 +280,7 @@ export default function CatererPage() {
           <Bell />
         </Button>
       </header>
-      <main className="bg-background p-4 space-y-6 rounded-t-3xl">
+      <main className="bg-white p-4 space-y-6 rounded-t-3xl">
         <h2 className="text-2xl font-bold">Interface Traiteur</h2>
         <Tabs defaultValue="commandes">
           <TabsList className="grid w-full grid-cols-2 bg-gray-200 rounded-full">
@@ -370,4 +370,5 @@ export default function CatererPage() {
   );
 }
 
+    
     
