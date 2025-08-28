@@ -151,6 +151,7 @@ export default function CatererPage() {
   
   const handleViewDetails = async (order: Order) => {
     setIsMealDetailsLoading(true);
+    setSelectedOrderMeals([]);
     try {
         const mealPromises = order.items.map(item => getMealById(item.mealId));
         const meals = await Promise.all(mealPromises);
@@ -207,12 +208,9 @@ export default function CatererPage() {
     );
 
     return (
-        <Dialog onOpenChange={(isOpen) => { if (!isOpen) setSelectedOrderMeals([]) }}>
+        <Dialog onOpenChange={(isOpen) => { if (isOpen) { handleViewDetails(order) } else { setSelectedOrderMeals([]) } }}>
             <DialogTrigger asChild>
-                <Card 
-                    className="w-64 shrink-0 shadow-lg transition-transform duration-300 hover:scale-105 cursor-pointer"
-                    onClick={() => handleViewDetails(order)}
-                >
+                <Card className="w-64 shrink-0 shadow-lg transition-transform duration-300 hover:scale-105 cursor-pointer">
                     <CardContent className="p-4 space-y-3">
                         <div className="flex items-center gap-3">
                         <Avatar>
