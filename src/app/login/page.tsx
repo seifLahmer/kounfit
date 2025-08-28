@@ -119,7 +119,7 @@ export default function LoginPage() {
         setIsSubmitting(true);
         try {
             const result = await getRedirectResult(auth);
-            if (result) {
+            if (result && result.user) {
                 await handleUserLogin(result.user);
             } else {
                 setIsSubmitting(false);
@@ -159,7 +159,11 @@ export default function LoginPage() {
     try {
         if (Capacitor.isNativePlatform()) {
             const result = await FirebaseAuthentication.signInWithGoogle();
-            await handleUserLogin(result.user);
+            if (result.user) {
+              await handleUserLogin(result.user);
+            } else {
+              setIsSubmitting(false);
+            }
         } else {
             await signInWithRedirect(auth, googleProvider);
         }
@@ -179,7 +183,11 @@ export default function LoginPage() {
     try {
         if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
             const result = await FirebaseAuthentication.signInWithApple();
-            await handleUserLogin(result.user);
+            if (result.user) {
+              await handleUserLogin(result.user);
+            } else {
+               setIsSubmitting(false);
+            }
         } else {
              const provider = new OAuthProvider('apple.com');
              await signInWithRedirect(auth, provider);
