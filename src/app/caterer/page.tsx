@@ -273,14 +273,14 @@ export default function CatererPage() {
   };
 
   return (
-    <div className="bg-primary min-h-screen">
-      <header className="p-4 flex justify-between items-center text-white">
-        <Image src="/kounfit-white.png" alt="Kounfit Logo" width={120} height={30} />
+    <div className="bg-white min-h-screen">
+      <header className="p-4 flex justify-between items-center text-gray-800 border-b">
+        <Image src="/kounfit/kounfit green.png" alt="Kounfit Logo" width={120} height={30} />
         <Button variant="ghost" size="icon">
           <Bell />
         </Button>
       </header>
-      <main className="bg-background rounded-t-3xl p-4 space-y-6">
+      <main className="bg-background p-4 space-y-6">
         <h2 className="text-2xl font-bold">Interface Traiteur</h2>
         <Tabs defaultValue="commandes">
           <TabsList className="grid w-full grid-cols-2 bg-gray-200 rounded-full">

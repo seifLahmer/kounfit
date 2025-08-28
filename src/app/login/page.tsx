@@ -165,17 +165,6 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-        <div className="relative w-full h-1/3">
-            <Image 
-                src="https://picsum.photos/600/400"
-                alt="Bol de nourriture saine"
-                width={600}
-                height={400}
-                className="w-full h-full object-cover"
-                data-ai-hint="healthy food bowl"
-            />
-        </div>
-
       <div className="w-full max-w-sm mx-auto px-4 py-4 flex-1">
         <div className="text-center mb-6">
             <Image src="/kounfit/kounfit green.png" alt="Kounfit Logo" width={160} height={40} className="mx-auto" />
