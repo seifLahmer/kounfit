@@ -104,7 +104,7 @@ export default function HomePage() {
   }
 
   return (
-      <div className="flex flex-col min-h-screen bg-primary px-4 pt-4 pb-4">
+      <div className="flex flex-col min-h-screen bg-primary px-4 pt-4">
         <header className="flex-shrink-0 pt-4 pb-4">
         </header>
 
@@ -139,7 +139,7 @@ export default function HomePage() {
               macroGoals={macroGoals}
             />
             
-            <div className="grid grid-cols-2 gap-4 pb-16">
+            <div className="grid grid-cols-2 gap-4">
                 <MealCard title="Petit déjeuner" meals={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} defaultImage="/img home/petit-dejeuner.png" />
                 <MealCard title="Déjeuner" meals={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} defaultImage="/img home/dejeuner.png" />
                 <MealCard title="Dîner" meals={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} defaultImage="/img home/dinner.png" />
