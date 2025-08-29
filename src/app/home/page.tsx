@@ -104,7 +104,7 @@ export default function HomePage() {
   }
 
   return (
-      <div className="flex flex-col min-h-screen bg-primary px-4 pt-4">
+      <div className="flex flex-col min-h-screen bg-primary px-4 pt-4 pb-4">
         <header className="flex-shrink-0 pt-4 pb-4">
         </header>
 
