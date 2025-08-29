@@ -1,4 +1,3 @@
-
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -37,7 +36,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { GoogleIcon } from "@/components/icons"
 import LocationPicker from "@/components/location-picker"
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 
 const profileFormSchema = z.object({
@@ -307,6 +306,7 @@ export default function ProfilePage() {
                                         </div>
                                     </DialogTrigger>
                                     <DialogContent className="w-full h-full max-w-full max-h-full p-0 gap-0">
+                                         <DialogTitle className="sr-only">Choisir une adresse</DialogTitle>
                                          <LocationPicker
                                             initialAddress={user.deliveryAddress}
                                             onLocationSelect={(address, region) => {
