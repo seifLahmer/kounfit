@@ -150,7 +150,7 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
                 <MapPin className="text-destructive h-10 w-10 drop-shadow-lg" />
             </div>
             
-            <Button variant="ghost" size="icon" className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm rounded-full" onClick={handleCurrentLocation}>
+             <Button variant="ghost" size="icon" className="absolute top-4 right-16 bg-white/80 backdrop-blur-sm rounded-full" onClick={handleCurrentLocation}>
                 <LocateFixed />
             </Button>
 
@@ -178,7 +178,7 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
                                      <p className="text-xs text-muted-foreground">Votre position actuelle</p>
                                 </div>
                             </div>
-                            <Button variant="secondary" className="w-full h-12 bg-secondary/20 text-secondary-foreground hover:bg-secondary/30 rounded-xl mt-2" onClick={() => onLocationSelect(currentGpsLocation.address, currentGpsLocation.region)}>
+                            <Button variant="secondary" className="w-full h-12 bg-secondary/80 text-secondary-foreground hover:bg-secondary rounded-xl mt-2" onClick={() => onLocationSelect(currentGpsLocation.address, currentGpsLocation.region)}>
                                 Utiliser cette adresse
                             </Button>
                         </div>
