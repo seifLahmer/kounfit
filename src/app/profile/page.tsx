@@ -9,7 +9,6 @@ import Image from "next/image"
 import * as React from "react"
 import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
-
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -38,6 +37,7 @@ import type { User } from "@/lib/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { GoogleIcon } from "@/components/icons"
+import LocationPicker from "@/components/location-picker"
 
 const profileFormSchema = z.object({
   fullName: z.string().min(2, "Le nom doit contenir au moins 2 caractères."),
@@ -130,6 +130,7 @@ export default function ProfilePage() {
         
         const result = profileFormSchema.safeParse(form.getValues());
         if (!result.success) {
+          console.log("Form validation failed:", result.error.flatten().fieldErrors);
           return;
         }
 
@@ -148,12 +149,13 @@ export default function ProfilePage() {
 
             const userProfileData: Partial<User> = {
                 ...fullData,
+                ...data, // Ensure the latest change is included
                 calorieGoal: nutritionalNeeds.calories,
                 macroRatio: nutritionalNeeds.macros,
             };
             
             await updateUserProfile(currentUser.uid, userProfileData);
-            form.reset(fullData, { keepValues: true, keepDirty: false });
+            form.reset(form.getValues(), { keepValues: true, keepDirty: false });
             
             setTimeout(() => setSaveStatus("saved"), 500);
             setTimeout(() => setSaveStatus("idle"), 2000);
@@ -288,33 +290,18 @@ export default function ProfilePage() {
                                     />
                                </div>
 
-                               <FormField
-                                  control={form.control}
-                                  name="deliveryAddress"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Adresse de livraison</FormLabel>
-                                      <FormControl>
-                                        <Input {...field} placeholder="Ex: Rue de la Liberté, Tunis" value={field.value ?? ''} onBlur={() => onBlur('deliveryAddress')} />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
+                               <div>
+                                <FormLabel>Adresse de livraison</FormLabel>
+                                <LocationPicker 
+                                  initialAddress={form.getValues().deliveryAddress}
+                                  onLocationSelect={(address, region) => {
+                                    form.setValue('deliveryAddress', address, { shouldDirty: true });
+                                    form.setValue('region', region, { shouldDirty: true });
+                                    handleAutoSave({ deliveryAddress: address, region: region });
+                                  }}
                                 />
-
-                                <FormField
-                                  control={form.control}
-                                  name="region"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Région/Ville</FormLabel>
-                                      <FormControl>
-                                        <Input {...field} placeholder="Ex: Ariana" value={field.value ?? ''} onBlur={() => onBlur('region')} />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
+                               </div>
+                               
 
                                 <FormField
                                   control={form.control}
@@ -386,5 +373,3 @@ export default function ProfilePage() {
         </MainLayout>
     );
 }
-
-    
