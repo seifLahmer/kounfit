@@ -107,7 +107,7 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
   }, []);
 
   const handleCurrentLocation = () => {
-    if (navigator.geolocation) {
+    if (navigator.geolocation && mapRef.current) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const pos = {
@@ -116,8 +116,8 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
           };
           mapRef.current?.panTo(pos);
         },
-        () => {
-          // Handle error
+        (error) => {
+          console.error("Error getting current location", error);
         }
       );
     }
@@ -150,14 +150,11 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
             >
             </GoogleMap>
             
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
                 <MapPin className="text-destructive h-10 w-10 drop-shadow-lg" />
             </div>
-
-            <Button variant="ghost" size="icon" className="absolute top-4 left-4 bg-white/80 backdrop-blur-sm rounded-full" onClick={onClose}>
-                <X />
-            </Button>
-            <Button variant="ghost" size="icon" className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm rounded-full" onClick={handleCurrentLocation}>
+            
+            <Button variant="ghost" size="icon" className="absolute top-4 right-14 bg-white/80 backdrop-blur-sm rounded-full" onClick={handleCurrentLocation}>
                 <LocateFixed />
             </Button>
 

@@ -306,7 +306,7 @@ export default function ProfilePage() {
                                         </div>
                                     </DialogTrigger>
                                     <DialogContent className="w-full h-full max-w-full max-h-full p-0 gap-0">
-                                         <DialogTitle className="sr-only">Choisir une adresse</DialogTitle>
+                                         <DialogTitle className="sr-only">Choisir une adresse de livraison</DialogTitle>
                                          <LocationPicker
                                             initialAddress={user.deliveryAddress}
                                             onLocationSelect={(address, region) => {
