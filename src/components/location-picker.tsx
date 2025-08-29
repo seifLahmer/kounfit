@@ -1,10 +1,9 @@
 
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
-import { Input } from './ui/input';
-import { Loader2, MapPin, Search, X, LocateFixed } from 'lucide-react';
+import { Loader2, MapPin, LocateFixed } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 
@@ -37,8 +36,6 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
   const [region, setRegion] = useState("");
   const [isGeocoding, setIsGeocoding] = useState(false);
   const mapRef = useRef<google.maps.Map | null>(null);
-  const searchBoxRef = useRef<google.maps.places.SearchBox | null>(null);
-  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
@@ -63,21 +60,6 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
         );
     }
   }, [initialAddress]);
-
-  const onSearchBoxLoad = (ref: google.maps.places.SearchBox) => {
-    searchBoxRef.current = ref;
-  };
-  
-  const onPlacesChanged = () => {
-    if (searchBoxRef.current) {
-        const places = searchBoxRef.current.getPlaces();
-        const place = (places && places.length > 0) ? places[0] : null;
-        if (place && place.geometry?.location) {
-          const location = place.geometry.location;
-          mapRef.current?.panTo(location);
-        }
-    }
-  };
 
   const handleMapDrag = useCallback(() => {
     if (mapRef.current) {
@@ -115,6 +97,7 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
             lng: position.coords.longitude,
           };
           mapRef.current?.panTo(pos);
+          handleMapDrag(); // Update address after panning
         },
         (error) => {
           console.error("Error getting current location", error);
@@ -146,6 +129,7 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
                     mapTypeControl: false,
                     fullscreenControl: false,
                     zoomControl: false,
+                    gestureHandling: 'greedy' // Allows one-finger panning
                 }}
             >
             </GoogleMap>
