@@ -3,7 +3,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
-import { Loader2, MapPin, LocateFixed } from 'lucide-react';
+import { Loader2, MapPin, LocateFixed, Navigation } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 
@@ -19,6 +19,11 @@ const defaultCenter = {
 
 const libraries: "places"[] = ["places"];
 
+interface LocationInfo {
+  address: string;
+  region: string;
+}
+
 interface LocationPickerProps {
   initialAddress?: string | null;
   onLocationSelect: (address: string, region: string) => void;
@@ -32,10 +37,18 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
   });
 
   const [center, setCenter] = useState(defaultCenter);
-  const [address, setAddress] = useState("Déplacement de la carte...");
-  const [region, setRegion] = useState("");
+  const [mapCenterLocation, setMapCenterLocation] = useState<LocationInfo>({ address: "Déplacement de la carte...", region: "" });
+  const [currentGpsLocation, setCurrentGpsLocation] = useState<LocationInfo | null>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const mapRef = useRef<google.maps.Map | null>(null);
+
+  const getRegionFromComponents = (components: google.maps.GeocoderAddressComponent[]): string => {
+      const regionComponent = components.find(c => c.types.includes('administrative_area_level_1'));
+      if (regionComponent) {
+          return regionComponent.long_name.toLowerCase().replace('governorate', '').trim();
+      }
+      return "";
+  }
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
@@ -48,20 +61,14 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
         }
       });
     } else {
-        // Try to get user's current location
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const pos = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                };
-                map.setCenter(pos);
-            }
-        );
+        navigator.geolocation.getCurrentPosition((position) => {
+            const pos = { lat: position.coords.latitude, lng: position.coords.longitude };
+            map.setCenter(pos);
+        });
     }
   }, [initialAddress]);
 
-  const handleMapDrag = useCallback(() => {
+  const handleMapInteractionEnd = useCallback(() => {
     if (mapRef.current) {
       setIsGeocoding(true);
       const geocoder = new window.google.maps.Geocoder();
@@ -69,18 +76,12 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
       if (currentCenter) {
         geocoder.geocode({ location: currentCenter }, (results, status) => {
           if (status === 'OK' && results && results[0]) {
-            setAddress(results[0].formatted_address);
-
-            let newRegion = '';
-            const addressComponents = results[0].address_components;
-            const regionComponent = addressComponents.find(c => c.types.includes('administrative_area_level_1'));
-            if (regionComponent) {
-              newRegion = regionComponent.long_name.toLowerCase().replace('governorate', '').trim();
-            }
-            setRegion(newRegion);
-
+            setMapCenterLocation({
+              address: results[0].formatted_address,
+              region: getRegionFromComponents(results[0].address_components)
+            });
           } else {
-            setAddress("Adresse introuvable");
+            setMapCenterLocation({ address: "Adresse introuvable", region: "" });
           }
           setIsGeocoding(false);
         });
@@ -90,22 +91,33 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
 
   const handleCurrentLocation = () => {
     if (navigator.geolocation && mapRef.current) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const pos = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          mapRef.current?.panTo(pos);
-          handleMapDrag(); // Update address after panning
-        },
-        (error) => {
-          console.error("Error getting current location", error);
-        }
-      );
+        setIsGeocoding(true);
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const pos = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                };
+                mapRef.current?.panTo(pos);
+
+                const geocoder = new window.google.maps.Geocoder();
+                geocoder.geocode({ location: pos }, (results, status) => {
+                    if (status === 'OK' && results && results[0]) {
+                        setCurrentGpsLocation({
+                          address: results[0].formatted_address,
+                          region: getRegionFromComponents(results[0].address_components)
+                        });
+                    }
+                    setIsGeocoding(false);
+                });
+            },
+            (error) => {
+                console.error("Error getting current location", error);
+                setIsGeocoding(false);
+            }
+        );
     }
   };
-
 
   if (loadError) return <div>Erreur de chargement de la carte.</div>;
 
@@ -122,14 +134,14 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
                 center={center}
                 zoom={15}
                 onLoad={onMapLoad}
-                onDragEnd={handleMapDrag}
-                onZoomChanged={handleMapDrag}
+                onDragEnd={handleMapInteractionEnd}
+                onZoomChanged={handleMapInteractionEnd}
                 options={{
                     streetViewControl: false,
                     mapTypeControl: false,
                     fullscreenControl: false,
                     zoomControl: false,
-                    gestureHandling: 'greedy' // Allows one-finger panning
+                    gestureHandling: 'greedy'
                 }}
             >
             </GoogleMap>
@@ -138,23 +150,39 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
                 <MapPin className="text-destructive h-10 w-10 drop-shadow-lg" />
             </div>
             
-            <Button variant="ghost" size="icon" className="absolute top-4 right-14 bg-white/80 backdrop-blur-sm rounded-full" onClick={handleCurrentLocation}>
+            <Button variant="ghost" size="icon" className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm rounded-full" onClick={handleCurrentLocation}>
                 <LocateFixed />
             </Button>
 
-
             <Card className="absolute bottom-4 left-4 right-4 shadow-lg rounded-2xl">
                 <CardContent className="p-4 space-y-3">
-                    <div className="flex items-start gap-3">
-                         <MapPin className="text-destructive h-6 w-6 mt-1 shrink-0" />
-                        <div>
-                             <p className="font-semibold text-base">{address}</p>
-                             {isGeocoding && <p className="text-xs text-muted-foreground">Mise à jour...</p>}
+                    <div>
+                        <div className="flex items-start gap-3">
+                             <MapPin className="text-destructive h-6 w-6 mt-1 shrink-0" />
+                            <div>
+                                 <p className="font-semibold text-base">{isGeocoding && !mapCenterLocation.address ? 'Recherche...' : mapCenterLocation.address}</p>
+                                 {isGeocoding && <p className="text-xs text-muted-foreground">Mise à jour...</p>}
+                            </div>
                         </div>
+                        <Button className="w-full h-12 bg-primary hover:bg-primary/90 rounded-xl mt-2" onClick={() => onLocationSelect(mapCenterLocation.address, mapCenterLocation.region)} disabled={isGeocoding}>
+                            Confirmer cette adresse
+                        </Button>
                     </div>
-                    <Button className="w-full h-12 bg-primary hover:bg-primary/90 rounded-xl" onClick={() => onLocationSelect(address, region)}>
-                        Confirmer cette adresse
-                    </Button>
+
+                    {currentGpsLocation && (
+                        <div className="border-t pt-3">
+                             <div className="flex items-start gap-3">
+                                 <Navigation className="text-blue-500 h-6 w-6 mt-1 shrink-0" />
+                                <div>
+                                     <p className="font-semibold text-base">{currentGpsLocation.address}</p>
+                                     <p className="text-xs text-muted-foreground">Votre position actuelle</p>
+                                </div>
+                            </div>
+                            <Button variant="secondary" className="w-full h-12 bg-secondary/20 text-secondary-foreground hover:bg-secondary/30 rounded-xl mt-2" onClick={() => onLocationSelect(currentGpsLocation.address, currentGpsLocation.region)}>
+                                Utiliser cette adresse
+                            </Button>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </>
