@@ -2,14 +2,15 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
 import { Input } from './ui/input';
-import { Loader2, MapPin } from 'lucide-react';
+import { Loader2, MapPin, Search, X, LocateFixed } from 'lucide-react';
+import { Button } from './ui/button';
+import { Card, CardContent } from './ui/card';
 
 const containerStyle = {
   width: '100%',
-  height: '250px',
-  borderRadius: '0.5rem',
+  height: '100%',
 };
 
 const defaultCenter = {
@@ -20,118 +21,163 @@ const defaultCenter = {
 const libraries: "places"[] = ["places"];
 
 interface LocationPickerProps {
-  initialAddress?: string;
+  initialAddress?: string | null;
   onLocationSelect: (address: string, region: string) => void;
+  onClose: () => void;
 }
 
-export default function LocationPicker({ initialAddress, onLocationSelect }: LocationPickerProps) {
+export default function LocationPicker({ initialAddress, onLocationSelect, onClose }: LocationPickerProps) {
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
     libraries,
   });
 
-  const [markerPosition, setMarkerPosition] = useState(defaultCenter);
-  const [address, setAddress] = useState(initialAddress || "");
+  const [center, setCenter] = useState(defaultCenter);
+  const [address, setAddress] = useState("Déplacement de la carte...");
+  const [region, setRegion] = useState("");
+  const [isGeocoding, setIsGeocoding] = useState(false);
   const mapRef = useRef<google.maps.Map | null>(null);
-
-  const geocodePosition = useCallback((pos: google.maps.LatLngLiteral) => {
-    const geocoder = new window.google.maps.Geocoder();
-    geocoder.geocode({ location: pos }, (results, status) => {
-      if (status === 'OK' && results && results[0]) {
-        const formattedAddress = results[0].formatted_address;
-        setAddress(formattedAddress);
-        
-        let region = '';
-        const addressComponents = results[0].address_components;
-        const regionComponent = addressComponents.find(c => c.types.includes('administrative_area_level_1'));
-        if (regionComponent) {
-          region = regionComponent.long_name.toLowerCase().replace('governorate', '').trim();
-        }
-        
-        onLocationSelect(formattedAddress, region);
-      } else {
-        console.error('Geocoder failed due to: ' + status);
-      }
-    });
-  }, [onLocationSelect]);
-  
-  const geocodeAddress = useCallback((addressString: string) => {
-    const geocoder = new window.google.maps.Geocoder();
-    geocoder.geocode({ address: addressString }, (results, status) => {
-      if (status === 'OK' && results && results[0]) {
-        const location = results[0].geometry.location;
-        const newPos = { lat: location.lat(), lng: location.lng() };
-        setMarkerPosition(newPos);
-        mapRef.current?.panTo(newPos);
-      }
-    });
-  }, []);
-
-  useEffect(() => {
-    if (isLoaded && initialAddress) {
-        geocodeAddress(initialAddress);
-    }
-  }, [isLoaded, initialAddress, geocodeAddress]);
-
+  const searchBoxRef = useRef<google.maps.places.SearchBox | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
     if (initialAddress) {
-        geocodeAddress(initialAddress);
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ address: initialAddress }, (results, status) => {
+        if (status === 'OK' && results && results[0]) {
+          const location = results[0].geometry.location;
+          map.setCenter(location);
+        }
+      });
+    } else {
+        // Try to get user's current location
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const pos = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                };
+                map.setCenter(pos);
+            }
+        );
     }
-  }, [initialAddress, geocodeAddress]);
+  }, [initialAddress]);
 
-  const onMarkerDragEnd = (e: google.maps.MapMouseEvent) => {
-    if (e.latLng) {
-        const newPos = { lat: e.latLng.lat(), lng: e.latLng.lng() };
-        setMarkerPosition(newPos);
-        geocodePosition(newPos);
+  const onSearchBoxLoad = (ref: google.maps.places.SearchBox) => {
+    searchBoxRef.current = ref;
+  };
+  
+  const onPlacesChanged = () => {
+    if (searchBoxRef.current) {
+        const places = searchBoxRef.current.getPlaces();
+        const place = (places && places.length > 0) ? places[0] : null;
+        if (place && place.geometry?.location) {
+          const location = place.geometry.location;
+          mapRef.current?.panTo(location);
+        }
     }
   };
 
-  const handleInputBlur = () => {
-    if(address) {
-        geocodeAddress(address);
+  const handleMapDrag = useCallback(() => {
+    if (mapRef.current) {
+      setIsGeocoding(true);
+      const geocoder = new window.google.maps.Geocoder();
+      const currentCenter = mapRef.current.getCenter();
+      if (currentCenter) {
+        geocoder.geocode({ location: currentCenter }, (results, status) => {
+          if (status === 'OK' && results && results[0]) {
+            setAddress(results[0].formatted_address);
+
+            let newRegion = '';
+            const addressComponents = results[0].address_components;
+            const regionComponent = addressComponents.find(c => c.types.includes('administrative_area_level_1'));
+            if (regionComponent) {
+              newRegion = regionComponent.long_name.toLowerCase().replace('governorate', '').trim();
+            }
+            setRegion(newRegion);
+
+          } else {
+            setAddress("Adresse introuvable");
+          }
+          setIsGeocoding(false);
+        });
+      }
+    }
+  }, []);
+
+  const handleCurrentLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const pos = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          mapRef.current?.panTo(pos);
+        },
+        () => {
+          // Handle error
+        }
+      );
     }
   };
 
-  if (loadError) {
-    return <div>Erreur de chargement de la carte. Vérifiez la clé API.</div>;
-  }
 
-  return isLoaded ? (
-    <div className="space-y-2">
-      <div className="relative">
-        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 z-10" />
-        <Input
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            onBlur={handleInputBlur}
-            placeholder="Rechercher ou glisser le marqueur"
-            className="pl-10"
-        />
-      </div>
-      <GoogleMap
-        mapContainerStyle={containerStyle}
-        center={markerPosition}
-        zoom={12}
-        onLoad={onMapLoad}
-        options={{
-            streetViewControl: false,
-            mapTypeControl: false,
-            fullscreenControl: false,
-        }}
-      >
-        <Marker 
-          position={markerPosition} 
-          draggable={true}
-          onDragEnd={onMarkerDragEnd}
-        />
-      </GoogleMap>
-    </div>
-  ) : (
-    <div className="flex items-center justify-center h-[250px] bg-muted rounded-lg">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  if (loadError) return <div>Erreur de chargement de la carte.</div>;
+
+  return (
+    <div className="relative w-full h-full">
+      {!isLoaded ? (
+        <div className="flex items-center justify-center h-full bg-muted">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <>
+            <GoogleMap
+                mapContainerStyle={containerStyle}
+                center={center}
+                zoom={15}
+                onLoad={onMapLoad}
+                onDragEnd={handleMapDrag}
+                onZoomChanged={handleMapDrag}
+                options={{
+                    streetViewControl: false,
+                    mapTypeControl: false,
+                    fullscreenControl: false,
+                    zoomControl: false,
+                }}
+            >
+            </GoogleMap>
+            
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                <MapPin className="text-destructive h-10 w-10 drop-shadow-lg" />
+            </div>
+
+            <Button variant="ghost" size="icon" className="absolute top-4 left-4 bg-white/80 backdrop-blur-sm rounded-full" onClick={onClose}>
+                <X />
+            </Button>
+            <Button variant="ghost" size="icon" className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm rounded-full" onClick={handleCurrentLocation}>
+                <LocateFixed />
+            </Button>
+
+
+            <Card className="absolute bottom-4 left-4 right-4 shadow-lg rounded-2xl">
+                <CardContent className="p-4 space-y-3">
+                    <div className="flex items-start gap-3">
+                         <MapPin className="text-destructive h-6 w-6 mt-1 shrink-0" />
+                        <div>
+                             <p className="font-semibold text-base">{address}</p>
+                             {isGeocoding && <p className="text-xs text-muted-foreground">Mise à jour...</p>}
+                        </div>
+                    </div>
+                    <Button className="w-full h-12 bg-primary hover:bg-primary/90 rounded-xl" onClick={() => onLocationSelect(address, region)}>
+                        Confirmer cette adresse
+                    </Button>
+                </CardContent>
+            </Card>
+        </>
+      )}
     </div>
   );
 }

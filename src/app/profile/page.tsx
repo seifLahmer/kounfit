@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { Camera, Loader2, CheckCircle, LogOut } from "lucide-react"
+import { Camera, Loader2, CheckCircle, LogOut, MapPin } from "lucide-react"
 import Image from "next/image"
 import * as React from "react"
 import { useEffect, useState, useRef } from "react"
@@ -19,7 +19,6 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import {
   Select,
   SelectContent,
@@ -38,6 +37,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { GoogleIcon } from "@/components/icons"
 import LocationPicker from "@/components/location-picker"
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog"
+
 
 const profileFormSchema = z.object({
   fullName: z.string().min(2, "Le nom doit contenir au moins 2 caractères."),
@@ -69,6 +70,7 @@ export default function ProfilePage() {
     const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
     const isMounted = useRef(false);
+    const [isMapOpen, setIsMapOpen] = useState(false);
 
     const form = useForm<ProfileFormValues>({
         resolver: zodResolver(profileFormSchema),
@@ -290,17 +292,33 @@ export default function ProfilePage() {
                                     />
                                </div>
 
-                               <div>
-                                <FormLabel>Adresse de livraison</FormLabel>
-                                <LocationPicker 
-                                  initialAddress={form.getValues().deliveryAddress}
-                                  onLocationSelect={(address, region) => {
-                                    form.setValue('deliveryAddress', address, { shouldDirty: true });
-                                    form.setValue('region', region, { shouldDirty: true });
-                                    handleAutoSave({ deliveryAddress: address, region: region });
-                                  }}
-                                />
-                               </div>
+                                <Dialog open={isMapOpen} onOpenChange={setIsMapOpen}>
+                                    <DialogTrigger asChild>
+                                        <div className="space-y-2">
+                                            <FormLabel>Adresse de livraison</FormLabel>
+                                            <div className="relative">
+                                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                                                <Input
+                                                    readOnly
+                                                    value={user.deliveryAddress || "Cliquez pour définir l'adresse"}
+                                                    className="pl-10 cursor-pointer"
+                                                />
+                                            </div>
+                                        </div>
+                                    </DialogTrigger>
+                                    <DialogContent className="w-full h-full max-w-full max-h-full p-0 gap-0">
+                                         <LocationPicker
+                                            initialAddress={user.deliveryAddress}
+                                            onLocationSelect={(address, region) => {
+                                                form.setValue('deliveryAddress', address, { shouldDirty: true });
+                                                form.setValue('region', region, { shouldDirty: true });
+                                                handleAutoSave({ deliveryAddress: address, region: region });
+                                                setIsMapOpen(false); // Close the map
+                                            }}
+                                            onClose={() => setIsMapOpen(false)}
+                                        />
+                                    </DialogContent>
+                                </Dialog>
                                
 
                                 <FormField
