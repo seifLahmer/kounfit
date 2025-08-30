@@ -30,7 +30,7 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
-        protocol: 'https',
+        protocol: 'httpss',
         hostname: 'unpkg.com',
         port: '',
         pathname: '/**',

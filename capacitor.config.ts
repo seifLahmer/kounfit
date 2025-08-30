@@ -5,6 +5,11 @@ const config: CapacitorConfig = {
   appId: 'com.kounfit.app',
   appName: 'Kounfit',
   webDir: '.next',
+  server: {
+    hostname: 'fithelath.web.app',
+    androidScheme: 'https',
+    iosScheme: 'https'
+  },
   plugins: {
     CapacitorFirebaseAuthentication: {
       skipNativeAuth: false,
