@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { NutritionSummary, MealCard } from "@/components/home-page-components";
 import Link from "next/link";
+import { fetchTodayStepCount } from "@/lib/services/googleFitService"
+import { StepsIcon } from "@/components/icons"
 
 const emptyPlan: DailyPlan = { breakfast: [], lunch: [], snack: [], dinner: [] };
 
@@ -23,6 +25,7 @@ export default function HomePage() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const [stepCount, setStepCount] = useState<number | null>(null);
   
   const getInitialDailyPlan = useCallback((): DailyPlan => {
     if (typeof window === "undefined") return emptyPlan;
@@ -58,10 +61,20 @@ export default function HomePage() {
             const userProfile = await getUserProfile(firebaseUser.uid)
             if (!userProfile) throw new Error("User profile not found");
             setUser(userProfile);
-        } catch(e) {
-            toast({ title: "Error fetching user", variant: "destructive" });
-            setUser(null);
-            router.replace('/welcome');
+            
+            // Fetch step count after user profile is loaded
+            const steps = await fetchTodayStepCount();
+            if (steps !== null) {
+              setStepCount(steps);
+            }
+
+        } catch(e: any) {
+            if (e.message.includes("permission")) {
+              // Non-blocking error, user just needs to connect
+              console.log("Google Fit permission not yet granted.");
+            } else {
+              toast({ title: "Erreur de chargement", description: e.message, variant: "destructive" });
+            }
         } finally {
             setLoading(false);
         }
@@ -104,7 +117,7 @@ export default function HomePage() {
   }
 
   return (
-      <div className="flex flex-col min-h-screen bg-primary px-4 pt-4 pb-8">
+      <div className="flex flex-col min-h-screen bg-primary pb-8">
         <header className="flex-shrink-0 pt-4 pb-4">
         </header>
 
@@ -138,6 +151,18 @@ export default function HomePage() {
               consumedMacros={consumedMacros}
               macroGoals={macroGoals}
             />
+
+            {stepCount !== null && (
+              <Card>
+                <CardContent className="p-4 flex items-center gap-4">
+                  <StepsIcon className="w-8 h-8 text-primary" />
+                  <div className="flex-1">
+                    <p className="font-bold text-lg">{stepCount.toLocaleString('fr-FR')}</p>
+                    <p className="text-sm text-muted-foreground">Pas aujourd'hui (via Google Fit)</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             
             <div className="grid grid-cols-2 gap-4">
                 <MealCard title="Petit déjeuner" meals={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} defaultImage="/img home/petit-dejeuner.png" />
