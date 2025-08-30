@@ -9,6 +9,12 @@ fitProvider.setCustomParameters({
   prompt: 'consent',
 });
 
+// Set the client ID from environment variables
+if (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+    fitProvider.setClientId(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
+}
+
+
 /**
  * Initiates the Google Fit sign-in process to get permissions.
  */
