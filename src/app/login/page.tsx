@@ -15,8 +15,8 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
-import { useState, useEffect, useCallback } from "react";
-import { signInWithEmailAndPassword, signInWithRedirect, User as FirebaseUser, getRedirectResult, OAuthProvider } from "firebase/auth";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { signInWithEmailAndPassword, signInWithRedirect, User as FirebaseUser, getRedirectResult, OAuthProvider, GoogleAuthProvider, linkWithCredential, AuthErrorCodes, fetchSignInMethodsForEmail } from "firebase/auth";
 import { auth, db, googleProvider } from "@/lib/firebase";
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication, User as CapacitorFirebaseUser } from '@capacitor-firebase/authentication';
@@ -48,6 +48,7 @@ export default function LoginPage() {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [isIos, setIsIos] = useState(false);
+  const googleCredentialRef = useRef<any>(null);
 
   useEffect(() => {
     setIsMounted(true);
@@ -124,20 +125,41 @@ export default function LoginPage() {
             } else {
                 setIsSubmitting(false);
             }
-        } catch (error) {
-            console.error("Google Redirect Error:", error);
-            toast({ title: "Erreur Google", description: "La connexion avec Google a échoué.", variant: "destructive" });
+        } catch (error: any) {
+             if (error.code === AuthErrorCodes.ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL) {
+                const credential = GoogleAuthProvider.credentialFromError(error);
+                if (credential) {
+                    googleCredentialRef.current = credential;
+                    const email = error.customData.email;
+                    form.setValue('email', email);
+                    toast({
+                        title: "Compte existant",
+                        description: "Ce compte e-mail existe déjà. Veuillez vous connecter avec votre mot de passe pour lier votre compte Google.",
+                        variant: "default"
+                    });
+                }
+            } else {
+                console.error("Google Redirect Error:", error);
+                toast({ title: "Erreur Google", description: "La connexion avec Google a échoué.", variant: "destructive" });
+            }
             setIsSubmitting(false);
         }
     };
     handleRedirect();
-  }, [isMounted, handleUserLogin, toast]);
+  }, [isMounted, handleUserLogin, toast, form]);
 
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
     try {
         const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+        
+        if (googleCredentialRef.current && userCredential.user) {
+             await linkWithCredential(userCredential.user, googleCredentialRef.current);
+             googleCredentialRef.current = null;
+             toast({ title: "Compte Google lié!", description: "Vous pouvez maintenant vous connecter avec Google."});
+        }
+        
         await handleUserLogin(userCredential.user);
     } catch (error: any) {
         console.error("Login Error:", error);
@@ -167,13 +189,27 @@ export default function LoginPage() {
         } else {
             await signInWithRedirect(auth, googleProvider);
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error("Google Sign-In Error:", error);
-        toast({
-            title: "Erreur de connexion Google",
-            description: "Une erreur s'est produite lors de la tentative de connexion avec Google.",
-            variant: "destructive",
-        });
+        if (error.code === AuthErrorCodes.ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL) {
+            const credential = GoogleAuthProvider.credentialFromError(error);
+            if (credential) {
+                googleCredentialRef.current = credential;
+                const email = error.customData.email;
+                form.setValue('email', email);
+                toast({
+                    title: "Compte existant",
+                    description: "Ce compte e-mail existe déjà. Veuillez vous connecter avec votre mot de passe pour lier votre compte Google.",
+                    variant: "default"
+                });
+            }
+        } else {
+            toast({
+                title: "Erreur de connexion Google",
+                description: "Une erreur s'est produite lors de la tentative de connexion avec Google.",
+                variant: "destructive",
+            });
+        }
         setIsSubmitting(false);
     }
   };
