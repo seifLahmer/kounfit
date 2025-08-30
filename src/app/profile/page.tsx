@@ -37,6 +37,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { GoogleIcon } from "@/components/icons"
 import LocationPicker from "@/components/location-picker"
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { handleGoogleFitSignIn, checkGoogleFitPermission } from "@/lib/services/googleFitService"
 
 
 const profileFormSchema = z.object({
@@ -70,6 +71,8 @@ export default function ProfilePage() {
     const fileInputRef = useRef<HTMLInputElement>(null)
     const isMounted = useRef(false);
     const [isMapOpen, setIsMapOpen] = useState(false);
+    const [isFitConnected, setIsFitConnected] = useState(false);
+    const [isConnecting, setIsConnecting] = useState(false);
 
     const form = useForm<ProfileFormValues>({
         resolver: zodResolver(profileFormSchema),
@@ -105,6 +108,9 @@ export default function ProfilePage() {
                           setProfileImagePreview(userProfile.photoURL);
                         }
                     }
+                    const hasPermission = await checkGoogleFitPermission();
+                    if(isMounted.current) setIsFitConnected(hasPermission);
+
                 } catch (error) {
                     console.error("Failed to fetch user profile", error);
                     toast({
@@ -124,6 +130,27 @@ export default function ProfilePage() {
             isMounted.current = false;
         }
     }, [form, router, toast]);
+
+    const handleConnectToFit = async () => {
+      setIsConnecting(true);
+      try {
+        await handleGoogleFitSignIn();
+        setIsFitConnected(true);
+        toast({
+          title: "Connecté à Google Fit!",
+          description: "Votre compte est maintenant lié.",
+        });
+      } catch (error) {
+        console.error(error);
+        toast({
+          title: "Erreur de connexion",
+          description: "Impossible de se connecter à Google Fit.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsConnecting(false);
+      }
+    };
 
     const handleAutoSave = async (data: Partial<ProfileFormValues>) => {
         const currentUser = auth.currentUser;
@@ -379,9 +406,18 @@ export default function ProfilePage() {
 
                         <div>
                             <h3 className="font-bold mb-2 mt-8">INTÉGRATIONS</h3>
-                            <Button variant="outline" className="w-full h-12">
-                                <GoogleIcon className="w-6 h-6 mr-3" />
-                                Se connecter à Google Fit
+                            <Button
+                              variant="outline"
+                              className="w-full h-12"
+                              onClick={handleConnectToFit}
+                              disabled={isFitConnected || isConnecting}
+                            >
+                                {isConnecting ? (
+                                    <Loader2 className="w-6 h-6 mr-3 animate-spin" />
+                                ) : (
+                                    <GoogleIcon className="w-6 h-6 mr-3" />
+                                )}
+                                {isFitConnected ? "Connecté à Google Fit" : "Se connecter à Google Fit"}
                             </Button>
                         </div>
                         
