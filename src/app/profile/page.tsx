@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { Camera, Loader2, CheckCircle, LogOut, MapPin, Check } from "lucide-react"
+import { Camera, Loader2, CheckCircle, LogOut, MapPin, Check, Snowflake, Run } from "lucide-react"
 import Image from "next/image"
 import * as React from "react"
 import { useEffect, useState, useRef } from "react"
@@ -453,6 +453,16 @@ export default function ProfilePage() {
                                 <IntegrationCard 
                                     name="Garmin"
                                      icon={<Image src="https://unpkg.com/lucide-static@latest/icons/navigation.svg" width={32} height={32} alt="Garmin Icon" />}
+                                    disabled
+                                />
+                                <IntegrationCard
+                                    name="Polar"
+                                    icon={<Snowflake className="w-8 h-8" />}
+                                    disabled
+                                />
+                                <IntegrationCard
+                                    name="S-Health"
+                                    icon={<Run className="w-8 h-8" />}
                                     disabled
                                 />
                             </div>
