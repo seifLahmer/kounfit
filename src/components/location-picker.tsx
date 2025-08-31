@@ -36,10 +36,10 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
     libraries,
   });
 
-  const [center, setCenter] = useState(defaultCenter);
-  const [mapCenterLocation, setMapCenterLocation] = useState<LocationInfo>({ address: "Déplacement de la carte...", region: "" });
+  const [mapCenterLocation, setMapCenterLocation] = useState<LocationInfo | null>(null);
   const [currentGpsLocation, setCurrentGpsLocation] = useState<LocationInfo | null>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);
+  const [isPointSelected, setIsPointSelected] = useState(false);
   const mapRef = useRef<google.maps.Map | null>(null);
 
   const getRegionFromComponents = (components: google.maps.GeocoderAddressComponent[]): string => {
@@ -69,8 +69,16 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
   }, [initialAddress]);
 
   const handleMapInteractionEnd = useCallback(() => {
+    if (isPointSelected) {
+      setIsPointSelected(false);
+      setMapCenterLocation(null);
+    }
+  }, [isPointSelected]);
+
+  const handleUseThisPoint = () => {
     if (mapRef.current) {
       setIsGeocoding(true);
+      setIsPointSelected(false);
       const geocoder = new window.google.maps.Geocoder();
       const currentCenter = mapRef.current.getCenter();
       if (currentCenter) {
@@ -80,6 +88,7 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
               address: results[0].formatted_address,
               region: getRegionFromComponents(results[0].address_components)
             });
+            setIsPointSelected(true);
           } else {
             setMapCenterLocation({ address: "Adresse introuvable", region: "" });
           }
@@ -87,7 +96,7 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
         });
       }
     }
-  }, []);
+  };
 
   const handleCurrentLocation = () => {
     if (navigator.geolocation && mapRef.current) {
@@ -103,10 +112,13 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
                 const geocoder = new window.google.maps.Geocoder();
                 geocoder.geocode({ location: pos }, (results, status) => {
                     if (status === 'OK' && results && results[0]) {
-                        setCurrentGpsLocation({
+                        const locationInfo = {
                           address: results[0].formatted_address,
                           region: getRegionFromComponents(results[0].address_components)
-                        });
+                        };
+                        setCurrentGpsLocation(locationInfo);
+                        setMapCenterLocation(locationInfo);
+                        setIsPointSelected(true);
                     }
                     setIsGeocoding(false);
                 });
@@ -131,7 +143,7 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
         <>
             <GoogleMap
                 mapContainerStyle={containerStyle}
-                center={center}
+                center={defaultCenter}
                 zoom={15}
                 onLoad={onMapLoad}
                 onDragEnd={handleMapInteractionEnd}
@@ -146,7 +158,17 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
             >
             </GoogleMap>
             
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none flex flex-col items-center">
+                {!isPointSelected && (
+                  <Button 
+                    size="sm" 
+                    className="pointer-events-auto mb-2 bg-white text-black shadow-lg hover:bg-gray-100" 
+                    onClick={handleUseThisPoint}
+                    disabled={isGeocoding}
+                  >
+                    {isGeocoding ? <Loader2 className="h-4 w-4 animate-spin"/> : "Utiliser ce point"}
+                  </Button>
+                )}
                 <MapPin className="text-destructive h-10 w-10 drop-shadow-lg" />
             </div>
             
@@ -154,37 +176,24 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
                 <LocateFixed />
             </Button>
 
-            <Card className="absolute bottom-4 left-4 right-4 shadow-lg rounded-2xl">
-                <CardContent className="p-4 space-y-3">
-                    <div>
-                        <div className="flex items-start gap-3">
-                             <MapPin className="text-destructive h-6 w-6 mt-1 shrink-0" />
-                            <div>
-                                 <p className="font-semibold text-base">{isGeocoding && !mapCenterLocation.address ? 'Recherche...' : mapCenterLocation.address}</p>
-                                 {isGeocoding && <p className="text-xs text-muted-foreground">Mise à jour...</p>}
-                            </div>
-                        </div>
-                        <Button className="w-full h-12 bg-primary hover:bg-primary/90 rounded-xl mt-2" onClick={() => onLocationSelect(mapCenterLocation.address, mapCenterLocation.region)} disabled={isGeocoding || !mapCenterLocation.address || mapCenterLocation.address === "Adresse introuvable"}>
-                            Confirmer cette adresse
-                        </Button>
-                    </div>
-
-                    {currentGpsLocation && (
-                        <div className="border-t pt-3">
-                             <div className="flex items-start gap-3">
-                                 <Navigation className="text-blue-500 h-6 w-6 mt-1 shrink-0" />
-                                <div>
-                                     <p className="font-semibold text-base">{currentGpsLocation.address}</p>
-                                     <p className="text-xs text-muted-foreground">Votre position actuelle</p>
-                                </div>
-                            </div>
-                            <Button variant="secondary" className="w-full h-12 bg-secondary/80 text-secondary-foreground hover:bg-secondary rounded-xl mt-2" onClick={() => onLocationSelect(currentGpsLocation.address, currentGpsLocation.region)}>
-                                Utiliser cette adresse
-                            </Button>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+            {isPointSelected && mapCenterLocation && (
+              <Card className="absolute bottom-4 left-4 right-4 shadow-lg rounded-2xl animate-in fade-in slide-in-from-bottom">
+                  <CardContent className="p-4 space-y-3">
+                      <div>
+                          <div className="flex items-start gap-3">
+                               <MapPin className="text-destructive h-6 w-6 mt-1 shrink-0" />
+                              <div>
+                                   <p className="font-semibold text-base">{mapCenterLocation.address}</p>
+                                   {isGeocoding && <p className="text-xs text-muted-foreground">Mise à jour...</p>}
+                              </div>
+                          </div>
+                          <Button className="w-full h-12 bg-primary hover:bg-primary/90 rounded-xl mt-2" onClick={() => onLocationSelect(mapCenterLocation.address, mapCenterLocation.region)} disabled={isGeocoding || !mapCenterLocation.address || mapCenterLocation.address === "Adresse introuvable"}>
+                              Confirmer cette adresse
+                          </Button>
+                      </div>
+                  </CardContent>
+              </Card>
+            )}
         </>
       )}
     </div>
