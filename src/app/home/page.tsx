@@ -69,6 +69,8 @@ export default function HomePage() {
         try {
             const hasPermission = await checkGoogleFitPermission();
             setHasFitPermission(hasPermission);
+            // Only try to fetch data if permission is confirmed.
+            // The fetchTodayFitData function is currently a placeholder and will return null.
             if (hasPermission) {
                 const data = await fetchTodayFitData();
                 setFitData(data);

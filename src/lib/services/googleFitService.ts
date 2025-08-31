@@ -1,57 +1,59 @@
 
 "use client";
 
-import { GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo, linkWithCredential, User, getIdTokenResult, linkWithPopup, getRedirectResult, AuthErrorCodes, fetchSignInMethodsForEmail } from "firebase/auth";
+import { GoogleAuthProvider, linkWithPopup, User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { AuthErrorCodes } from "firebase/auth";
 
 const fitProvider = new GoogleAuthProvider();
-// Demander toutes les permissions nécessaires en une seule fois
 fitProvider.addScope('https://www.googleapis.com/auth/fitness.activity.read');
 fitProvider.addScope('https://www.googleapis.com/auth/fitness.body.read');
 fitProvider.addScope('https://www.googleapis.com/auth/fitness.nutrition.read');
-fitProvider.addScope('https://www.googleapis.com/auth/fitness.heart_rate.read');
-fitProvider.addScope('https://www.googleapis.com/auth/fitness.location.read');
+
 
 /**
- * Gère la connexion ou la liaison du compte Google de l'utilisateur pour les données Google Fit.
- * Utilise linkWithPopup pour éviter la création de comptes en double.
- * @returns {Promise<boolean>} True si la liaison a réussi.
+ * Handles signing in or linking the user's Google account for Google Fit data.
+ * Uses linkWithPopup to avoid creating duplicate accounts.
+ * @returns {Promise<boolean>} True if the link was successful or already existed.
  */
 export async function handleGoogleFitSignIn(): Promise<boolean> {
   const user = auth.currentUser;
   if (!user) {
-    throw new Error("Utilisateur non authentifié.");
+    throw new Error("User not authenticated.");
   }
   
   try {
-    // Tente de lier le compte Google au compte Firebase existant.
+    // Attempts to link the Google account to the existing Firebase account.
     await linkWithPopup(user, fitProvider);
     return true;
 
   } catch (error: any) {
     if (error.code === AuthErrorCodes.CREDENTIAL_ALREADY_IN_USE) {
-        return true; 
+        console.log("Google Fit account already linked.");
+        return true; // This is a success case for our purpose
     }
     if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
-      throw new Error("La fenêtre de connexion a été fermée avant la fin.");
+      throw new Error("The sign-in window was closed before completing.");
     }
     console.error("Google Fit Sign-In/Link Error:", error.code);
-    throw new Error("Échec de la connexion ou de la liaison avec Google Fit.");
+    throw new Error("Failed to sign in or link with Google Fit.");
   }
 }
 
 /**
- * Vérifie si l'utilisateur a accordé les permissions à Google Fit.
- * @returns {Promise<boolean>} True si le fournisseur Google est lié au compte de l'utilisateur.
+ * Checks if the user has granted Google Fit permissions.
+ * @returns {Promise<boolean>} True if the Google provider is linked to the user's account.
  */
 export async function checkGoogleFitPermission(): Promise<boolean> {
   const user = auth.currentUser;
   if (!user) return false;
 
+  // Reload the user to ensure providerData is up to date.
   await user.reload();
   const freshUser = auth.currentUser;
   if (!freshUser) return false;
   
+  // Check if the user's provider data includes Google.
   return freshUser.providerData.some(
     (provider) => provider.providerId === GoogleAuthProvider.PROVIDER_ID
   );
@@ -59,36 +61,29 @@ export async function checkGoogleFitPermission(): Promise<boolean> {
 
 export interface FitData {
   steps: number;
-  distance: number; // en mètres
+  distance: number; // in meters
   moveMinutes: number;
   heartPoints: number;
 }
 
 
 /**
- * Récupère les données d'activité complètes pour la journée en cours depuis l'API Google Fit.
- * Cette fonction est entièrement côté client.
- * NOTE: Cette fonction est un stub et nécessite une implémentation backend sécurisée
- * pour gérer les jetons d'accès OAuth en production de manière fiable.
- * @returns {Promise<FitData | null>} Un objet avec les pas, distance, minutes d'activité et points cardio, ou null.
+ * Fetches today's activity data from the Google Fit API.
+ * This function is a placeholder for a future secure backend implementation.
+ * Direct client-side token management for this API is complex and insecure.
+ * Therefore, this function currently returns null.
+ * @returns {Promise<FitData | null>}
  */
 export async function fetchTodayFitData(): Promise<FitData | null> {
     const user = auth.currentUser;
     if (!user) return null;
-
-    // Pour une application de production robuste, la gestion des jetons d'accès
-    // devrait se faire côté serveur pour des raisons de sécurité.
-    // La récupération directe du jeton d'accès côté client est complexe et
-    // sujette à des problèmes de sécurité et d'expiration.
-    // En attendant une telle implémentation, cette fonction ne récupérera pas de données
-    // pour éviter des erreurs complexes et des popups inattendus.
     
-    // Si l'application était dotée d'un backend, nous appellerions ici
-    // une fonction côté serveur qui utiliserait un jeton de rafraîchissement stocké
-    // pour obtenir un nouveau jeton d'accès et interroger l'API Google Fit.
-    // Exemple : const fitData = await fetch('/api/fit-data');
-    
-    console.log("La récupération des données Google Fit nécessite une implémentation backend sécurisée pour être pleinement fonctionnelle.");
+    // In a production application, fetching Fit data requires a secure server-side
+    // implementation to handle OAuth access tokens safely.
+    // The previous attempts to do this on the client-side were unstable.
+    // To ensure app stability, this function will not fetch data for now.
+    // This avoids silent failures and user confusion.
+    console.log("Google Fit data fetching requires a secure backend implementation to be fully functional. Returning null.");
 
     return null;
 }
