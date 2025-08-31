@@ -118,11 +118,11 @@ export async function fetchTodayFitData(): Promise<FitData | null> {
       }
 
     } catch (error: any) {
-        console.error("Error getting access token for Fit:", error.code);
         // This is expected if the user closes the popup. We can ignore it here.
         if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
           return null;
         }
+        console.error("Error getting access token for Fit:", error.code);
         throw new Error("Could not get authorization for Google Fit.");
     }
 
