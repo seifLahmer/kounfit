@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { Camera, Loader2, CheckCircle, LogOut, MapPin, Check, Snowflake, Run } from "lucide-react"
+import { Camera, Loader2, CheckCircle, LogOut, MapPin, Check, Snowflake, Activity } from "lucide-react"
 import Image from "next/image"
 import * as React from "react"
 import { useEffect, useState, useRef } from "react"
@@ -431,42 +431,42 @@ export default function ProfilePage() {
                         </Form>
 
                         <div>
-                            <h3 className="font-bold mb-2 mt-8">INTÉGRATIONS</h3>
-                            <div className="grid grid-cols-4 gap-3">
-                                <IntegrationCard 
-                                    name="Fit"
-                                    icon={<GoogleIcon className="w-8 h-8"/>}
-                                    isConnected={isFitConnected}
-                                    isConnecting={isConnecting}
-                                    onClick={handleConnectToFit}
-                                />
-                                <IntegrationCard 
-                                    name="Huawei"
-                                    icon={<Image src="https://unpkg.com/lucide-static@latest/icons/smartphone.svg" width={32} height={32} alt="Huawei Icon" />}
-                                    disabled
-                                />
-                                <IntegrationCard 
-                                    name="Fitbit"
-                                    icon={<Image src="https://unpkg.com/lucide-static@latest/icons/activity.svg" width={32} height={32} alt="Fitbit Icon" />}
-                                    disabled
-                                />
-                                <IntegrationCard 
-                                    name="Garmin"
-                                     icon={<Image src="https://unpkg.com/lucide-static@latest/icons/navigation.svg" width={32} height={32} alt="Garmin Icon" />}
-                                    disabled
-                                />
-                                <IntegrationCard
-                                    name="Polar"
-                                    icon={<Snowflake className="w-8 h-8" />}
-                                    disabled
-                                />
-                                <IntegrationCard
-                                    name="S-Health"
-                                    icon={<Run className="w-8 h-8" />}
-                                    disabled
-                                />
-                            </div>
-                        </div>
+                             <h3 className="font-bold mb-2 mt-8">INTÉGRATIONS</h3>
+                             <div className="grid grid-cols-3 gap-3">
+                                 <IntegrationCard 
+                                     name="Fit"
+                                     icon={<GoogleIcon className="w-8 h-8"/>}
+                                     isConnected={isFitConnected}
+                                     isConnecting={isConnecting}
+                                     onClick={handleConnectToFit}
+                                 />
+                                 <IntegrationCard 
+                                     name="Huawei"
+                                     icon={<Image src="https://unpkg.com/lucide-static@latest/icons/smartphone.svg" width={32} height={32} alt="Huawei Icon" />}
+                                     disabled
+                                 />
+                                 <IntegrationCard 
+                                     name="Fitbit"
+                                     icon={<Image src="https://unpkg.com/lucide-static@latest/icons/activity.svg" width={32} height={32} alt="Fitbit Icon" />}
+                                     disabled
+                                 />
+                                 <IntegrationCard 
+                                     name="Garmin"
+                                      icon={<Image src="https://unpkg.com/lucide-static@latest/icons/navigation.svg" width={32} height={32} alt="Garmin Icon" />}
+                                     disabled
+                                 />
+                                 <IntegrationCard
+                                     name="Polar"
+                                     icon={<Snowflake className="w-8 h-8" />}
+                                     disabled
+                                 />
+                                 <IntegrationCard
+                                     name="S-Health"
+                                     icon={<Activity className="w-8 h-8" />}
+                                     disabled
+                                 />
+                             </div>
+                         </div>
                         
                     </CardContent>
                 </Card>
