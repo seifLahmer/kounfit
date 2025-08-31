@@ -56,8 +56,11 @@ export default function ShoppingCartPage() {
             
             const mealsFromPlan: Meal[] = Object.values(plan).flat() as Meal[];
             
+            // Filter out any undefined or invalid meal objects before processing
+            const validMeals = mealsFromPlan.filter(meal => meal && typeof meal === 'object' && meal.id);
+
             const items: { [id: string]: CartItem } = {};
-            mealsFromPlan.forEach(meal => {
+            validMeals.forEach(meal => {
                 if (items[meal.id]) {
                     items[meal.id].quantity++;
                 } else {
@@ -113,7 +116,7 @@ export default function ShoppingCartPage() {
             
             for (const key in plan) {
                const mealType = key as keyof DailyPlan;
-               newPlan[mealType] = (plan[mealType] as Meal[]).filter(m => m.id !== mealId);
+               newPlan[mealType] = (plan[mealType] as Meal[]).filter(m => m && m.id !== mealId);
             }
             
             localStorage.setItem(storageKey, JSON.stringify({ date, plan: newPlan }));
@@ -167,22 +170,25 @@ export default function ShoppingCartPage() {
 
       setIsPlacingOrder(true);
       try {
+          // Filter out any potentially invalid items before sending to the backend
+          const validCartItems = cartItems.filter(item => item && item.id);
+          if (validCartItems.length === 0) {
+              throw new Error("Le panier est vide ou contient des articles invalides.");
+          }
+
           const detailedCartItems = await Promise.all(
-            cartItems.map(async (item) => {
+            validCartItems.map(async (item) => {
                 const mealDetails = await getMealById(item.id);
                 if (!mealDetails) {
                     throw new Error(`Meal with id ${item.id} not found.`);
                 }
                 return {
                     mealId: item.id,
-                    mealName: mealDetails.name, // Ensure name is from fresh data
+                    mealName: mealDetails.name, 
                     quantity: item.quantity,
                     unitPrice: mealDetails.price,
                     catererId: mealDetails.createdBy,
-                    calories: mealDetails.calories,
-                    macros: mealDetails.macros,
-                    category: mealDetails.category,
-                    imageUrl: mealDetails.imageUrl,
+                    ...mealDetails
                 };
             })
           );

@@ -29,7 +29,7 @@ type PlaceOrderInput = Omit<Order, 'id' | 'orderDate' | 'deliveryDate' | 'status
     mealName: string;
     quantity: number;
     unitPrice: number;
-    catererId: string; // Ensure catererId is included for each item
+    catererId: string; 
   }>;
 };
 
@@ -54,23 +54,11 @@ export async function placeOrder(orderData: PlaceOrderInput): Promise<string> {
       imageUrl: item.imageUrl,
     }));
     
-    // Prepare full meal data for user's daily intake log
-    const itemsForDailyIntake = orderData.items.map(item => ({
-      id: item.id,
-      name: item.name,
-      description: item.description,
-      category: item.category,
-      imageUrl: item.imageUrl,
-      imageRef: item.imageRef,
-      ingredients: item.ingredients,
-      calories: item.calories,
-      macros: item.macros,
-      price: item.price,
-      createdBy: item.createdBy,
-      availability: item.availability,
-      ratings: item.ratings,
-      createdAt: item.createdAt,
-    }));
+    const itemsForDailyIntake = orderData.items.map(item => {
+        // This ensures we only store the clean Meal object, without the extra fields from PlaceOrderInput
+        const { mealId, mealName, quantity, unitPrice, catererId, ...mealObject } = item;
+        return mealObject;
+    });
 
 
     const orderWithTimestamp = {
