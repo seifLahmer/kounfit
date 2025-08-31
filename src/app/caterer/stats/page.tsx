@@ -115,13 +115,17 @@ const getChartData = (orders: Order[], timeframe: Timeframe): RevenueDataPoint[]
 
 const getMostOrderedMeals = (orders: Order[], allMeals: Meal[]): PopularMeal[] => {
     const mealCounts: { [id: string]: number } = {};
+    const existingMealIds = new Set(allMeals.map(m => m.id));
 
     orders.forEach(order => {
         order.items.forEach(item => {
-            if (mealCounts[item.mealId]) {
-                mealCounts[item.mealId] += item.quantity;
-            } else {
-                mealCounts[item.mealId] = item.quantity;
+            // Only count items for meals that still exist
+            if (existingMealIds.has(item.mealId)) {
+                if (mealCounts[item.mealId]) {
+                    mealCounts[item.mealId] += item.quantity;
+                } else {
+                    mealCounts[item.mealId] = item.quantity;
+                }
             }
         });
     });
@@ -130,6 +134,8 @@ const getMostOrderedMeals = (orders: Order[], allMeals: Meal[]): PopularMeal[] =
     
     return sortedMealIds.map(id => {
         const mealDetails = allMeals.find(m => m.id === id);
+        // Since we filtered, mealDetails should always be found.
+        // We add a fallback just in case, but it shouldn't be reached.
         return {
             id,
             name: mealDetails?.name || 'Repas inconnu',
