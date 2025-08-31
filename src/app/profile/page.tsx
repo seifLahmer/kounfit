@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { Camera, Loader2, CheckCircle, LogOut, MapPin } from "lucide-react"
+import { Camera, Loader2, CheckCircle, LogOut, MapPin, Check } from "lucide-react"
 import Image from "next/image"
 import * as React from "react"
 import { useEffect, useState, useRef } from "react"
@@ -37,6 +37,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { GoogleIcon } from "@/components/icons"
 import { handleGoogleFitSignIn, checkGoogleFitPermission } from "@/lib/services/googleFitService"
+import { cn } from "@/lib/utils"
 
 
 const profileFormSchema = z.object({
@@ -59,6 +60,23 @@ const profileFormSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>
 
+
+const IntegrationCard = ({ icon, name, isConnected, isConnecting, onClick, disabled = false }: { icon: React.ReactNode, name: string, isConnected?: boolean, isConnecting?: boolean, onClick?: () => void, disabled?: boolean }) => {
+    return (
+        <Card 
+            className={cn(
+                "w-full aspect-square flex flex-col items-center justify-center gap-2 cursor-pointer transition-all",
+                isConnected ? "bg-primary text-primary-foreground border-primary" : "bg-muted hover:bg-border",
+                (disabled || isConnecting) && "opacity-50 cursor-not-allowed"
+            )}
+            onClick={disabled || isConnecting ? undefined : onClick}
+        >
+            {isConnecting ? <Loader2 className="h-6 w-6 animate-spin" /> : icon}
+            <span className="text-xs font-semibold">{name}</span>
+            {isConnected && <CheckCircle className="w-4 h-4 absolute top-1 right-1" />}
+        </Card>
+    )
+}
 
 export default function ProfilePage() {
     const { toast } = useToast()
@@ -414,19 +432,30 @@ export default function ProfilePage() {
 
                         <div>
                             <h3 className="font-bold mb-2 mt-8">INTÉGRATIONS</h3>
-                            <Button
-                              variant="outline"
-                              className="w-full h-12"
-                              onClick={handleConnectToFit}
-                              disabled={isFitConnected || isConnecting}
-                            >
-                                {isConnecting ? (
-                                    <Loader2 className="w-6 h-6 mr-3 animate-spin" />
-                                ) : (
-                                    <GoogleIcon className="w-6 h-6 mr-3" />
-                                )}
-                                {isFitConnected ? "Connecté à Google Fit" : "Se connecter à Google Fit"}
-                            </Button>
+                            <div className="grid grid-cols-4 gap-3">
+                                <IntegrationCard 
+                                    name="Fit"
+                                    icon={<GoogleIcon className="w-8 h-8"/>}
+                                    isConnected={isFitConnected}
+                                    isConnecting={isConnecting}
+                                    onClick={handleConnectToFit}
+                                />
+                                <IntegrationCard 
+                                    name="Huawei"
+                                    icon={<Image src="https://unpkg.com/lucide-static@latest/icons/smartphone.svg" width={32} height={32} alt="Huawei Icon" />}
+                                    disabled
+                                />
+                                <IntegrationCard 
+                                    name="Fitbit"
+                                    icon={<Image src="https://unpkg.com/lucide-static@latest/icons/activity.svg" width={32} height={32} alt="Fitbit Icon" />}
+                                    disabled
+                                />
+                                <IntegrationCard 
+                                    name="Garmin"
+                                     icon={<Image src="https://unpkg.com/lucide-static@latest/icons/navigation.svg" width={32} height={32} alt="Garmin Icon" />}
+                                    disabled
+                                />
+                            </div>
                         </div>
                         
                     </CardContent>
