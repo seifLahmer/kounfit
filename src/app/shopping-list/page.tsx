@@ -316,7 +316,7 @@ export default function ShoppingCartPage() {
           )}
         </div>
         {cartItems.length > 0 && (
-             <footer className="p-4 bg-white border-t">
+             <footer className="p-4 bg-white border-t mb-8">
                   <Button 
                     className="w-full bg-primary hover:bg-primary/90 text-white font-bold text-lg h-14 rounded-button"
                     onClick={handlePlaceOrder}
