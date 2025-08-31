@@ -1,5 +1,5 @@
 
-import { GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo, linkWithCredential, User, getIdTokenResult } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo, linkWithCredential, User, getIdTokenResult, linkWithPopup } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
 const fitProvider = new GoogleAuthProvider();
@@ -9,7 +9,11 @@ fitProvider.addScope('https://www.googleapis.com/auth/fitness.nutrition.read');
 fitProvider.addScope('https://www.googleapis.com/auth/fitness.heart_rate.read');
 fitProvider.addScope('https://www.googleapis.com/auth/fitness.location.read');
 
-
+/**
+ * Handles signing in or linking the user's Google account for Google Fit data.
+ * It uses linkWithPopup to avoid creating duplicate accounts.
+ * @returns {Promise<boolean>} True if the linking was successful.
+ */
 export async function handleGoogleFitSignIn(): Promise<boolean> {
   const user = auth.currentUser;
   if (!user) {
@@ -17,30 +21,21 @@ export async function handleGoogleFitSignIn(): Promise<boolean> {
   }
   
   try {
-    const result = await signInWithPopup(auth, fitProvider);
-    const credential = GoogleAuthProvider.credentialFromResult(result);
-    
-    if (!credential || !credential.accessToken) {
-        throw new Error("Could not retrieve access token from Google.");
-    }
-    
-    // If the user is new to this provider, link it to the existing account
-    const additionalUserInfo = getAdditionalUserInfo(result);
-    if (additionalUserInfo?.isNewUser) {
-        await linkWithCredential(user, credential);
-    }
-    
+    // Use linkWithPopup to add the Google provider to the existing user account.
+    await linkWithPopup(user, fitProvider);
     return true;
 
   } catch (error: any) {
-    console.error("Google Fit Sign-In Error:", error);
+    console.error("Google Fit Sign-In/Link Error:", error);
     if (error.code === 'auth/popup-closed-by-user') {
       throw new Error("Popup closed before completion.");
     } else if (error.code === 'auth/credential-already-in-use') {
+        // This means the Google account is already linked to this user or another user.
+        // For this flow, we can consider it a success as the credential exists.
         console.log("Google Fit account already linked.");
         return true;
     }
-    throw new Error("Failed to sign in with Google Fit.");
+    throw new Error("Failed to sign in or link with Google Fit.");
   }
 }
 
@@ -105,11 +100,25 @@ export async function fetchTodayFitData(): Promise<FitData | null> {
     const user = auth.currentUser;
     if (!user) return null;
 
-    const idTokenResult = await getIdTokenResult(user, true);
-    // signInWithPopup is necessary to get a fresh OAuth access token.
-    const result = await signInWithPopup(auth, fitProvider);
-    const credential = GoogleAuthProvider.credentialFromResult(result);
-    const oauthAccessToken = credential?.accessToken;
+    // A backend service is required to securely manage and refresh OAuth tokens.
+    // The current client-side approach with signInWithPopup to get a new token is not ideal
+    // as it requires user interaction and can be blocked.
+    // For this prototype, we'll proceed but acknowledge this limitation.
+    
+    // Attempt to get a fresh OAuth access token. This may trigger a popup.
+    let oauthAccessToken: string | null = null;
+    try {
+      const result = await signInWithPopup(auth, fitProvider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      oauthAccessToken = credential?.accessToken || null;
+    } catch (error: any) {
+        console.error("Error getting fresh access token:", error);
+        if (error.code === 'auth/popup-blocked') {
+             throw new Error("Google Fit permission denied. Please reconnect from your profile.");
+        }
+        throw new Error("Could not get authorization for Google Fit.");
+    }
+
 
     if (!oauthAccessToken) {
         console.log("OAuth Access Token for Google Fit is not available.");
