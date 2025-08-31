@@ -6,6 +6,8 @@ const fitProvider = new GoogleAuthProvider();
 fitProvider.addScope('https://www.googleapis.com/auth/fitness.activity.read');
 fitProvider.addScope('https://www.googleapis.com/auth/fitness.body.read');
 fitProvider.addScope('https://www.googleapis.com/auth/fitness.nutrition.read');
+fitProvider.addScope('https://www.googleapis.com/auth/fitness.heart_rate.read');
+fitProvider.addScope('https://www.googleapis.com/auth/fitness.location.read');
 
 
 export async function handleGoogleFitSignIn(): Promise<boolean> {
@@ -58,11 +60,19 @@ export async function checkGoogleFitPermission(): Promise<boolean> {
   return isGoogleLinked;
 }
 
+export interface FitData {
+  steps: number;
+  distance: number; // in meters
+  moveMinutes: number;
+  heartPoints: number;
+}
+
+
 /**
- * Fetches the total step count for the current day from the Google Fit API.
- * @returns {Promise<number | null>} The total step count, or null if an error occurs.
+ * Fetches comprehensive activity data for the current day from the Google Fit API.
+ * @returns {Promise<FitData | null>} An object with steps, distance, moveMinutes, and heartPoints, or null.
  */
-export async function fetchTodayStepCount(): Promise<number | null> {
+export async function fetchTodayFitData(): Promise<FitData | null> {
     const user = auth.currentUser;
     if (!user) {
         throw new Error("User not authenticated to fetch Fit data.");
@@ -83,7 +93,6 @@ export async function fetchTodayStepCount(): Promise<number | null> {
              if(!googleUser) {
                  throw new Error("Could not get Google Fit access token even after re-auth attempt.");
              }
-             // Re-authenticating to get a fresh token might be needed if it's expired.
              const freshResult = await signInWithPopup(auth, fitProvider);
              const freshCredential = GoogleAuthProvider.credentialFromResult(freshResult);
              if(freshCredential?.accessToken) {
@@ -104,10 +113,12 @@ export async function fetchTodayStepCount(): Promise<number | null> {
     const endTimeMillis = new Date(today.setHours(23, 59, 59, 999)).getTime();
 
     const requestBody = {
-        aggregateBy: [{
-            dataTypeName: "com.google.step_count.delta",
-            dataSourceId: "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps"
-        }],
+        aggregateBy: [
+            { dataTypeName: "com.google.step_count.delta", dataSourceId: "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps" },
+            { dataTypeName: "com.google.distance.delta", dataSourceId: "derived:com.google.distance.delta:com.google.android.gms:merge_distance_delta" },
+            { dataTypeName: "com.google.active_minutes", dataSourceId: "derived:com.google.active_minutes:com.google.android.gms:merge_active_minutes" },
+            { dataTypeName: "com.google.heart_minutes", dataSourceId: "derived:com.google.heart_minutes:com.google.android.gms:merge_heart_minutes" }
+        ],
         bucketByTime: { durationMillis: 86400000 }, // 1 day
         startTimeMillis: startTimeMillis,
         endTimeMillis: endTimeMillis,
@@ -132,24 +143,25 @@ export async function fetchTodayStepCount(): Promise<number | null> {
         }
 
         const data = await response.json();
+        const fitData: FitData = { steps: 0, distance: 0, moveMinutes: 0, heartPoints: 0 };
         
         if (data.bucket && data.bucket.length > 0) {
-            const bucket = data.bucket[0];
-            if (bucket.dataset && bucket.dataset.length > 0) {
-                const dataset = bucket.dataset[0];
-                if (dataset.point && dataset.point.length > 0) {
-                    const point = dataset.point[0];
-                    if (point.value && point.value.length > 0) {
-                        return point.value[0].intVal || 0;
-                    }
-                }
-            }
+           data.bucket[0].dataset.forEach((dataset: any) => {
+               if (dataset.point && dataset.point.length > 0) {
+                   const point = dataset.point[0];
+                   const value = point.value[0].fpVal ?? point.value[0].intVal ?? 0;
+                   if(dataset.dataSourceId.includes('step_count')) fitData.steps = value;
+                   if(dataset.dataSourceId.includes('distance')) fitData.distance = value;
+                   if(dataset.dataSourceId.includes('active_minutes')) fitData.moveMinutes = value;
+                   if(dataset.dataSourceId.includes('heart_minutes')) fitData.heartPoints = value;
+               }
+           });
         }
         
-        return 0; // No steps recorded for the day
+        return fitData;
 
     } catch (error) {
-        console.error("Error fetching step count:", error);
+        console.error("Error fetching google fit data:", error);
         throw error; // Re-throw to be caught by the calling function
     }
 }

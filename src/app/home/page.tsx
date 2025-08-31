@@ -15,8 +15,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { NutritionSummary, MealCard } from "@/components/home-page-components";
 import Link from "next/link";
-import { fetchTodayStepCount } from "@/lib/services/googleFitService"
-import { StepsIcon } from "@/components/icons"
+import { fetchTodayFitData, type FitData } from "@/lib/services/googleFitService"
+import { StepsIcon, DistanceIcon, MoveMinutesIcon, HeartPointsIcon } from "@/components/icons"
 
 const emptyPlan: DailyPlan = { breakfast: [], lunch: [], snack: [], dinner: [] };
 
@@ -25,7 +25,7 @@ export default function HomePage() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const router = useRouter()
-  const [stepCount, setStepCount] = useState<number | null>(null);
+  const [fitData, setFitData] = useState<FitData | null>(null);
   
   const getInitialDailyPlan = useCallback((): DailyPlan => {
     if (typeof window === "undefined") return emptyPlan;
@@ -62,15 +62,13 @@ export default function HomePage() {
             if (!userProfile) throw new Error("User profile not found");
             setUser(userProfile);
             
-            // Fetch step count after user profile is loaded
-            const steps = await fetchTodayStepCount();
-            if (steps !== null) {
-              setStepCount(steps);
+            const data = await fetchTodayFitData();
+            if (data !== null) {
+              setFitData(data);
             }
 
         } catch(e: any) {
             if (e.message.includes("permission")) {
-              // Non-blocking error, user just needs to connect
               console.log("Google Fit permission not yet granted.");
             } else {
               toast({ title: "Erreur de chargement", description: e.message, variant: "destructive" });
@@ -152,14 +150,40 @@ export default function HomePage() {
               macroGoals={macroGoals}
             />
 
-            {stepCount !== null && (
+            {fitData && (
               <Card>
-                <CardContent className="p-4 flex items-center gap-4">
-                  <StepsIcon className="w-8 h-8 text-primary" />
-                  <div className="flex-1">
-                    <p className="font-bold text-lg">{stepCount.toLocaleString('fr-FR')}</p>
-                    <p className="text-sm text-muted-foreground">Pas aujourd'hui (via Google Fit)</p>
-                  </div>
+                <CardContent className="p-3">
+                   <p className="text-sm font-semibold text-muted-foreground mb-2">Activité du jour (via Google Fit)</p>
+                   <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                       <div className="flex items-center gap-2">
+                          <StepsIcon className="w-5 h-5 text-primary"/>
+                          <div>
+                            <p className="font-bold">{fitData.steps.toLocaleString('fr-FR')}</p>
+                            <p className="text-xs text-muted-foreground">Pas</p>
+                          </div>
+                       </div>
+                       <div className="flex items-center gap-2">
+                          <DistanceIcon className="w-5 h-5 text-destructive"/>
+                           <div>
+                            <p className="font-bold">{(fitData.distance / 1000).toFixed(2)}</p>
+                            <p className="text-xs text-muted-foreground">km</p>
+                          </div>
+                       </div>
+                       <div className="flex items-center gap-2">
+                          <MoveMinutesIcon className="w-5 h-5 text-yellow-500"/>
+                           <div>
+                            <p className="font-bold">{fitData.moveMinutes}</p>
+                            <p className="text-xs text-muted-foreground">Min d'activité</p>
+                          </div>
+                       </div>
+                       <div className="flex items-center gap-2">
+                          <HeartPointsIcon className="w-5 h-5 text-red-500"/>
+                           <div>
+                            <p className="font-bold">{fitData.heartPoints}</p>
+                            <p className="text-xs text-muted-foreground">Points cardio</p>
+                          </div>
+                       </div>
+                   </div>
                 </CardContent>
               </Card>
             )}
