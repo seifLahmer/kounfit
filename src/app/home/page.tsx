@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { NutritionSummary, MealCard } from "@/components/home-page-components";
 import Link from "next/link";
-import { fetchTodayFitData, type FitData } from "@/lib/services/googleFitService"
+import { fetchTodayFitData, type FitData, checkGoogleFitPermission } from "@/lib/services/googleFitService"
 import { StepsIcon, DistanceIcon, MoveMinutesIcon, HeartPointsIcon } from "@/components/icons"
 
 const emptyPlan: DailyPlan = { breakfast: [], lunch: [], snack: [], dinner: [] };
@@ -62,14 +62,17 @@ export default function HomePage() {
             if (!userProfile) throw new Error("User profile not found");
             setUser(userProfile);
             
-            const data = await fetchTodayFitData();
-            if (data !== null) {
-              setFitData(data);
+            const hasPermission = await checkGoogleFitPermission();
+            if (hasPermission) {
+                const data = await fetchTodayFitData();
+                setFitData(data);
             }
 
         } catch(e: any) {
+            console.error("Error on home page data fetch:", e.message);
+            // Non-blocking error for the user
             if (e.message.includes("permission")) {
-              console.log("Google Fit permission not yet granted.");
+              console.log("Google Fit permission not yet granted or fetch failed.");
             } else {
               toast({ title: "Erreur de chargement", description: e.message, variant: "destructive" });
             }
@@ -192,7 +195,7 @@ export default function HomePage() {
                 <MealCard title="Petit déjeuner" meals={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} defaultImage="/img home/petit-dejeuner.png" />
                 <MealCard title="Déjeuner" meals={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} defaultImage="/img home/dejeuner.png" />
                 <MealCard title="Dîner" meals={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} defaultImage="/img home/dinner.png" />
-                <MealCard title="Collation" meals={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} defaultImage="/img home/snacks.png" />
+                <MealCard title="Collation" meals={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} defaultImage="/img home-page/snacks.png" />
             </div>
           </CardContent>
         </Card>

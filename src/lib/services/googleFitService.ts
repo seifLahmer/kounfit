@@ -1,5 +1,5 @@
 
-import { GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo, linkWithCredential } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo, linkWithCredential, User, getIdTokenResult } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
 const fitProvider = new GoogleAuthProvider();
@@ -68,44 +68,37 @@ export interface FitData {
 }
 
 
+async function getFitAccessToken(): Promise<string | null> {
+    const user = auth.currentUser;
+    if (!user) return null;
+
+    try {
+        const result = await signInWithPopup(auth, fitProvider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        return credential?.accessToken || null;
+    } catch (error: any) {
+        if (error.code === 'auth/credential-already-in-use') {
+             console.log("Credential already in use, trying to get token again.");
+             const result = await signInWithPopup(auth, fitProvider);
+             const credential = GoogleAuthProvider.credentialFromResult(result);
+             return credential?.accessToken || null;
+        }
+        console.error("Could not get access token", error);
+        throw error;
+    }
+}
+
+
 /**
  * Fetches comprehensive activity data for the current day from the Google Fit API.
  * @returns {Promise<FitData | null>} An object with steps, distance, moveMinutes, and heartPoints, or null.
  */
 export async function fetchTodayFitData(): Promise<FitData | null> {
-    const user = auth.currentUser;
-    if (!user) {
-        throw new Error("User not authenticated to fetch Fit data.");
-    }
-
-    let oauthAccessToken: string | null = null;
+    const oauthAccessToken = await getFitAccessToken();
     
-    try {
-        const reauthResult = await signInWithPopup(auth, fitProvider);
-        const credential = GoogleAuthProvider.credentialFromResult(reauthResult);
-        if (credential?.accessToken) {
-            oauthAccessToken = credential.accessToken;
-        }
-    } catch(error: any) {
-        if(error.code === 'auth/credential-already-in-use') {
-            console.warn("Credential in use, but this may be okay. Trying to proceed.");
-             const googleUser = auth.currentUser?.providerData.find(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
-             if(!googleUser) {
-                 throw new Error("Could not get Google Fit access token even after re-auth attempt.");
-             }
-             const freshResult = await signInWithPopup(auth, fitProvider);
-             const freshCredential = GoogleAuthProvider.credentialFromResult(freshResult);
-             if(freshCredential?.accessToken) {
-                 oauthAccessToken = freshCredential.accessToken;
-             }
-        } else {
-             throw new Error("Could not get Google Fit access token.");
-        }
-    }
-
-
     if (!oauthAccessToken) {
-        throw new Error("OAuth Access Token for Google Fit is not available.");
+        console.log("OAuth Access Token for Google Fit is not available.");
+        return null;
     }
 
     const today = new Date();
