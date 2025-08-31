@@ -130,7 +130,7 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
     }
   };
 
-  if (loadError) return <div>Erreur de chargement de la carte. Assurez-vous que la clé API Google Maps est correctement configurée.</div>;
+  if (loadError) return <div>Erreur de chargement de la carte. Assurez-vous que la clé API Google Maps est correctement configurée dans votre fichier .env.local (NEXT_PUBLIC_GOOGLE_MAPS_API_KEY).</div>;
 
   return (
     <div className="relative w-full h-full">
