@@ -15,7 +15,7 @@ export async function handleGoogleFitSignIn(): Promise<boolean> {
   }
   
   try {
-    const result = await signInWithPopup(user, fitProvider);
+    const result = await signInWithPopup(auth, fitProvider);
     const credential = GoogleAuthProvider.credentialFromResult(result);
     
     if (!credential || !credential.accessToken) {
@@ -71,7 +71,7 @@ export async function fetchTodayStepCount(): Promise<number | null> {
     let oauthAccessToken: string | null = null;
     
     try {
-        const reauthResult = await signInWithPopup(auth.currentUser, fitProvider);
+        const reauthResult = await signInWithPopup(auth, fitProvider);
         const credential = GoogleAuthProvider.credentialFromResult(reauthResult);
         if (credential?.accessToken) {
             oauthAccessToken = credential.accessToken;
@@ -84,7 +84,7 @@ export async function fetchTodayStepCount(): Promise<number | null> {
                  throw new Error("Could not get Google Fit access token even after re-auth attempt.");
              }
              // Re-authenticating to get a fresh token might be needed if it's expired.
-             const freshResult = await signInWithPopup(auth.currentUser, fitProvider);
+             const freshResult = await signInWithPopup(auth, fitProvider);
              const freshCredential = GoogleAuthProvider.credentialFromResult(freshResult);
              if(freshCredential?.accessToken) {
                  oauthAccessToken = freshCredential.accessToken;
