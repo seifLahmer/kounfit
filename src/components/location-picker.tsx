@@ -3,7 +3,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
-import { Loader2, MapPin, LocateFixed, Navigation } from 'lucide-react';
+import { Loader2, MapPin, Navigation } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 
@@ -37,7 +37,6 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
   });
 
   const [mapCenterLocation, setMapCenterLocation] = useState<LocationInfo | null>(null);
-  const [currentGpsLocation, setCurrentGpsLocation] = useState<LocationInfo | null>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [isPointSelected, setIsPointSelected] = useState(false);
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -97,10 +96,11 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
       }
     }
   };
-
+  
   const handleCurrentLocation = () => {
     if (navigator.geolocation && mapRef.current) {
         setIsGeocoding(true);
+        setIsPointSelected(false);
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 const pos = {
@@ -116,7 +116,6 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
                           address: results[0].formatted_address,
                           region: getRegionFromComponents(results[0].address_components)
                         };
-                        setCurrentGpsLocation(locationInfo);
                         setMapCenterLocation(locationInfo);
                         setIsPointSelected(true);
                     }
@@ -159,21 +158,24 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
             </GoogleMap>
             
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none flex flex-col items-center">
-                {!isPointSelected && (
-                  <Button 
+                 <Button 
                     size="sm" 
                     className="pointer-events-auto mb-2 bg-white text-black shadow-lg hover:bg-gray-100" 
                     onClick={handleUseThisPoint}
-                    disabled={isGeocoding}
+                    disabled={isGeocoding || isPointSelected}
                   >
                     {isGeocoding ? <Loader2 className="h-4 w-4 animate-spin"/> : "Utiliser ce point"}
                   </Button>
-                )}
                 <MapPin className="text-destructive h-10 w-10 drop-shadow-lg" />
             </div>
             
-             <Button variant="ghost" size="icon" className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm rounded-full" onClick={handleCurrentLocation}>
-                <LocateFixed />
+             <Button 
+                className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur-sm rounded-full text-black hover:bg-white" 
+                onClick={handleCurrentLocation}
+                disabled={isGeocoding}
+            >
+                <Navigation className="mr-2 h-4 w-4" />
+                Utiliser votre localisation
             </Button>
 
             {isPointSelected && mapCenterLocation && (
