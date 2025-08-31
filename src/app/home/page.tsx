@@ -27,6 +27,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const [fitData, setFitData] = useState<FitData | null>(null);
+  const [hasFitPermission, setHasFitPermission] = useState(false);
   const [dailyPlan, setDailyPlan] = useState<DailyPlan>(emptyPlan);
   const [confirmedMeals, setConfirmedMeals] = useState<Meal[]>([]);
 
@@ -86,11 +87,13 @@ export default function HomePage() {
         }
     });
 
-    // Fetch Google Fit data once
+    // Check Fit permission and fetch data if available
     checkGoogleFitPermission().then(hasPermission => {
+        setHasFitPermission(hasPermission);
         if (hasPermission) {
             fetchTodayFitData().catch(fitError => {
                 console.error("Could not fetch Google Fit data on Home page:", fitError);
+                toast({ title: "Erreur Google Fit", description: "Impossible de récupérer les données d'activité.", variant: "destructive" });
             }).then(data => {
                 if (data) setFitData(data);
             });
@@ -172,7 +175,7 @@ export default function HomePage() {
               macroGoals={macroGoals}
             />
 
-            {fitData ? (
+            {hasFitPermission && fitData ? (
               <Card>
                 <CardContent className="p-3">
                    <p className="text-sm font-semibold text-muted-foreground mb-2">Activité du jour (via Google Fit)</p>
