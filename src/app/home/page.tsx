@@ -28,12 +28,15 @@ export default function HomePage() {
 
   const getUnconfirmedPlan = useCallback((): DailyPlan => {
     if (typeof window === "undefined") return emptyPlan;
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) return emptyPlan;
+
     try {
-      const savedData = localStorage.getItem("dailyPlanData");
+      const savedData = localStorage.getItem(`dailyPlanData_${firebaseUser.uid}`);
       if (savedData) {
         const { date, plan } = JSON.parse(savedData);
         if (date !== new Date().toISOString().split('T')[0]) {
-          localStorage.removeItem("dailyPlanData");
+          localStorage.removeItem(`dailyPlanData_${firebaseUser.uid}`);
           return emptyPlan;
         }
         return {
@@ -61,7 +64,11 @@ export default function HomePage() {
     
     setDailyPlan(getUnconfirmedPlan());
 
-    const handleStorageChange = () => setDailyPlan(getUnconfirmedPlan());
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === `dailyPlanData_${firebaseUser.uid}`) {
+        setDailyPlan(getUnconfirmedPlan());
+      }
+    };
     window.addEventListener('storage', handleStorageChange);
 
     const todayStr = new Date().toISOString().split('T')[0];

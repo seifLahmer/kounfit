@@ -101,8 +101,11 @@ export default function AddMealClientPage() {
   
   const getAddedMealsFromStorage = useCallback(() => {
     if (typeof window === "undefined") return [];
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) return [];
+
     try {
-      const savedData = localStorage.getItem("dailyPlanData");
+      const savedData = localStorage.getItem(`dailyPlanData_${firebaseUser.uid}`);
       if (savedData) {
         const { date, plan } = JSON.parse(savedData);
         if (date === new Date().toISOString().split('T')[0]) {
@@ -154,8 +157,15 @@ export default function AddMealClientPage() {
 
   
   const handleAddMeal = (meal: Meal) => {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) {
+      toast({ title: "Non connecté", description: "Veuillez vous connecter pour ajouter un repas.", variant: "destructive" });
+      return;
+    }
+
     try {
-      const savedData = localStorage.getItem("dailyPlanData");
+      const storageKey = `dailyPlanData_${firebaseUser.uid}`;
+      const savedData = localStorage.getItem(storageKey);
       const todayStr = new Date().toISOString().split('T')[0];
       
       let currentPlan: DailyPlan;
@@ -180,7 +190,7 @@ export default function AddMealClientPage() {
       }
       currentPlan[targetMealType].push(meal);
       
-      localStorage.setItem("dailyPlanData", JSON.stringify({ date: todayStr, plan: currentPlan }));
+      localStorage.setItem(storageKey, JSON.stringify({ date: todayStr, plan: currentPlan }));
       
       setAddedMeals(currentPlan[mealType] || []);
 

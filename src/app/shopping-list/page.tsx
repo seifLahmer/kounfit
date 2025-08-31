@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -40,12 +41,15 @@ export default function ShoppingCartPage() {
   const [isLocationSheetOpen, setIsLocationSheetOpen] = useState(false);
 
   const loadCartFromStorage = () => {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) return;
+    
     try {
-        const savedData = localStorage.getItem("dailyPlanData");
+        const savedData = localStorage.getItem(`dailyPlanData_${firebaseUser.uid}`);
         if (savedData) {
             const { date, plan } = JSON.parse(savedData);
             if (date !== new Date().toISOString().split('T')[0]) {
-                localStorage.removeItem("dailyPlanData");
+                localStorage.removeItem(`dailyPlanData_${firebaseUser.uid}`);
                 setCartItems([]);
                 return;
             }
@@ -97,32 +101,22 @@ export default function ShoppingCartPage() {
   }, [router]);
   
   const handleRemoveItem = (mealId: string) => {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) return;
+    const storageKey = `dailyPlanData_${firebaseUser.uid}`;
+
     try {
-        const savedData = localStorage.getItem("dailyPlanData");
+        const savedData = localStorage.getItem(storageKey);
         if (savedData) {
             const { date, plan } = JSON.parse(savedData);
             const newPlan: DailyPlan = { breakfast: [], lunch: [], dinner: [], snack: [] };
-
-            let itemRemoved = false;
-            for (const key in plan) {
-                const mealType = key as keyof DailyPlan;
-                const meals = plan[mealType] as Meal[];
-                const indexToRemove = meals.findIndex(m => m.id === mealId);
-                
-                if (indexToRemove > -1 && !itemRemoved) {
-                    newPlan[mealType] = [...meals.slice(0, indexToRemove), ...meals.slice(indexToRemove + 1)];
-                    itemRemoved = true; // Set flag to only remove one instance
-                } else {
-                    newPlan[mealType] = meals;
-                }
-            }
-             for (const key in newPlan) {
-                   const mealType = key as keyof DailyPlan;
-                   // This logic is flawed, let's just remove all instances of the mealId
-                   newPlan[mealType] = (newPlan[mealType] as Meal[]).filter(m => m.id !== mealId);
-                }
             
-            localStorage.setItem("dailyPlanData", JSON.stringify({ date, plan: newPlan }));
+            for (const key in plan) {
+               const mealType = key as keyof DailyPlan;
+               newPlan[mealType] = (plan[mealType] as Meal[]).filter(m => m.id !== mealId);
+            }
+            
+            localStorage.setItem(storageKey, JSON.stringify({ date, plan: newPlan }));
             loadCartFromStorage();
         }
     } catch (e) {
@@ -185,6 +179,10 @@ export default function ShoppingCartPage() {
                     quantity: item.quantity,
                     unitPrice: mealDetails.price,
                     catererId: mealDetails.createdBy,
+                    calories: mealDetails.calories,
+                    macros: mealDetails.macros,
+                    category: mealDetails.category,
+                    imageUrl: mealDetails.imageUrl,
                 };
             })
           );
@@ -204,7 +202,7 @@ export default function ShoppingCartPage() {
               action: <CheckCircle className="text-green-500" />,
           });
           
-          localStorage.removeItem("dailyPlanData");
+          localStorage.removeItem(`dailyPlanData_${user.uid}`);
           setCartItems([]);
           
       } catch (error) {

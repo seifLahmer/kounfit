@@ -1,4 +1,5 @@
 
+
 export type User = {
   uid: string;
   email: string;
@@ -92,7 +93,14 @@ export type Order = {
   clientId: string;
   clientName: string;
   clientRegion: string;
-  items: Array<Meal & { quantity: number; unitPrice: number; catererId: string; }>;
+  items: Array<{ 
+    mealId: string; 
+    mealName: string; 
+    quantity: number; 
+    unitPrice: number;
+    catererId: string;
+    imageUrl: string;
+  }>;
   catererIds: string[]; // List of caterer UIDs involved in the order
   deliveryPersonId?: string; // The UID of the assigned delivery person
   totalPrice: number;

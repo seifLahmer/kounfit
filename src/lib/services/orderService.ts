@@ -24,7 +24,7 @@ const USERS_COLLECTION = "users";
 
 
 type PlaceOrderInput = Omit<Order, 'id' | 'orderDate' | 'deliveryDate' | 'status' | 'catererIds'> & {
-  items: Array<{
+  items: Array<Meal & {
     mealId: string;
     mealName: string;
     quantity: number;
@@ -44,18 +44,38 @@ export async function placeOrder(orderData: PlaceOrderInput): Promise<string> {
   try {
     const catererIds = [...new Set(orderData.items.map(item => item.catererId))];
 
-    // Ensure mealName is included in the items being saved
-    const itemsWithMealName = orderData.items.map(item => ({
+    // Ensure only necessary meal data is stored in the order
+    const itemsForOrder = orderData.items.map(item => ({
       mealId: item.mealId,
+      mealName: item.mealName,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
       catererId: item.catererId,
-      mealName: item.mealName, // Explicitly include mealName
+      imageUrl: item.imageUrl,
     }));
+    
+    // Prepare full meal data for user's daily intake log
+    const itemsForDailyIntake = orderData.items.map(item => ({
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      category: item.category,
+      imageUrl: item.imageUrl,
+      imageRef: item.imageRef,
+      ingredients: item.ingredients,
+      calories: item.calories,
+      macros: item.macros,
+      price: item.price,
+      createdBy: item.createdBy,
+      availability: item.availability,
+      ratings: item.ratings,
+      createdAt: item.createdAt,
+    }));
+
 
     const orderWithTimestamp = {
       ...orderData,
-      items: itemsWithMealName, // Use the enriched items
+      items: itemsForOrder,
       status: 'pending' as const,
       orderDate: serverTimestamp(),
       deliveryDate: serverTimestamp(),
@@ -72,9 +92,8 @@ export async function placeOrder(orderData: PlaceOrderInput): Promise<string> {
     const todayStr = new Date().toISOString().split('T')[0];
     const dailyIntakeField = `dailyIntake.${todayStr}`;
     
-    // We use arrayUnion to add meals without creating duplicates if the order is somehow placed twice.
     batch.update(userRef, {
-        [dailyIntakeField]: arrayUnion(...orderData.items)
+        [dailyIntakeField]: arrayUnion(...itemsForDailyIntake)
     });
 
     // 3. Commit all writes to the database
