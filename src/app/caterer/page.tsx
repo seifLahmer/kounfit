@@ -187,7 +187,7 @@ export default function CatererPage() {
   }, [orders]);
   
   const OrderCard = ({ order }: { order: Order }) => {
-    const isClickable = order.status === 'pending' || order.status === 'in_preparation';
+    const isClickable = order.status === 'pending';
     
     const ActionButton = () => {
         switch(order.status) {
@@ -400,5 +400,3 @@ export default function CatererPage() {
     </Dialog>
   );
 }
-
-    
