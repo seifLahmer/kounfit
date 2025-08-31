@@ -7,28 +7,25 @@ fitProvider.addScope('https://www.googleapis.com/auth/fitness.activity.read');
 fitProvider.addScope('https://www.googleapis.com/auth/fitness.body.read');
 fitProvider.addScope('https://www.googleapis.com/auth/fitness.nutrition.read');
 
-// This forces the consent screen to appear every time, useful for development.
-// Remove in production if you want the user to grant permission only once.
-// fitProvider.setCustomParameters({
-//   prompt: 'consent',
-// });
 
-/**
- * Initiates the Google Fit sign-in process to get permissions.
- * It tries to link the Google Fit account if the user is already logged in.
- */
-export async function handleGoogleFitSignIn() {
+export async function handleGoogleFitSignIn(): Promise<boolean> {
   const user = auth.currentUser;
   if (!user) {
     throw new Error("User not authenticated.");
   }
   
   try {
-    const result = await linkWithCredential(user, fitProvider);
+    const result = await signInWithPopup(user, fitProvider);
     const credential = GoogleAuthProvider.credentialFromResult(result);
     
     if (!credential || !credential.accessToken) {
         throw new Error("Could not retrieve access token from Google.");
+    }
+    
+    // If the user is new to this provider, link it to the existing account
+    const additionalUserInfo = getAdditionalUserInfo(result);
+    if (additionalUserInfo?.isNewUser) {
+        await linkWithCredential(user, credential);
     }
     
     return true;
@@ -38,7 +35,6 @@ export async function handleGoogleFitSignIn() {
     if (error.code === 'auth/popup-closed-by-user') {
       throw new Error("Popup closed before completion.");
     } else if (error.code === 'auth/credential-already-in-use') {
-        // This case means the account is already linked. It's a success.
         console.log("Google Fit account already linked.");
         return true;
     }
@@ -72,20 +68,36 @@ export async function fetchTodayStepCount(): Promise<number | null> {
         throw new Error("User not authenticated to fetch Fit data.");
     }
 
-    // Get the OAuth access token from the user's credentials
-    const idTokenResult = await user.getIdTokenResult();
-    const accessToken = idTokenResult.token; // This is the Firebase ID token, not the OAuth token. Mistake.
+    let oauthAccessToken: string | null = null;
     
-    // The client-side SDK doesn't easily expose the OAuth access token after the initial sign-in.
-    // The most robust way is via a backend, but for a pure client-side PoC, we can re-authenticate silently
-    // or try to get it from the initial sign-in. For now, let's assume we need to re-auth to get a fresh token.
-
-    const reauthResult = await signInWithPopup(auth, fitProvider);
-    const credential = GoogleAuthProvider.credentialFromResult(reauthResult);
-    if (!credential?.accessToken) {
-        throw new Error("Could not get Google Fit access token.");
+    try {
+        const reauthResult = await signInWithPopup(auth.currentUser, fitProvider);
+        const credential = GoogleAuthProvider.credentialFromResult(reauthResult);
+        if (credential?.accessToken) {
+            oauthAccessToken = credential.accessToken;
+        }
+    } catch(error: any) {
+        if(error.code === 'auth/credential-already-in-use') {
+            console.warn("Credential in use, but this may be okay. Trying to proceed.");
+             const googleUser = auth.currentUser?.providerData.find(p => p.providerId === GoogleAuthProvider.PROVIDER_ID);
+             if(!googleUser) {
+                 throw new Error("Could not get Google Fit access token even after re-auth attempt.");
+             }
+             // Re-authenticating to get a fresh token might be needed if it's expired.
+             const freshResult = await signInWithPopup(auth.currentUser, fitProvider);
+             const freshCredential = GoogleAuthProvider.credentialFromResult(freshResult);
+             if(freshCredential?.accessToken) {
+                 oauthAccessToken = freshCredential.accessToken;
+             }
+        } else {
+             throw new Error("Could not get Google Fit access token.");
+        }
     }
-    const oauthAccessToken = credential.accessToken;
+
+
+    if (!oauthAccessToken) {
+        throw new Error("OAuth Access Token for Google Fit is not available.");
+    }
 
     const today = new Date();
     const startTimeMillis = new Date(today.setHours(0, 0, 0, 0)).getTime();
