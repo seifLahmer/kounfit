@@ -209,6 +209,13 @@ export default function HomePage() {
                    </div>
                 </CardContent>
               </Card>
+            ) : hasFitPermission ? (
+                <Card className="bg-muted">
+                    <CardContent className="p-3 text-center">
+                        <p className="text-sm text-muted-foreground">Données Google Fit en cours de synchronisation...</p>
+                        <p className="text-xs text-muted-foreground">Cette opération peut prendre un moment.</p>
+                    </CardContent>
+                </Card>
             ) : (
                 <Card className="bg-muted">
                     <CardContent className="p-3 text-center">
