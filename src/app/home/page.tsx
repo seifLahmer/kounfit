@@ -23,10 +23,10 @@ export default function HomePage() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const router = useRouter()
-  const [dailyPlan, setDailyPlan] = useState<DailyPlan>(emptyPlan);
+  const [unconfirmedPlan, setUnconfirmedPlan] = useState<DailyPlan>(emptyPlan);
   const [confirmedMeals, setConfirmedMeals] = useState<Meal[]>([]);
 
-  const getUnconfirmedPlan = useCallback((): DailyPlan => {
+  const getUnconfirmedPlanFromStorage = useCallback((): DailyPlan => {
     if (typeof window === "undefined") return emptyPlan;
     const firebaseUser = auth.currentUser;
     if (!firebaseUser) return emptyPlan;
@@ -62,11 +62,11 @@ export default function HomePage() {
 
     setLoading(true);
     
-    setDailyPlan(getUnconfirmedPlan());
+    setUnconfirmedPlan(getUnconfirmedPlanFromStorage());
 
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === `dailyPlanData_${firebaseUser.uid}`) {
-        setDailyPlan(getUnconfirmedPlan());
+        setUnconfirmedPlan(getUnconfirmedPlanFromStorage());
       }
     };
     window.addEventListener('storage', handleStorageChange);
@@ -74,8 +74,8 @@ export default function HomePage() {
     const todayStr = new Date().toISOString().split('T')[0];
     const userDocRef = doc(db, "users", firebaseUser.uid);
     const unsubscribeSnapshot = onSnapshot(userDocRef, (doc) => {
-        const userData = doc.data() as User;
-        if (userData) {
+        if (doc.exists()) {
+            const userData = doc.data() as User;
             setUser(userData);
             const todaysIntake = userData.dailyIntake?.[todayStr] || [];
             setConfirmedMeals(todaysIntake);
@@ -89,14 +89,14 @@ export default function HomePage() {
       window.removeEventListener('storage', handleStorageChange);
       unsubscribeSnapshot();
     }
-  }, [router, toast, getUnconfirmedPlan]);
+  }, [router, toast, getUnconfirmedPlanFromStorage]);
 
 
   const handleAddMeal = (mealType: keyof DailyPlan) => {
     router.push(`/home/add-meal/${mealType}`);
   };
 
-  const allUnconfirmedMeals = Object.values(dailyPlan).flat();
+  const allUnconfirmedMeals = Object.values(unconfirmedPlan).flat();
   const allMealsForToday = [...confirmedMeals, ...allUnconfirmedMeals];
 
   const consumedCalories = allMealsForToday.reduce((acc, meal) => acc + (meal?.calories || 0), 0);
@@ -112,6 +112,13 @@ export default function HomePage() {
   const calorieGoal = user?.calorieGoal || 2000;
   const macroGoals = user?.macroRatio || { protein: 150, carbs: 250, fat: 70 };
   const formattedDate = format(new Date(), "eeee d MMMM", { locale: fr });
+  
+  const getMealsForCategory = (category: keyof DailyPlan): Meal[] => {
+    const confirmed = confirmedMeals.filter(m => m.category === category);
+    const unconfirmed = unconfirmedPlan[category];
+    return [...confirmed, ...unconfirmed];
+  }
+
 
   if (loading) {
       return (
@@ -161,10 +168,10 @@ export default function HomePage() {
             />
             
             <div className="grid grid-cols-2 gap-4">
-                <MealCard title="Petit déjeuner" meals={[...(user?.dailyIntake?.[new Date().toISOString().split('T')[0]]?.filter(m => m.category === 'breakfast') || []), ...dailyPlan.breakfast]} onAdd={() => handleAddMeal('breakfast')} defaultImage="/img home/petit-dejeuner.png" />
-                <MealCard title="Déjeuner" meals={[...(user?.dailyIntake?.[new Date().toISOString().split('T')[0]]?.filter(m => m.category === 'lunch') || []), ...dailyPlan.lunch]} onAdd={() => handleAddMeal('lunch')} defaultImage="/img home/dejeuner.png" />
-                <MealCard title="Dîner" meals={[...(user?.dailyIntake?.[new Date().toISOString().split('T')[0]]?.filter(m => m.category === 'dinner') || []), ...dailyPlan.dinner]} onAdd={() => handleAddMeal('dinner')} defaultImage="/img home/dinner.png" />
-                <MealCard title="Collation" meals={[...(user?.dailyIntake?.[new Date().toISOString().split('T')[0]]?.filter(m => m.category === 'snack') || []), ...dailyPlan.snack]} onAdd={() => handleAddMeal('snack')} defaultImage="/img home-page/snacks.png" />
+                <MealCard title="Petit déjeuner" meals={getMealsForCategory('breakfast')} onAdd={() => handleAddMeal('breakfast')} defaultImage="/img home/petit-dejeuner.png" />
+                <MealCard title="Déjeuner" meals={getMealsForCategory('lunch')} onAdd={() => handleAddMeal('lunch')} defaultImage="/img home/dejeuner.png" />
+                <MealCard title="Dîner" meals={getMealsForCategory('dinner')} onAdd={() => handleAddMeal('dinner')} defaultImage="/img home/dinner.png" />
+                <MealCard title="Collation" meals={getMealsForCategory('snack')} onAdd={() => handleAddMeal('snack')} defaultImage="/img home-page/snacks.png" />
             </div>
           </CardContent>
         </Card>

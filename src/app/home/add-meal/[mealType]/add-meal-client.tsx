@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -9,9 +8,9 @@ import { ChevronLeft, Loader2, Plus, Search, Heart, Frown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { getAvailableMealsByCategory, getFavoriteMeals } from "@/lib/services/mealService";
+import { getAvailableMealsByCategory } from "@/lib/services/mealService";
 import { toggleFavoriteMeal } from "@/lib/services/userService";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import type { Meal, DailyPlan, User } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
@@ -19,6 +18,8 @@ import { getUserProfile } from "@/lib/services/userService";
 import { cn } from "@/lib/utils";
 import { CalorieIcon } from "@/components/icons";
 import { Separator } from "@/components/ui/separator";
+import { onSnapshot, doc } from "firebase/firestore";
+
 
 const mealTypeTranslations: { [key: string]: string } = {
   breakfast: 'Petit déjeuner',
@@ -92,46 +93,38 @@ export default function AddMealClientPage() {
   const mealType = (Array.isArray(params.mealType) ? params.mealType[0] : params.mealType) as keyof DailyPlan;
 
   const [recommendedMeals, setRecommendedMeals] = useState<Meal[]>([]);
-  const [addedMeals, setAddedMeals] = useState<Meal[]>([]);
+  const [unconfirmedMeals, setUnconfirmedMeals] = useState<Meal[]>([]);
+  const [confirmedMeals, setConfirmedMeals] = useState<Meal[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
   const [favoriteMealIds, setFavoriteMealIds] = useState<string[]>([]);
   const [user, setUser] = useState<User | null>(null);
   
-  const getAddedMealsFromStorage = useCallback(() => {
-    if (typeof window === "undefined") return [];
+  const getUnconfirmedPlanFromStorage = useCallback((): DailyPlan => {
     const firebaseUser = auth.currentUser;
-    if (!firebaseUser) return [];
+    if (!firebaseUser) return { breakfast: [], lunch: [], snack: [], dinner: [] };
 
     try {
       const savedData = localStorage.getItem(`dailyPlanData_${firebaseUser.uid}`);
       if (savedData) {
         const { date, plan } = JSON.parse(savedData);
         if (date === new Date().toISOString().split('T')[0]) {
-          return plan[mealType] || [];
+          return plan;
         }
       }
     } catch (error) {
       console.error("Failed to parse daily plan from storage", error);
     }
-    return [];
-  }, [mealType]);
+    return { breakfast: [], lunch: [], snack: [], dinner: [] };
+  }, []);
 
-  const fetchInitialData = useCallback(async () => {
-    const firebaseUser = auth.currentUser;
-    if (!firebaseUser) {
-        router.push('/login');
-        return;
-    }
-    setLoading(true);
+  const fetchAvailableMeals = useCallback(async (userProfile: User) => {
     try {
-        const userProfile = await getUserProfile(firebaseUser.uid);
         if (userProfile?.region) {
             const fetchedMeals = await getAvailableMealsByCategory(mealType, userProfile.region);
             setRecommendedMeals(fetchedMeals);
-            setUser(userProfile);
-            setFavoriteMealIds(userProfile.favoriteMealIds || []);
         } else {
              toast({
                 title: "Région non définie",
@@ -139,21 +132,52 @@ export default function AddMealClientPage() {
                 variant: "destructive",
             });
         }
-        setAddedMeals(getAddedMealsFromStorage());
     } catch (error) {
         toast({
             title: "Erreur",
             description: "Impossible de charger les repas disponibles.",
             variant: "destructive",
         });
-    } finally {
-        setLoading(false);
     }
-  }, [mealType, router, toast, getAddedMealsFromStorage]);
+  }, [mealType, toast]);
 
   useEffect(() => {
-    fetchInitialData();
-  }, [fetchInitialData]);
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) {
+        router.push('/login');
+        return;
+    }
+    setLoading(true);
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const userDocRef = doc(db, "users", firebaseUser.uid);
+
+    const unsubscribe = onSnapshot(userDocRef, (doc) => {
+        if (doc.exists()) {
+            const userProfile = doc.data() as User;
+            setUser(userProfile);
+            setFavoriteMealIds(userProfile.favoriteMealIds || []);
+            setConfirmedMeals(userProfile.dailyIntake?.[todayStr] || []);
+            fetchAvailableMeals(userProfile);
+        } else {
+            toast({ title: "Erreur", description: "Profil non trouvé.", variant: "destructive" });
+        }
+        setLoading(false);
+    });
+
+    const handleStorageChange = () => {
+        const plan = getUnconfirmedPlanFromStorage();
+        setUnconfirmedMeals(Object.values(plan).flat());
+    };
+    window.addEventListener('storage', handleStorageChange);
+    handleStorageChange(); // Initial load
+
+    return () => {
+        unsubscribe();
+        window.removeEventListener('storage', handleStorageChange);
+    };
+
+  }, [router, toast, fetchAvailableMeals, getUnconfirmedPlanFromStorage]);
 
   
   const handleAddMeal = (meal: Meal) => {
@@ -192,7 +216,7 @@ export default function AddMealClientPage() {
       
       localStorage.setItem(storageKey, JSON.stringify({ date: todayStr, plan: currentPlan }));
       
-      setAddedMeals(currentPlan[mealType] || []);
+      setUnconfirmedMeals(Object.values(currentPlan).flat());
 
       toast({
           title: "Repas ajouté !",
@@ -229,6 +253,14 @@ export default function AddMealClientPage() {
     }
   };
 
+  const allAddedMeals = useMemo(() => {
+    const combinedMeals: { [id: string]: Meal } = {};
+    [...confirmedMeals, ...unconfirmedMeals].forEach(meal => {
+        if(meal) combinedMeals[meal.id] = meal;
+    });
+    return Object.values(combinedMeals);
+  }, [confirmedMeals, unconfirmedMeals]);
+
   const filteredRecommendedMeals = useMemo(() => {
     return recommendedMeals.filter(meal => 
       meal.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -236,10 +268,10 @@ export default function AddMealClientPage() {
   }, [recommendedMeals, searchTerm]);
 
   const filteredAddedMeals = useMemo(() => {
-    return addedMeals.filter(meal => 
+    return allAddedMeals.filter(meal => 
         meal.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
-  }, [addedMeals, searchTerm]);
+  }, [allAddedMeals, searchTerm]);
 
   return (
     <div className="flex flex-col h-screen bg-gradient-to-b from-[#a2fcdc] to-background">
