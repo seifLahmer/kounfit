@@ -44,8 +44,18 @@ export async function placeOrder(orderData: PlaceOrderInput): Promise<string> {
   try {
     const catererIds = [...new Set(orderData.items.map(item => item.catererId))];
 
+    // Ensure mealName is included in the items being saved
+    const itemsWithMealName = orderData.items.map(item => ({
+      mealId: item.mealId,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      catererId: item.catererId,
+      mealName: item.mealName, // Explicitly include mealName
+    }));
+
     const orderWithTimestamp = {
       ...orderData,
+      items: itemsWithMealName, // Use the enriched items
       status: 'pending' as const,
       orderDate: serverTimestamp(),
       deliveryDate: serverTimestamp(),
@@ -61,16 +71,6 @@ export async function placeOrder(orderData: PlaceOrderInput): Promise<string> {
     const userRef = doc(db, USERS_COLLECTION, orderData.clientId);
     const todayStr = new Date().toISOString().split('T')[0];
     const dailyIntakeField = `dailyIntake.${todayStr}`;
-
-    const mealsToSave = orderData.items.map(item => ({
-        id: item.mealId,
-        name: item.mealName,
-        price: item.unitPrice,
-        // You might need to fetch the full meal object if more details are needed
-        // For now, we save what's available
-        calories: 0, // Placeholder, ideally fetch this
-        macros: { protein: 0, carbs: 0, fat: 0 }, // Placeholder
-    }));
     
     // We use arrayUnion to add meals without creating duplicates if the order is somehow placed twice.
     batch.update(userRef, {

@@ -111,13 +111,14 @@ export default function ShoppingCartPage() {
                 
                 if (indexToRemove > -1 && !itemRemoved) {
                     newPlan[mealType] = [...meals.slice(0, indexToRemove), ...meals.slice(indexToRemove + 1)];
-                    itemRemoved = true;
+                    itemRemoved = true; // Set flag to only remove one instance
                 } else {
                     newPlan[mealType] = meals;
                 }
             }
              for (const key in newPlan) {
                    const mealType = key as keyof DailyPlan;
+                   // This logic is flawed, let's just remove all instances of the mealId
                    newPlan[mealType] = (newPlan[mealType] as Meal[]).filter(m => m.id !== mealId);
                 }
             
@@ -166,6 +167,7 @@ export default function ShoppingCartPage() {
             variant: "destructive",
             duration: 5000,
         });
+        router.push('/profile');
         return;
       }
 
@@ -174,11 +176,15 @@ export default function ShoppingCartPage() {
           const detailedCartItems = await Promise.all(
             cartItems.map(async (item) => {
                 const mealDetails = await getMealById(item.id);
+                if (!mealDetails) {
+                    throw new Error(`Meal with id ${item.id} not found.`);
+                }
                 return {
-                    ...item,
-                    ...mealDetails, // Add full details
-                    unitPrice: item.price,
-                    catererId: item.createdBy,
+                    mealId: item.id,
+                    mealName: mealDetails.name, // Ensure name is from fresh data
+                    quantity: item.quantity,
+                    unitPrice: mealDetails.price,
+                    catererId: mealDetails.createdBy,
                 };
             })
           );
@@ -188,7 +194,7 @@ export default function ShoppingCartPage() {
               clientName: userProfile.fullName,
               clientRegion: userProfile.region || 'Non spécifiée',
               deliveryAddress: deliveryAddress,
-              items: detailedCartItems as any,
+              items: detailedCartItems,
               totalPrice: total,
           });
 
@@ -269,7 +275,7 @@ export default function ShoppingCartPage() {
           {cartItems.length > 0 && (
               <div className="pt-6 space-y-4">
                 <div className="space-y-2">
-                    <Label htmlFor="deliveryAddress">Adresse de livraison <span className="text-xs text-muted-foreground">(la localisation doit etre appartient au region selectionner si non la commande ne sera pas traiter)</span></Label>
+                    <Label htmlFor="deliveryAddress">Adresse de livraison</Label>
                      <Sheet open={isLocationSheetOpen} onOpenChange={setIsLocationSheetOpen}>
                         <SheetTrigger asChild>
                              <Card className="mt-2 cursor-pointer hover:bg-muted">
