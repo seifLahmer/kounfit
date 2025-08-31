@@ -14,7 +14,17 @@ import { useToast } from "@/hooks/use-toast"
 import { placeOrder } from "@/lib/services/orderService"
 import { getUserProfile, updateUserProfile } from "@/lib/services/userService"
 import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
+import { Card, CardContent } from "@/components/ui/card"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import LocationPicker from "@/components/location-picker"
+
 
 type CartItem = Meal & { quantity: number };
 
@@ -26,6 +36,7 @@ export default function ShoppingCartPage() {
   const [userProfile, setUserProfile] = useState<User | null>(null);
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const { toast } = useToast();
+  const [isLocationSheetOpen, setIsLocationSheetOpen] = useState(false);
 
   const loadCartFromStorage = () => {
     try {
@@ -118,15 +129,28 @@ export default function ShoppingCartPage() {
     }
   };
 
-  const handleAddressSave = async () => {
-      if (!userProfile) return;
-      try {
-        await updateUserProfile(userProfile.uid, { deliveryAddress });
-        toast({ title: "Adresse enregistrée", description: "Votre adresse de livraison a été mise à jour."});
-      } catch (error) {
-        toast({ title: "Erreur", description: "Impossible de sauvegarder l'adresse.", variant: "destructive" });
-      }
-  }
+  const handleLocationSelect = async (address: string, region: string) => {
+    if (userProfile && region.toLowerCase() !== userProfile.region.toLowerCase()) {
+        toast({
+            title: "Région incompatible",
+            description: `Cette adresse est dans la région de ${region}, mais votre profil est configuré pour ${userProfile.region}. Veuillez changer la région de votre profil pour commander ici.`,
+            variant: "destructive",
+            duration: 5000,
+        });
+        return;
+    }
+
+    setDeliveryAddress(address);
+    if (userProfile) {
+        try {
+            await updateUserProfile(userProfile.uid, { deliveryAddress: address });
+            toast({ title: "Adresse enregistrée!" });
+        } catch (error) {
+            toast({ title: "Erreur", description: "Impossible de sauvegarder l'adresse.", variant: "destructive" });
+        }
+    }
+    setIsLocationSheetOpen(false);
+};
 
 
   const handlePlaceOrder = async () => {
@@ -138,14 +162,12 @@ export default function ShoppingCartPage() {
           if (!deliveryAddress) {
             toast({
                 title: "Adresse de livraison manquante",
-                description: "Veuillez ajouter une adresse de livraison avant de commander.",
+                description: "Veuillez sélectionner une adresse de livraison sur la carte.",
                 variant: "destructive",
             });
             setIsPlacingOrder(false);
             return;
           }
-
-          await updateUserProfile(user.uid, { deliveryAddress });
 
           await placeOrder({
               clientId: user.uid,
@@ -241,17 +263,29 @@ export default function ShoppingCartPage() {
                 <div className="space-y-2">
                     <Label htmlFor="deliveryAddress">Adresse de livraison</Label>
                      <p className="text-xs text-muted-foreground">(la localisation doit etre appartient au region selectionner si non la commande ne sera pas traiter)</p>
-                    <div className="relative">
-                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        <Input
-                            id="deliveryAddress"
-                            value={deliveryAddress}
-                            onChange={(e) => setDeliveryAddress(e.target.value)}
-                            onBlur={handleAddressSave}
-                            placeholder="Entrez votre adresse complète"
-                            className="pl-10"
-                        />
-                    </div>
+                     <Sheet open={isLocationSheetOpen} onOpenChange={setIsLocationSheetOpen}>
+                        <SheetTrigger asChild>
+                             <Card className="mt-2 cursor-pointer hover:bg-muted">
+                                <CardContent className="p-3 flex items-center gap-3">
+                                    <MapPin className="text-primary" />
+                                    <span className="text-sm truncate">
+                                        {deliveryAddress || "Sélectionner une adresse sur la carte"}
+                                    </span>
+                                </CardContent>
+                            </Card>
+                        </SheetTrigger>
+                        <SheetContent side="bottom" className="h-[90vh] p-0">
+                            <SheetHeader className="p-4 border-b">
+                                <SheetTitle>Sélectionnez votre adresse</SheetTitle>
+                                <SheetDescription>Déplacez la carte pour positionner le marqueur sur votre adresse de livraison exacte.</SheetDescription>
+                            </SheetHeader>
+                            <LocationPicker 
+                                initialAddress={deliveryAddress}
+                                onLocationSelect={handleLocationSelect} 
+                                onClose={() => setIsLocationSheetOpen(false)} 
+                            />
+                        </SheetContent>
+                    </Sheet>
                 </div>
 
                 <div className="space-y-2 text-muted-foreground">

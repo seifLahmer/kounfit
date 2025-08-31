@@ -119,7 +119,7 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
     }
   };
 
-  if (loadError) return <div>Erreur de chargement de la carte.</div>;
+  if (loadError) return <div>Erreur de chargement de la carte. Assurez-vous que la clé API Google Maps est correctement configurée.</div>;
 
   return (
     <div className="relative w-full h-full">
@@ -150,7 +150,7 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
                 <MapPin className="text-destructive h-10 w-10 drop-shadow-lg" />
             </div>
             
-             <Button variant="ghost" size="icon" className="absolute top-4 right-16 bg-white/80 backdrop-blur-sm rounded-full" onClick={handleCurrentLocation}>
+             <Button variant="ghost" size="icon" className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm rounded-full" onClick={handleCurrentLocation}>
                 <LocateFixed />
             </Button>
 
@@ -164,7 +164,7 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
                                  {isGeocoding && <p className="text-xs text-muted-foreground">Mise à jour...</p>}
                             </div>
                         </div>
-                        <Button className="w-full h-12 bg-primary hover:bg-primary/90 rounded-xl mt-2" onClick={() => onLocationSelect(mapCenterLocation.address, mapCenterLocation.region)} disabled={isGeocoding}>
+                        <Button className="w-full h-12 bg-primary hover:bg-primary/90 rounded-xl mt-2" onClick={() => onLocationSelect(mapCenterLocation.address, mapCenterLocation.region)} disabled={isGeocoding || !mapCenterLocation.address || mapCenterLocation.address === "Adresse introuvable"}>
                             Confirmer cette adresse
                         </Button>
                     </div>
