@@ -25,7 +25,6 @@ export async function handleGoogleFitSignIn(): Promise<boolean> {
     return true;
 
   } catch (error: any) {
-    console.error("Google Fit Sign-In/Link Error:", error.code);
     if (error.code === AuthErrorCodes.CREDENTIAL_ALREADY_IN_USE) {
         console.log("Google Fit account already linked.");
         return true; // This is a success case for our purpose
@@ -33,6 +32,7 @@ export async function handleGoogleFitSignIn(): Promise<boolean> {
     if (error.code === 'auth/popup-closed-by-user') {
       throw new Error("Popup closed before completion.");
     }
+    console.error("Google Fit Sign-In/Link Error:", error.code);
     throw new Error("Failed to sign in or link with Google Fit.");
   }
 }
