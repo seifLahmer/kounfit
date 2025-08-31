@@ -261,8 +261,7 @@ export default function ShoppingCartPage() {
           {cartItems.length > 0 && (
               <div className="pt-6 space-y-4">
                 <div className="space-y-2">
-                    <Label htmlFor="deliveryAddress">Adresse de livraison</Label>
-                     <p className="text-xs text-muted-foreground">(la localisation doit etre appartient au region selectionner si non la commande ne sera pas traiter)</p>
+                    <Label htmlFor="deliveryAddress">Adresse de livraison <span className="text-xs text-muted-foreground">(la localisation doit etre appartient au region selectionner si non la commande ne sera pas traiter)</span></Label>
                      <Sheet open={isLocationSheetOpen} onOpenChange={setIsLocationSheetOpen}>
                         <SheetTrigger asChild>
                              <Card className="mt-2 cursor-pointer hover:bg-muted">
