@@ -94,9 +94,11 @@ export default function HomePage() {
 
   const consumedCalories = allMealsForToday.reduce((acc, meal) => acc + (meal?.calories || 0), 0);
   const consumedMacros = allMealsForToday.reduce((acc, meal) => {
-    acc.protein += meal?.macros.protein || 0;
-    acc.carbs += meal?.macros.carbs || 0;
-    acc.fat += meal?.macros.fat || 0;
+    if (meal && meal.macros) {
+        acc.protein += meal.macros.protein || 0;
+        acc.carbs += meal.macros.carbs || 0;
+        acc.fat += meal.macros.fat || 0;
+    }
     return acc;
   }, { protein: 0, carbs: 0, fat: 0 });
 
