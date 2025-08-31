@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { Camera, Loader2, CheckCircle, LogOut, MapPin, Check, Snowflake, Activity } from "lucide-react"
+import { Camera, Loader2, CheckCircle, LogOut, MapPin, Check, Snowflake, Activity, Phone } from "lucide-react"
 import Image from "next/image"
 import * as React from "react"
 import { useEffect, useState, useRef } from "react"
@@ -35,12 +35,12 @@ import { calculateNutritionalNeeds } from "@/lib/services/nutritionService"
 import type { User } from "@/lib/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { GoogleIcon } from "@/components/icons"
 import { cn } from "@/lib/utils"
 
 
 const profileFormSchema = z.object({
   fullName: z.string().min(2, "Le nom doit contenir au moins 2 caractères."),
+  phoneNumber: z.string().optional(),
   age: z.coerce.number().min(16, "Vous devez avoir au moins 16 ans.").max(120),
   biologicalSex: z.enum(["male", "female"], {
     required_error: "Veuillez sélectionner votre sexe.",
@@ -60,19 +60,14 @@ const profileFormSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileFormSchema>
 
 
-const IntegrationCard = ({ icon, name, isConnected, isConnecting, onClick, disabled = false }: { icon: React.ReactNode, name: string, isConnected?: boolean, isConnecting?: boolean, onClick?: () => void, disabled?: boolean }) => {
+const IntegrationCard = ({ icon, name, onClick }: { icon: React.ReactNode, name: string, onClick?: () => void }) => {
     return (
         <Card 
-            className={cn(
-                "w-full aspect-square flex flex-col items-center justify-center gap-2 cursor-pointer transition-all",
-                isConnected ? "bg-primary text-primary-foreground border-primary" : "bg-muted hover:bg-border",
-                (disabled || isConnecting) && "opacity-50 cursor-not-allowed"
-            )}
-            onClick={disabled || isConnecting ? undefined : onClick}
+            className="w-full aspect-square flex flex-col items-center justify-center gap-2 cursor-pointer transition-all bg-muted hover:bg-border"
+            onClick={onClick}
         >
-            {isConnecting ? <Loader2 className="h-6 w-6 animate-spin" /> : icon}
+            {icon}
             <span className="text-xs font-semibold">{name}</span>
-            {isConnected && <CheckCircle className="w-4 h-4 absolute top-1 right-1" />}
         </Card>
     )
 }
@@ -90,6 +85,7 @@ export default function ProfilePage() {
         resolver: zodResolver(profileFormSchema),
         defaultValues: {
             fullName: "",
+            phoneNumber: "",
             age: 0,
             biologicalSex: "male",
             weight: 0,
@@ -111,6 +107,7 @@ export default function ProfilePage() {
                     if (userProfile && isMounted.current) {
                         const formValues = {
                             ...userProfile,
+                            phoneNumber: userProfile.phoneNumber || "",
                             region: userProfile.region || "tunis"
                         };
                         form.reset(formValues as ProfileFormValues);
@@ -284,6 +281,22 @@ export default function ProfilePage() {
                         
                         <Form {...form}>
                             <form className="space-y-6">
+                                <FormField
+                                  control={form.control}
+                                  name="phoneNumber"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Numéro de téléphone</FormLabel>
+                                      <FormControl>
+                                        <div className="relative">
+                                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                          <Input type="tel" {...field} onBlur={() => onBlur('phoneNumber')} className="pl-10" placeholder="Ex: 55123456"/>
+                                        </div>
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
                                <div className="grid grid-cols-3 gap-4">
                                     <FormField
                                       control={form.control}
@@ -412,26 +425,23 @@ export default function ProfilePage() {
                         </Form>
 
                         <div>
-                             <h3 className="font-bold mb-2 mt-8">INTÉGRATIONS</h3>
-                             <div className="grid grid-cols-3 gap-3">
-                                 <IntegrationCard 
-                                     name="Google Fit"
-                                     icon={<GoogleIcon className="w-8 h-8"/>}
-                                     onClick={handleComingSoon}
-                                     disabled
-                                 />
-                                 <IntegrationCard 
-                                     name="Huawei"
-                                     icon={<Image src="https://unpkg.com/lucide-static@latest/icons/smartphone.svg" width={32} height={32} alt="Huawei Icon" />}
-                                     onClick={handleComingSoon}
-                                     disabled
-                                 />
-                                  <IntegrationCard
-                                     name="S-Health"
-                                     icon={<Activity className="w-8 h-8" />}
-                                     onClick={handleComingSoon}
-                                     disabled
-                                 />
+                            <h3 className="font-bold mb-2 mt-8">INTÉGRATIONS</h3>
+                            <div className="grid grid-cols-3 gap-3">
+                                <IntegrationCard 
+                                    name="Google Fit"
+                                    icon={<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="#4285F4" d="M11.23 6.94l-3.3 3.3l-1.2-1.2l-1.42 1.41l2.62 2.62l.71-.71l.7-.7l3.3-3.3z"/><path fill="#34A853" d="M16.48 8.78l-4.54 4.54l-1.41-1.41l-1.42 1.42l2.83 2.83l.71-.71l5.24-5.24z"/><path fill="#FBBC05" d="M10.59 13.9l-2.12 2.12a2.98 2.98 0 0 0 0 4.24a2.98 2.98 0 0 0 4.24 0l4.95-4.95l-4.24-4.24l-2.83 2.83z"/><path fill="#EA4335" d="M14.83 5.17a2.98 2.98 0 0 0-4.24 0l-2.12 2.12l4.24 4.24l2.12-2.12a2.98 2.98 0 0 0 0-4.24z"/></svg>}
+                                    onClick={handleComingSoon}
+                                />
+                                <IntegrationCard 
+                                    name="Huawei"
+                                    icon={<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 16 16"><path fill="#E63422" d="M2 8a6 6 0 0 1 10.125-4.532l.338-.563a7 7 0 0 0-11.82 5.095zM12.924 3.7A6.002 6.002 0 0 1 14 8a6 6 0 0 1-5.875 5.968l-.338.563a7 7 0 0 0 6.035-6.83z"/><path fill="#E63422" d="M5.875 2.032L6.213 1.47A7 7 0 0 1 14 8a7 7 0 0 1-6.178 6.905l-.338-.563A6 6 0 0 0 12.924 3.7L5.875 2.033z"/></svg>}
+                                    onClick={handleComingSoon}
+                                />
+                                <IntegrationCard
+                                    name="S-Health"
+                                    icon={<Activity className="w-8 h-8" />}
+                                    onClick={handleComingSoon}
+                                />
                              </div>
                          </div>
                         
@@ -441,5 +451,3 @@ export default function ProfilePage() {
         </MainLayout>
     );
 }
-
-    

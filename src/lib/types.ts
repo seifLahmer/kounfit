@@ -8,6 +8,7 @@ export type User = {
   biologicalSex: "male" | "female";
   weight: number; // in kg
   height: number; // in cm
+  phoneNumber?: string;
   deliveryAddress?: string;
   region: string;
   activityLevel: "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "extremely_active";

@@ -157,19 +157,20 @@ export default function ShoppingCartPage() {
   const handlePlaceOrder = async () => {
       const user = auth.currentUser;
       if (!user || !userProfile || cartItems.length === 0) return;
+      
+      // Validation step
+      if (!deliveryAddress || !userProfile.phoneNumber) {
+        toast({
+            title: "Informations manquantes",
+            description: "Veuillez renseigner votre adresse et numéro de téléphone dans votre profil avant de commander.",
+            variant: "destructive",
+            duration: 5000,
+        });
+        return;
+      }
 
       setIsPlacingOrder(true);
       try {
-          if (!deliveryAddress) {
-            toast({
-                title: "Adresse de livraison manquante",
-                description: "Veuillez sélectionner une adresse de livraison sur la carte.",
-                variant: "destructive",
-            });
-            setIsPlacingOrder(false);
-            return;
-          }
-
           const detailedCartItems = await Promise.all(
             cartItems.map(async (item) => {
                 const mealDetails = await getMealById(item.id);
