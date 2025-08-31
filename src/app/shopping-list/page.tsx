@@ -273,7 +273,7 @@ export default function ShoppingCartPage() {
                                 </CardContent>
                             </Card>
                         </SheetTrigger>
-                        <SheetContent side="bottom" className="h-full p-0 flex flex-col">
+                        <SheetContent side="bottom" className="h-[90vh] p-0 flex flex-col">
                             <SheetHeader className="p-4 border-b shrink-0">
                                 <SheetTitle>Sélectionnez votre adresse</SheetTitle>
                                 <SheetDescription>Déplacez la carte pour positionner le marqueur sur votre adresse de livraison exacte.</SheetDescription>
