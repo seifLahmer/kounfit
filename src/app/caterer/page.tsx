@@ -62,6 +62,7 @@ export default function CatererPage() {
   const [preferredDeliveryPeople, setPreferredDeliveryPeople] = useState<DeliveryPerson[]>([]);
   const [selectedDeliveryPerson, setSelectedDeliveryPerson] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedOrderMeals, setSelectedOrderMeals] = useState<Meal[]>([]);
   const [isMealDetailsLoading, setIsMealDetailsLoading] = useState(false);
   const { toast } = useToast();
@@ -149,29 +150,28 @@ export default function CatererPage() {
     setSelectedDeliveryPerson(null);
   };
   
-  const handleViewDetails = async (order: Order) => {
+ const handleViewDetails = async (order: Order) => {
     setIsMealDetailsLoading(true);
     setSelectedOrderMeals([]);
+    setSelectedOrder(order); // Set the selected order
     try {
-        const mealPromises = order.items.map(item => getMealById(item.mealId));
-        const mealsDetails = await Promise.all(mealPromises);
-        const validMeals = mealsDetails.filter((m): m is Meal => m !== null);
-        
-        // Map quantities from order to the fetched meal details
-        const mealsWithQuantities = validMeals.map(meal => {
-            const orderItem = order.items.find(item => item.mealId === meal.id);
-            return {
-                ...meal,
-                quantity: orderItem?.quantity || 0,
-            };
-        });
-        
-        setSelectedOrderMeals(mealsWithQuantities);
-
+      const mealPromises = order.items.map(item => getMealById(item.mealId));
+      const mealsDetails = await Promise.all(mealPromises);
+      const validMeals = mealsDetails.filter((m): m is Meal => m !== null);
+      
+      const mealsWithQuantities = validMeals.map(meal => {
+        const orderItem = order.items.find(item => item.mealId === meal.id);
+        return {
+          ...meal,
+          quantity: orderItem?.quantity || 0,
+        };
+      });
+      
+      setSelectedOrderMeals(mealsWithQuantities);
     } catch (error) {
-        toast({ title: "Erreur", description: "Impossible de charger les détails des repas.", variant: "destructive" });
+      toast({ title: "Erreur", description: "Impossible de charger les détails de la commande.", variant: "destructive" });
     } finally {
-        setIsMealDetailsLoading(false);
+      setIsMealDetailsLoading(false);
     }
   };
 
@@ -239,45 +239,142 @@ export default function CatererPage() {
     };
 
     return (
-        <Dialog onOpenChange={(isOpen) => { if (isOpen) { handleViewDetails(order) } else { setSelectedOrderMeals([]) } }}>
-            <DialogTrigger asChild>
-                <Card className="w-64 shrink-0 shadow-lg transition-transform duration-300 hover:scale-105 cursor-pointer">
-                    <CardContent className="p-4 space-y-3 flex flex-col h-full">
-                        <div className="flex items-center gap-3">
-                            <Avatar><AvatarImage src={`https://placehold.co/40x40.png`} /><AvatarFallback>{order.clientName.charAt(0)}</AvatarFallback></Avatar>
-                            <span className="font-semibold">{order.clientName}</span>
+        <Card onClick={() => handleViewDetails(order)} className="w-64 shrink-0 shadow-lg transition-transform duration-300 hover:scale-105 cursor-pointer">
+            <CardContent className="p-4 space-y-3 flex flex-col h-full">
+                <div className="flex items-center gap-3">
+                    <Avatar><AvatarImage src={`https://placehold.co/40x40.png`} /><AvatarFallback>{order.clientName.charAt(0)}</AvatarFallback></Avatar>
+                    <span className="font-semibold">{order.clientName}</span>
+                </div>
+                <div className="flex items-start gap-2 text-sm text-muted-foreground"><MapPin className="w-4 h-4 mt-0.5 shrink-0"/><span>{order.deliveryAddress}</span></div>
+                <div className="text-sm text-muted-foreground min-h-[40px] border-t pt-2">
+                    {order.items.slice(0, 2).map((item, index) => (<p key={`${item.mealId}-${index}`}>{item.quantity}x {item.mealName}</p>))}
+                </div>
+                
+                {order.status === 'pending' && <Badge variant="secondary">À préparer</Badge>}
+                {order.status === 'in_preparation' && <Badge className="bg-blue-100 text-blue-800">En cours</Badge>}
+                {order.status === 'ready_for_delivery' && <Badge className="bg-yellow-100 text-yellow-800">Prêt</Badge>}
+                {order.status === 'delivered' && <Badge className="bg-green-100 text-green-800 flex items-center gap-1"><CheckCircle className="w-3 h-3"/> Livrée</Badge>}
+                
+                <p className="font-bold text-lg mt-auto">{order.totalPrice.toFixed(2)} DT</p>
+                
+                <ActionButton />
+            </CardContent>
+        </Card>
+    )
+  };
+
+  return (
+    <Dialog open={!!selectedOrder} onOpenChange={(isOpen) => !isOpen && setSelectedOrder(null)}>
+        <div className="bg-primary">
+        <header className="p-2 flex justify-between items-center text-white border-b border-white/20">
+            <Image src="/kounfit/kounfit white.png" alt="Kounfit Logo" width={120} height={30} />
+            <Button variant="ghost" size="icon">
+            <Bell />
+            </Button>
+        </header>
+        <main className="bg-white p-4 space-y-6 rounded-t-3xl">
+            <h2 className="text-2xl font-bold">Interface Traiteur</h2>
+            <Tabs defaultValue="commandes">
+            <TabsList className="grid w-full grid-cols-2 bg-gray-200 rounded-full">
+                <TabsTrigger value="commandes" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-white">Commandes</TabsTrigger>
+                <TabsTrigger value="repas" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-white">Mes Repas</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="commandes" className="space-y-6 pt-4">
+                {loading ? (
+                    <div className="flex justify-center items-center h-48"><Loader2 className="animate-spin text-primary" /></div>
+                ) : (
+                <>
+                <div>
+                    <h3 className="text-lg font-semibold mb-2">À préparer</h3>
+                    <div className="flex gap-4 overflow-x-auto pb-4">
+                    {pendingOrders.length > 0 ? pendingOrders.map(o => <OrderCard key={o.id} order={o} />) : <p className="text-sm text-muted-foreground">Aucune commande à préparer.</p>}
+                    </div>
+                </div>
+                <div>
+                    <h3 className="text-lg font-semibold mb-2">En cours</h3>
+                    <div className="flex gap-4 overflow-x-auto pb-4">
+                    {inPreparationOrders.length > 0 ? inPreparationOrders.map(o => <OrderCard key={o.id} order={o} />) : <p className="text-sm text-muted-foreground">Aucune commande en cours.</p>}
+                    </div>
+                </div>
+                <div>
+                    <h3 className="text-lg font-semibold mb-2">Prêtes</h3>
+                    <div className="flex gap-4 overflow-x-auto pb-4">
+                    {readyForDeliveryOrders.length > 0 ? readyForDeliveryOrders.map(o => <OrderCard key={o.id} order={o} />) : <p className="text-sm text-muted-foreground">Aucune commande prête.</p>}
+                    </div>
+                </div>
+                <div>
+                    <h3 className="text-lg font-semibold mb-2">Livrées</h3>
+                    <div className="flex gap-4 overflow-x-auto pb-4">
+                    {deliveredOrders.length > 0 ? deliveredOrders.map(o => <OrderCard key={o.id} order={o} />) : <p className="text-sm text-muted-foreground">Aucune commande livrée.</p>}
+                    </div>
+                </div>
+                </>
+                )}
+            </TabsContent>
+            
+            <TabsContent value="repas" className="space-y-4 pt-4">
+                <h3 className="text-lg font-semibold">Mes Repas ({meals.length})</h3>
+                
+                {loading ? (
+                    <div className="flex justify-center items-center h-48"><Loader2 className="animate-spin text-primary" /></div>
+                ) : (
+                <div className="grid grid-cols-2 gap-4">
+                {meals.map(meal => (
+                    <Card key={meal.id} className="space-y-2">
+                    <Image src={meal.imageUrl} alt={meal.name} width={200} height={120} className="rounded-t-lg object-cover w-full h-24" data-ai-hint="caterer meal" />
+                    <CardContent className="p-2">
+                        <h4 className="font-semibold truncate">{meal.name}</h4>
+                        <p className="text-sm font-bold">{meal.price.toFixed(2)} DT</p>
+                        <p className="text-xs text-muted-foreground">{meal.calories} kcal</p>
+                        <div className="flex justify-end items-center mt-1">
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-6 w-6"><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Cette action est irréversible et supprimera le repas "{meal.name}".
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteMeal(meal)} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                            </AlertDialog>
+                        <Button variant="ghost" size="icon" className="h-6 w-6"><MoreHorizontal className="w-4 h-4" /></Button>
                         </div>
-                        <div className="flex items-start gap-2 text-sm text-muted-foreground"><MapPin className="w-4 h-4 mt-0.5 shrink-0"/><span>{order.deliveryAddress}</span></div>
-                        <div className="text-sm text-muted-foreground min-h-[40px] border-t pt-2">
-                            {order.items.slice(0, 2).map(item => (<p key={item.mealId}>{item.quantity}x {item.mealName}</p>))}
-                        </div>
-                        
-                        {order.status === 'pending' && <Badge variant="secondary">À préparer</Badge>}
-                        {order.status === 'in_preparation' && <Badge className="bg-blue-100 text-blue-800">En cours</Badge>}
-                        {order.status === 'ready_for_delivery' && <Badge className="bg-yellow-100 text-yellow-800">Prêt</Badge>}
-                        {order.status === 'delivered' && <Badge className="bg-green-100 text-green-800 flex items-center gap-1"><CheckCircle className="w-3 h-3"/> Livrée</Badge>}
-                        
-                        <p className="font-bold text-lg mt-auto">{order.totalPrice.toFixed(2)} DT</p>
-                        
-                        <ActionButton />
                     </CardContent>
-                </Card>
-            </DialogTrigger>
+                    </Card>
+                ))}
+                </div>
+                )}
+                <Button className="w-full bg-secondary hover:bg-secondary/90 text-white rounded-lg h-12" onClick={() => router.push('/caterer/add-meal')}>
+                <PlusCircle className="mr-2"/> Ajouter un repas
+                </Button>
+            </TabsContent>
+            </Tabs>
+        </main>
+        </div>
+        {selectedOrder && (
             <DialogContent className="max-h-[80svh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Détails de la Commande #{order.id.substring(0,5)}</DialogTitle>
+                    <DialogTitle>Détails de la Commande #{selectedOrder.id.substring(0,5)}</DialogTitle>
                     <DialogDescription>Liste des repas et ingrédients pour la préparation.</DialogDescription>
                 </DialogHeader>
                 {isMealDetailsLoading ? (
-                     <div className="flex justify-center items-center h-48"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+                    <div className="flex justify-center items-center h-48"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
                 ) : (
                     <div className="space-y-4">
                         {selectedOrderMeals.map(meal => (
                             <div key={meal.id} className="space-y-2">
                                 <h3 className="font-semibold text-lg text-primary">{(meal as any).quantity}x {meal.name}</h3>
                                 <div className="pl-4 border-l-2 border-primary/50 space-y-1 text-sm">
-                                    {meal.ingredients.map(ing => (
-                                        <div key={ing.name} className="flex justify-between">
+                                    {meal.ingredients.map((ing, index) => (
+                                        <div key={`${ing.name}-${index}`} className="flex justify-between">
                                             <span>{ing.name}</span>
                                             <span className="text-muted-foreground">{ing.grams}g</span>
                                         </div>
@@ -289,104 +386,9 @@ export default function CatererPage() {
                     </div>
                 )}
             </DialogContent>
-        </Dialog>
-    )
-  };
-
-  return (
-    <div className="bg-primary">
-      <header className="p-2 flex justify-between items-center text-white border-b border-white/20">
-        <Image src="/kounfit/kounfit white.png" alt="Kounfit Logo" width={120} height={30} />
-        <Button variant="ghost" size="icon">
-          <Bell />
-        </Button>
-      </header>
-      <main className="bg-white p-4 space-y-6 rounded-t-3xl">
-        <h2 className="text-2xl font-bold">Interface Traiteur</h2>
-        <Tabs defaultValue="commandes">
-          <TabsList className="grid w-full grid-cols-2 bg-gray-200 rounded-full">
-            <TabsTrigger value="commandes" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-white">Commandes</TabsTrigger>
-            <TabsTrigger value="repas" className="rounded-full data-[state=active]:bg-primary data-[state=active]:text-white">Mes Repas</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="commandes" className="space-y-6 pt-4">
-             {loading ? (
-                <div className="flex justify-center items-center h-48"><Loader2 className="animate-spin text-primary" /></div>
-             ) : (
-             <>
-              <div>
-                <h3 className="text-lg font-semibold mb-2">À préparer</h3>
-                <div className="flex gap-4 overflow-x-auto pb-4">
-                  {pendingOrders.length > 0 ? pendingOrders.map(o => <OrderCard key={o.id} order={o} />) : <p className="text-sm text-muted-foreground">Aucune commande à préparer.</p>}
-                </div>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-2">En cours</h3>
-                <div className="flex gap-4 overflow-x-auto pb-4">
-                  {inPreparationOrders.length > 0 ? inPreparationOrders.map(o => <OrderCard key={o.id} order={o} />) : <p className="text-sm text-muted-foreground">Aucune commande en cours.</p>}
-                </div>
-              </div>
-               <div>
-                <h3 className="text-lg font-semibold mb-2">Prêtes</h3>
-                <div className="flex gap-4 overflow-x-auto pb-4">
-                  {readyForDeliveryOrders.length > 0 ? readyForDeliveryOrders.map(o => <OrderCard key={o.id} order={o} />) : <p className="text-sm text-muted-foreground">Aucune commande prête.</p>}
-                </div>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Livrées</h3>
-                <div className="flex gap-4 overflow-x-auto pb-4">
-                 {deliveredOrders.length > 0 ? deliveredOrders.map(o => <OrderCard key={o.id} order={o} />) : <p className="text-sm text-muted-foreground">Aucune commande livrée.</p>}
-                </div>
-              </div>
-             </>
-             )}
-          </TabsContent>
-          
-          <TabsContent value="repas" className="space-y-4 pt-4">
-            <h3 className="text-lg font-semibold">Mes Repas ({meals.length})</h3>
-            
-             {loading ? (
-                <div className="flex justify-center items-center h-48"><Loader2 className="animate-spin text-primary" /></div>
-             ) : (
-            <div className="grid grid-cols-2 gap-4">
-              {meals.map(meal => (
-                <Card key={meal.id} className="space-y-2">
-                  <Image src={meal.imageUrl} alt={meal.name} width={200} height={120} className="rounded-t-lg object-cover w-full h-24" data-ai-hint="caterer meal" />
-                  <CardContent className="p-2">
-                    <h4 className="font-semibold truncate">{meal.name}</h4>
-                    <p className="text-sm font-bold">{meal.price.toFixed(2)} DT</p>
-                    <p className="text-xs text-muted-foreground">{meal.calories} kcal</p>
-                    <div className="flex justify-end items-center mt-1">
-                      <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-6 w-6"><Trash2 className="w-4 h-4 text-destructive" /></Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Cette action est irréversible et supprimera le repas "{meal.name}".
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Annuler</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteMeal(meal)} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      <Button variant="ghost" size="icon" className="h-6 w-6"><MoreHorizontal className="w-4 h-4" /></Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            )}
-             <Button className="w-full bg-secondary hover:bg-secondary/90 text-white rounded-lg h-12" onClick={() => router.push('/caterer/add-meal')}>
-              <PlusCircle className="mr-2"/> Ajouter un repas
-            </Button>
-          </TabsContent>
-        </Tabs>
-      </main>
-    </div>
+        )}
+    </Dialog>
   );
 }
+
+    
