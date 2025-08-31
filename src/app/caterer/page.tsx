@@ -54,6 +54,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useRouter } from 'next/navigation';
 import { Separator } from '@/components/ui/separator';
+import { cn } from "@/lib/utils";
+
 
 export default function CatererPage() {
   const [caterer, setCaterer] = useState<Caterer | null>(null);
@@ -185,6 +187,8 @@ export default function CatererPage() {
   }, [orders]);
   
   const OrderCard = ({ order }: { order: Order }) => {
+    const isClickable = order.status === 'pending' || order.status === 'in_preparation';
+    
     const ActionButton = () => {
         switch(order.status) {
             case 'pending':
@@ -239,7 +243,13 @@ export default function CatererPage() {
     };
 
     return (
-        <Card onClick={() => handleViewDetails(order)} className="w-64 shrink-0 shadow-lg transition-transform duration-300 hover:scale-105 cursor-pointer">
+        <Card 
+            onClick={() => isClickable && handleViewDetails(order)} 
+            className={cn(
+                "w-64 shrink-0 shadow-lg transition-transform duration-300",
+                isClickable && "hover:scale-105 cursor-pointer"
+            )}
+        >
             <CardContent className="p-4 space-y-3 flex flex-col h-full">
                 <div className="flex items-center gap-3">
                     <Avatar><AvatarImage src={`https://placehold.co/40x40.png`} /><AvatarFallback>{order.clientName.charAt(0)}</AvatarFallback></Avatar>

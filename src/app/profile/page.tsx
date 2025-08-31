@@ -415,7 +415,7 @@ export default function ProfilePage() {
                              <h3 className="font-bold mb-2 mt-8">INTÉGRATIONS</h3>
                              <div className="grid grid-cols-3 gap-3">
                                  <IntegrationCard 
-                                     name="Fit"
+                                     name="Google Fit"
                                      icon={<GoogleIcon className="w-8 h-8"/>}
                                      onClick={handleComingSoon}
                                      disabled
@@ -426,25 +426,7 @@ export default function ProfilePage() {
                                      onClick={handleComingSoon}
                                      disabled
                                  />
-                                 <IntegrationCard 
-                                     name="Fitbit"
-                                     icon={<Image src="https://unpkg.com/lucide-static@latest/icons/activity.svg" width={32} height={32} alt="Fitbit Icon" />}
-                                     onClick={handleComingSoon}
-                                     disabled
-                                 />
-                                 <IntegrationCard 
-                                     name="Garmin"
-                                      icon={<Image src="https://unpkg.com/lucide-static@latest/icons/navigation.svg" width={32} height={32} alt="Garmin Icon" />}
-                                      onClick={handleComingSoon}
-                                     disabled
-                                 />
-                                 <IntegrationCard
-                                     name="Polar"
-                                     icon={<Snowflake className="w-8 h-8" />}
-                                     onClick={handleComingSoon}
-                                     disabled
-                                 />
-                                 <IntegrationCard
+                                  <IntegrationCard
                                      name="S-Health"
                                      icon={<Activity className="w-8 h-8" />}
                                      onClick={handleComingSoon}
@@ -459,3 +441,5 @@ export default function ProfilePage() {
         </MainLayout>
     );
 }
+
+    
