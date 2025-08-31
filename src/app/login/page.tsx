@@ -114,39 +114,42 @@ export default function LoginPage() {
     }
   }, [router, toast]);
   
-  useEffect(() => {
-    if (!isMounted || Capacitor.isNativePlatform()) return;
-    const handleRedirect = async () => {
-        setIsSubmitting(true);
-        try {
-            const result = await getRedirectResult(auth);
-            if (result && result.user) {
-                await handleUserLogin(result.user);
-            } else {
-                setIsSubmitting(false);
-            }
-        } catch (error: any) {
-             if (error.code === AuthErrorCodes.ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL) {
-                const credential = GoogleAuthProvider.credentialFromError(error);
-                if (credential) {
-                    googleCredentialRef.current = credential;
-                    const email = error.customData.email;
-                    form.setValue('email', email);
-                    toast({
-                        title: "Compte existant",
-                        description: "Ce compte e-mail existe déjà. Veuillez vous connecter avec votre mot de passe pour lier votre compte Google.",
-                        variant: "default"
-                    });
-                }
-            } else {
-                console.error("Google Redirect Error:", error);
-                toast({ title: "Erreur Google", description: "La connexion avec Google a échoué.", variant: "destructive" });
-            }
+  const handleRedirectResult = useCallback(async () => {
+    // This function will only run once on mount
+    setIsSubmitting(true);
+    try {
+        const result = await getRedirectResult(auth);
+        if (result && result.user) {
+            await handleUserLogin(result.user);
+        } else {
             setIsSubmitting(false);
         }
-    };
-    handleRedirect();
-  }, [isMounted, handleUserLogin, toast, form]);
+    } catch (error: any) {
+         if (error.code === AuthErrorCodes.ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL) {
+            const credential = GoogleAuthProvider.credentialFromError(error);
+            if (credential) {
+                googleCredentialRef.current = credential;
+                const email = error.customData.email;
+                if(email) form.setValue('email', email);
+                toast({
+                    title: "Compte existant",
+                    description: "Ce compte e-mail existe déjà. Veuillez vous connecter avec votre mot de passe pour lier votre compte Google.",
+                    variant: "default"
+                });
+            }
+        } else if (error.code !== 'auth/no-redirect-operation') {
+            console.error("Google Redirect Error:", error);
+            toast({ title: "Erreur Google", description: "La connexion avec Google a échoué.", variant: "destructive" });
+        }
+        setIsSubmitting(false);
+    }
+  }, [handleUserLogin, toast, form]);
+
+  useEffect(() => {
+    if (isMounted && !Capacitor.isNativePlatform()) {
+      handleRedirectResult();
+    }
+  }, [isMounted, handleRedirectResult]);
 
 
   const onSubmit = async (data: LoginFormValues) => {
@@ -196,7 +199,7 @@ export default function LoginPage() {
             if (credential) {
                 googleCredentialRef.current = credential;
                 const email = error.customData.email;
-                form.setValue('email', email);
+                if(email) form.setValue('email', email);
                 toast({
                     title: "Compte existant",
                     description: "Ce compte e-mail existe déjà. Veuillez vous connecter avec votre mot de passe pour lier votre compte Google.",
