@@ -63,6 +63,12 @@ export default function DeliveryDashboardPage() {
         }
     };
     
+    const openInGoogleMaps = (address: string) => {
+        const encodedAddress = encodeURIComponent(address);
+        const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodedAddress}`;
+        window.open(mapsUrl, '_blank');
+    };
+
     return (
         <div className="p-4 space-y-6">
              <header className="p-4 flex justify-between items-center bg-primary text-white rounded-lg">
@@ -94,9 +100,12 @@ export default function DeliveryDashboardPage() {
                                             </Avatar>
                                             <div className="flex-1">
                                                 <p className="font-semibold">{order.clientName}</p>
-                                                <div className="flex items-center text-sm text-muted-foreground gap-2 mt-1">
+                                                <div 
+                                                    className="flex items-center text-sm text-muted-foreground gap-2 mt-1 cursor-pointer hover:text-primary"
+                                                    onClick={() => openInGoogleMaps(order.deliveryAddress)}
+                                                >
                                                     <MapPin className="w-4 h-4" />
-                                                    <span>{order.deliveryAddress}</span>
+                                                    <span className="underline">{order.deliveryAddress}</span>
                                                 </div>
                                             </div>
                                         </div>

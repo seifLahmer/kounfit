@@ -154,8 +154,20 @@ export default function CatererPage() {
     setSelectedOrderMeals([]);
     try {
         const mealPromises = order.items.map(item => getMealById(item.mealId));
-        const meals = await Promise.all(mealPromises);
-        setSelectedOrderMeals(meals.filter((m): m is Meal => m !== null));
+        const mealsDetails = await Promise.all(mealPromises);
+        const validMeals = mealsDetails.filter((m): m is Meal => m !== null);
+        
+        // Map quantities from order to the fetched meal details
+        const mealsWithQuantities = validMeals.map(meal => {
+            const orderItem = order.items.find(item => item.mealId === meal.id);
+            return {
+                ...meal,
+                quantity: orderItem?.quantity || 0,
+            };
+        });
+        
+        setSelectedOrderMeals(mealsWithQuantities);
+
     } catch (error) {
         toast({ title: "Erreur", description: "Impossible de charger les détails des repas.", variant: "destructive" });
     } finally {
@@ -173,60 +185,71 @@ export default function CatererPage() {
   }, [orders]);
   
   const OrderCard = ({ order }: { order: Order }) => {
-    
-    const getButtonAction = () => {
-      switch(order.status) {
-        case 'pending':
-          return { 
-            text: 'Préparer', 
-            action: (e: React.MouseEvent) => { e.stopPropagation(); handleStatusChange(order.id, 'in_preparation'); },
-            className: 'bg-primary hover:bg-primary/90' 
-          };
-        case 'in_preparation':
-          return { 
-            text: 'Prêt (Choisir livreur)', 
-            action: (e: React.MouseEvent) => e.stopPropagation(), // Let DialogTrigger handle it
-            className: 'bg-blue-500 hover:bg-blue-600',
-            isDialog: true
-          };
-        case 'ready_for_delivery':
-          return { 
-            text: 'En attente du livreur', 
-            action: (e: React.MouseEvent) => e.stopPropagation(), 
-            className: 'bg-yellow-500', 
-            disabled: true 
-          };
-        default:
-          return null;
-      }
+    const ActionButton = () => {
+        switch(order.status) {
+            case 'pending':
+                return (
+                    <Button onClick={(e) => { e.stopPropagation(); handleStatusChange(order.id, 'in_preparation'); }} className='w-full bg-primary hover:bg-primary/90 text-white rounded-lg'>
+                        Préparer
+                    </Button>
+                );
+            case 'in_preparation':
+                return (
+                    <Dialog onOpenChange={(isOpen) => !isOpen && setSelectedDeliveryPerson(null)}>
+                        <DialogTrigger asChild>
+                            <Button onClick={(e) => e.stopPropagation()} className='w-full bg-blue-500 hover:bg-blue-600 text-white rounded-lg'>
+                                Prêt (Choisir livreur)
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Assigner un livreur</DialogTitle>
+                                <DialogDescription>Choisissez un livreur pour la commande #{order.id.substring(0, 5)}.</DialogDescription>
+                            </DialogHeader>
+                            {preferredDeliveryPeople.length > 0 ? (
+                                <Select onValueChange={setSelectedDeliveryPerson}>
+                                    <SelectTrigger><SelectValue placeholder="Sélectionner un livreur..." /></SelectTrigger>
+                                    <SelectContent>
+                                        {preferredDeliveryPeople.map(person => (
+                                            <SelectItem key={person.uid} value={person.uid}>{person.name} ({person.vehicleType})</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            ) : (
+                                <div className="text-sm text-muted-foreground text-center py-4">
+                                    <p>Aucun livreur préféré trouvé.</p>
+                                    <Button variant="link" onClick={() => router.push('/caterer/profile')}>Gérer ma liste de livreurs</Button>
+                                </div>
+                            )}
+                            <DialogFooter>
+                                <DialogClose asChild>
+                                    <Button onClick={() => handleAssignDelivery(order.id)} disabled={!selectedDeliveryPerson || preferredDeliveryPeople.length === 0}>
+                                        <Bike className="mr-2 h-4 w-4" /> Assigner
+                                    </Button>
+                                </DialogClose>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                );
+            case 'ready_for_delivery':
+                return <Button disabled className='w-full bg-yellow-500 text-white rounded-lg'>En attente du livreur</Button>;
+            default:
+                return null;
+        }
     };
-    
-    const buttonProps = getButtonAction();
-    
-    const actionButton = buttonProps && (
-         <Button onClick={buttonProps.action} className={`w-full ${buttonProps.className} text-white rounded-lg`} disabled={buttonProps.disabled}>{buttonProps.text}</Button>
-    );
 
     return (
         <Dialog onOpenChange={(isOpen) => { if (isOpen) { handleViewDetails(order) } else { setSelectedOrderMeals([]) } }}>
             <DialogTrigger asChild>
                 <Card className="w-64 shrink-0 shadow-lg transition-transform duration-300 hover:scale-105 cursor-pointer">
-                    <CardContent className="p-4 space-y-3">
+                    <CardContent className="p-4 space-y-3 flex flex-col h-full">
                         <div className="flex items-center gap-3">
-                        <Avatar>
-                            <AvatarImage src={`https://placehold.co/40x40.png`} />
-                            <AvatarFallback>{order.clientName.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <span className="font-semibold">{order.clientName}</span>
+                            <Avatar><AvatarImage src={`https://placehold.co/40x40.png`} /><AvatarFallback>{order.clientName.charAt(0)}</AvatarFallback></Avatar>
+                            <span className="font-semibold">{order.clientName}</span>
                         </div>
-                        <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                            <MapPin className="w-4 h-4 mt-0.5 shrink-0"/>
-                            <span>{order.deliveryAddress}</span>
-                        </div>
+                        <div className="flex items-start gap-2 text-sm text-muted-foreground"><MapPin className="w-4 h-4 mt-0.5 shrink-0"/><span>{order.deliveryAddress}</span></div>
                         <div className="text-sm text-muted-foreground min-h-[40px] border-t pt-2">
-                        {order.items.slice(0, 2).map(item => (
-                            <p key={item.mealId}>{item.quantity}x {item.mealName}</p>
-                        ))}
+                            {order.items.slice(0, 2).map(item => (<p key={item.mealId}>{item.quantity}x {item.mealName}</p>))}
                         </div>
                         
                         {order.status === 'pending' && <Badge variant="secondary">À préparer</Badge>}
@@ -234,68 +257,24 @@ export default function CatererPage() {
                         {order.status === 'ready_for_delivery' && <Badge className="bg-yellow-100 text-yellow-800">Prêt</Badge>}
                         {order.status === 'delivered' && <Badge className="bg-green-100 text-green-800 flex items-center gap-1"><CheckCircle className="w-3 h-3"/> Livrée</Badge>}
                         
-                        <p className="font-bold text-lg">{order.totalPrice.toFixed(2)} DT</p>
-
-                        {buttonProps?.isDialog ? (
-                            <Dialog onOpenChange={(isOpen) => !isOpen && setSelectedDeliveryPerson(null)}>
-                                <DialogTrigger asChild onClick={(e) => e.stopPropagation()}>{actionButton}</DialogTrigger>
-                                <DialogContent>
-                                    <DialogHeader>
-                                    <DialogTitle>Assigner un livreur</DialogTitle>
-                                    <DialogDescription>
-                                        Choisissez un livreur pour la commande #{order.id.substring(0, 5)}.
-                                    </DialogDescription>
-                                    </DialogHeader>
-                                    {preferredDeliveryPeople.length > 0 ? (
-                                    <Select onValueChange={setSelectedDeliveryPerson}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Sélectionner un livreur..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {preferredDeliveryPeople.map(person => (
-                                                <SelectItem key={person.uid} value={person.uid}>
-                                                    {person.name} ({person.vehicleType})
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    ) : (
-                                        <div className="text-sm text-muted-foreground text-center py-4">
-                                            <p>Aucun livreur préféré trouvé.</p>
-                                            <Button variant="link" onClick={() => router.push('/caterer/profile')}>
-                                                Gérer ma liste de livreurs
-                                            </Button>
-                                        </div>
-                                    )}
-                                    <DialogFooter>
-                                        <DialogClose asChild>
-                                            <Button onClick={() => handleAssignDelivery(order.id)} disabled={!selectedDeliveryPerson || preferredDeliveryPeople.length === 0}>
-                                                <Bike className="mr-2 h-4 w-4" /> Assigner
-                                            </Button>
-                                        </DialogClose>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
-                        ) : actionButton}
+                        <p className="font-bold text-lg mt-auto">{order.totalPrice.toFixed(2)} DT</p>
+                        
+                        <ActionButton />
                     </CardContent>
                 </Card>
             </DialogTrigger>
-             <DialogContent className="max-h-[80svh] overflow-y-auto">
+            <DialogContent className="max-h-[80svh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Détails de la Commande #{order.id.substring(0,5)}</DialogTitle>
-                    <DialogDescription>
-                        Liste des repas et ingrédients pour la préparation.
-                    </DialogDescription>
+                    <DialogDescription>Liste des repas et ingrédients pour la préparation.</DialogDescription>
                 </DialogHeader>
                 {isMealDetailsLoading ? (
-                     <div className="flex justify-center items-center h-48">
-                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                    </div>
+                     <div className="flex justify-center items-center h-48"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
                 ) : (
                     <div className="space-y-4">
                         {selectedOrderMeals.map(meal => (
                             <div key={meal.id} className="space-y-2">
-                                <h3 className="font-semibold text-lg text-primary">{order.items.find(i => i.mealId === meal.id)?.quantity}x {meal.name}</h3>
+                                <h3 className="font-semibold text-lg text-primary">{(meal as any).quantity}x {meal.name}</h3>
                                 <div className="pl-4 border-l-2 border-primary/50 space-y-1 text-sm">
                                     {meal.ingredients.map(ing => (
                                         <div key={ing.name} className="flex justify-between">

@@ -14,8 +14,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { NutritionSummary, MealCard } from "@/components/home-page-components";
 import Link from "next/link";
-import { fetchTodayFitData, type FitData, checkGoogleFitPermission } from "@/lib/services/googleFitService"
-import { StepsIcon, DistanceIcon, MoveMinutesIcon, HeartPointsIcon } from "@/components/icons"
 import { doc, onSnapshot } from "firebase/firestore"
 
 const emptyPlan: DailyPlan = { breakfast: [], lunch: [], snack: [], dinner: [] };
@@ -25,12 +23,9 @@ export default function HomePage() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const router = useRouter()
-  const [fitData, setFitData] = useState<FitData | null>(null);
-  const [hasFitPermission, setHasFitPermission] = useState(false);
   const [dailyPlan, setDailyPlan] = useState<DailyPlan>(emptyPlan);
   const [confirmedMeals, setConfirmedMeals] = useState<Meal[]>([]);
 
-  // Function to get unconfirmed meals from localStorage
   const getUnconfirmedPlan = useCallback((): DailyPlan => {
     if (typeof window === "undefined") return emptyPlan;
     try {
@@ -54,7 +49,6 @@ export default function HomePage() {
     return emptyPlan;
   }, []);
 
-  // Effect to listen for changes in localStorage and user's confirmed meals
   useEffect(() => {
     const firebaseUser = auth.currentUser;
     if (!firebaseUser) {
@@ -65,22 +59,6 @@ export default function HomePage() {
 
     setLoading(true);
     
-    const fetchAndSetFitData = async () => {
-        try {
-            const hasPermission = await checkGoogleFitPermission();
-            setHasFitPermission(hasPermission);
-            // Only try to fetch data if permission is confirmed.
-            // The fetchTodayFitData function is currently a placeholder and will return null.
-            if (hasPermission) {
-                const data = await fetchTodayFitData();
-                setFitData(data);
-            }
-        } catch (fitError) {
-            console.error("Could not fetch Google Fit data on Home page:", fitError);
-        }
-    };
-
-    fetchAndSetFitData();
     setDailyPlan(getUnconfirmedPlan());
 
     const handleStorageChange = () => setDailyPlan(getUnconfirmedPlan());
@@ -172,62 +150,6 @@ export default function HomePage() {
               consumedMacros={consumedMacros}
               macroGoals={macroGoals}
             />
-
-            {hasFitPermission ? (
-                fitData ? (
-                  <Card>
-                    <CardContent className="p-3">
-                       <p className="text-sm font-semibold text-muted-foreground mb-2">Activité du jour (via Google Fit)</p>
-                       <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                           <div className="flex items-center gap-2">
-                              <StepsIcon className="w-5 h-5 text-primary"/>
-                              <div>
-                                <p className="font-bold">{fitData.steps.toLocaleString('fr-FR')}</p>
-                                <p className="text-xs text-muted-foreground">Pas</p>
-                              </div>
-                           </div>
-                           <div className="flex items-center gap-2">
-                              <DistanceIcon className="w-5 h-5 text-destructive"/>
-                               <div>
-                                <p className="font-bold">{(fitData.distance / 1000).toFixed(2)}</p>
-                                <p className="text-xs text-muted-foreground">km</p>
-                              </div>
-                           </div>
-                           <div className="flex items-center gap-2">
-                              <MoveMinutesIcon className="w-5 h-5 text-yellow-500"/>
-                               <div>
-                                <p className="font-bold">{fitData.moveMinutes}</p>
-                                <p className="text-xs text-muted-foreground">Min d'activité</p>
-                              </div>
-                           </div>
-                           <div className="flex items-center gap-2">
-                              <HeartPointsIcon className="w-5 h-5 text-red-500"/>
-                               <div>
-                                <p className="font-bold">{fitData.heartPoints}</p>
-                                <p className="text-xs text-muted-foreground">Points cardio</p>
-                              </div>
-                           </div>
-                       </div>
-                    </CardContent>
-                  </Card>
-                ) : (
-                    <Card className="bg-muted">
-                        <CardContent className="p-3 text-center">
-                            <p className="text-sm text-muted-foreground">Données Google Fit en cours de synchronisation...</p>
-                            <p className="text-xs text-muted-foreground">Cette opération peut prendre un moment.</p>
-                        </CardContent>
-                    </Card>
-                )
-            ) : (
-                <Card className="bg-muted">
-                    <CardContent className="p-3 text-center">
-                        <p className="text-sm text-muted-foreground">Connectez Google Fit pour voir votre activité ici.</p>
-                        <Button variant="link" size="sm" asChild>
-                            <Link href="/profile">Se connecter depuis le profil</Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-            )}
             
             <div className="grid grid-cols-2 gap-4">
                 <MealCard title="Petit déjeuner" meals={[...(user?.dailyIntake?.[new Date().toISOString().split('T')[0]]?.filter(m => m.category === 'breakfast') || []), ...dailyPlan.breakfast]} onAdd={() => handleAddMeal('breakfast')} defaultImage="/img home/petit-dejeuner.png" />

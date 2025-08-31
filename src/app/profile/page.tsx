@@ -36,7 +36,6 @@ import type { User } from "@/lib/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { GoogleIcon } from "@/components/icons"
-import { handleGoogleFitSignIn, checkGoogleFitPermission } from "@/lib/services/googleFitService"
 import { cn } from "@/lib/utils"
 
 
@@ -86,8 +85,6 @@ export default function ProfilePage() {
     const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
     const isMounted = useRef(false);
-    const [isFitConnected, setIsFitConnected] = useState(false);
-    const [isConnecting, setIsConnecting] = useState(false);
 
     const form = useForm<ProfileFormValues>({
         resolver: zodResolver(profileFormSchema),
@@ -121,8 +118,6 @@ export default function ProfilePage() {
                           setProfileImagePreview(userProfile.photoURL);
                         }
                     }
-                    const hasPermission = await checkGoogleFitPermission();
-                    if(isMounted.current) setIsFitConnected(hasPermission);
 
                 } catch (error) {
                     console.error("Failed to fetch user profile", error);
@@ -144,25 +139,11 @@ export default function ProfilePage() {
         }
     }, [form, router, toast]);
 
-    const handleConnectToFit = async () => {
-      setIsConnecting(true);
-      try {
-        await handleGoogleFitSignIn();
-        setIsFitConnected(true);
+    const handleComingSoon = () => {
         toast({
-          title: "Connecté à Google Fit!",
-          description: "Votre compte est maintenant lié.",
+            title: "Bientôt disponible",
+            description: "Cette fonctionnalité est en cours de développement.",
         });
-      } catch (error) {
-        console.error(error);
-        toast({
-          title: "Erreur de connexion",
-          description: "Impossible de se connecter à Google Fit.",
-          variant: "destructive"
-        });
-      } finally {
-        setIsConnecting(false);
-      }
     };
 
     const handleRegionChange = (newRegion: string) => {
@@ -436,33 +417,37 @@ export default function ProfilePage() {
                                  <IntegrationCard 
                                      name="Fit"
                                      icon={<GoogleIcon className="w-8 h-8"/>}
-                                     isConnected={isFitConnected}
-                                     isConnecting={isConnecting}
-                                     onClick={handleConnectToFit}
+                                     onClick={handleComingSoon}
+                                     disabled
                                  />
                                  <IntegrationCard 
                                      name="Huawei"
                                      icon={<Image src="https://unpkg.com/lucide-static@latest/icons/smartphone.svg" width={32} height={32} alt="Huawei Icon" />}
+                                     onClick={handleComingSoon}
                                      disabled
                                  />
                                  <IntegrationCard 
                                      name="Fitbit"
                                      icon={<Image src="https://unpkg.com/lucide-static@latest/icons/activity.svg" width={32} height={32} alt="Fitbit Icon" />}
+                                     onClick={handleComingSoon}
                                      disabled
                                  />
                                  <IntegrationCard 
                                      name="Garmin"
                                       icon={<Image src="https://unpkg.com/lucide-static@latest/icons/navigation.svg" width={32} height={32} alt="Garmin Icon" />}
+                                      onClick={handleComingSoon}
                                      disabled
                                  />
                                  <IntegrationCard
                                      name="Polar"
                                      icon={<Snowflake className="w-8 h-8" />}
+                                     onClick={handleComingSoon}
                                      disabled
                                  />
                                  <IntegrationCard
                                      name="S-Health"
                                      icon={<Activity className="w-8 h-8" />}
+                                     onClick={handleComingSoon}
                                      disabled
                                  />
                              </div>
