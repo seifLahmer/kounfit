@@ -5,6 +5,7 @@ import { GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo, linkWithCre
 import { auth } from "@/lib/firebase";
 
 const fitProvider = new GoogleAuthProvider();
+// Demander toutes les permissions nécessaires en une seule fois
 fitProvider.addScope('https://www.googleapis.com/auth/fitness.activity.read');
 fitProvider.addScope('https://www.googleapis.com/auth/fitness.body.read');
 fitProvider.addScope('https://www.googleapis.com/auth/fitness.nutrition.read');
@@ -12,44 +13,50 @@ fitProvider.addScope('https://www.googleapis.com/auth/fitness.heart_rate.read');
 fitProvider.addScope('https://www.googleapis.com/auth/fitness.location.read');
 
 /**
- * Handles signing in or linking the user's Google account for Google Fit data.
- * It uses linkWithPopup to avoid creating duplicate accounts.
- * @returns {Promise<boolean>} True if the linking was successful.
+ * Gère la connexion ou la liaison du compte Google de l'utilisateur pour les données Google Fit.
+ * Utilise linkWithPopup pour éviter la création de comptes en double.
+ * @returns {Promise<boolean>} True si la liaison a réussi.
  */
 export async function handleGoogleFitSignIn(): Promise<boolean> {
   const user = auth.currentUser;
   if (!user) {
-    throw new Error("User not authenticated.");
+    throw new Error("Utilisateur non authentifié.");
   }
   
   try {
+    // Tente de lier le compte Google au compte Firebase existant.
     await linkWithPopup(user, fitProvider);
     return true;
 
   } catch (error: any) {
+    // Si le compte est déjà lié, c'est un cas de succès pour nous.
     if (error.code === AuthErrorCodes.CREDENTIAL_ALREADY_IN_USE) {
         return true; 
     }
     if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
-      throw new Error("Popup closed before completion.");
+      // L'utilisateur a annulé, ce n'est pas une erreur système.
+      throw new Error("La fenêtre de connexion a été fermée avant la fin.");
     }
-    console.error("Google Fit Sign-In/Link Error:", error);
-    throw new Error("Failed to sign in or link with Google Fit.");
+    // Pour les autres erreurs, on les log et on lance une exception.
+    console.error("Erreur de connexion/liaison Google Fit:", error);
+    throw new Error("Échec de la connexion ou de la liaison avec Google Fit.");
   }
 }
 
 /**
- * Checks if the user has granted Google Fit permissions by verifying if the Google provider is linked.
- * @returns {Promise<boolean>} True if Google provider is linked to the current user's account.
+ * Vérifie si l'utilisateur a accordé les permissions à Google Fit.
+ * @returns {Promise<boolean>} True si le fournisseur Google est lié au compte de l'utilisateur.
  */
 export async function checkGoogleFitPermission(): Promise<boolean> {
   const user = auth.currentUser;
   if (!user) return false;
 
+  // Forcer une actualisation des données de l'utilisateur
   await user.reload();
   const freshUser = auth.currentUser;
   if (!freshUser) return false;
   
+  // Vérifie si "google.com" fait partie des fournisseurs liés.
   const isGoogleLinked = freshUser.providerData.some(
     (provider) => provider.providerId === GoogleAuthProvider.PROVIDER_ID
   );
@@ -59,46 +66,101 @@ export async function checkGoogleFitPermission(): Promise<boolean> {
 
 export interface FitData {
   steps: number;
-  distance: number; // in meters
+  distance: number; // en mètres
   moveMinutes: number;
   heartPoints: number;
 }
 
 
 /**
- * Fetches comprehensive activity data for the current day from the Google Fit API.
- * This function NO LONGER triggers a sign-in flow. It assumes permissions are granted.
- * This now works fully on the client-side.
- * @returns {Promise<FitData | null>} An object with steps, distance, moveMinutes, and heartPoints, or null.
+ * Récupère les données d'activité complètes pour la journée en cours depuis l'API Google Fit.
+ * Cette fonction est entièrement côté client.
+ * @returns {Promise<FitData | null>} Un objet avec les pas, distance, minutes d'activité et points cardio, ou null.
  */
 export async function fetchTodayFitData(): Promise<FitData | null> {
     const user = auth.currentUser;
     if (!user) return null;
 
+    let oauthAccessToken: string | null = null;
+    
+    // Tenter de se connecter pour obtenir un token d'accès OAuth
     try {
-        const idTokenResult = await user.getIdTokenResult();
-        const accessToken = idTokenResult.token; // This is the ID Token, not Access Token
+      const result = await signInWithPopup(auth, fitProvider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      oauthAccessToken = credential?.accessToken || null;
+    } catch (error: any) {
+        if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+             console.error("Erreur lors de l'obtention du token d'accès pour Fit:", error.code);
+        }
+        return null; // Retourne null si l'utilisateur ferme le popup ou si une erreur survient
+    }
 
-        // THIS IS A WORKAROUND. In a production app, you should securely exchange the
-        // ID token for an access token on your server. For the scope of this client-side
-        // application and to fix the immediate issue, we are relying on a previously
-        // obtained credential during the sign-in flow if available, or acknowledging
-        // this limitation. The 401 error comes from using the ID token as an Access token.
-        // A proper fix requires a backend or a more complex auth flow.
-        // Given the constraints, we will remove the failing call.
-
-        // The previous implementation was incorrect. A simple client-side
-        // fetch with the ID token is not sufficient. This functionality
-        // requires a backend to securely handle token exchange, or the user
-        // to have just signed in to get a temporary access token.
-        // To prevent the error, we will return null and log the limitation.
-
-        console.log("Note: Google Fit data fetching is disabled as it requires a secure backend for token exchange. The previous implementation was causing errors.");
-        
+    if (!oauthAccessToken) {
+        console.log("Impossible d'obtenir le jeton d'accès OAuth de Google.");
         return null;
+    }
+
+    // Définir la période pour la journée en cours
+    const now = new Date();
+    const startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const endTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+    const startTimeMillis = startTime.getTime();
+    const endTimeMillis = endTime.getTime();
+
+    // Configuration de la requête pour l'API Fitness
+    const fitApiUrl = 'https://www.googleapis.com/fitness/v1/users/me/dataset:aggregate';
+    const requestBody = {
+        aggregateBy: [
+            { dataTypeName: "com.google.step_count.delta", dataSourceId: "derived:com.google.step_count.delta:com.google.android.gms:estimated_steps" },
+            { dataTypeName: "com.google.distance.delta", dataSourceId: "derived:com.google.distance.delta:com.google.android.gms:merge_distance_delta" },
+            { dataTypeName: "com.google.active_minutes", dataSourceId: "derived:com.google.active_minutes:com.google.android.gms:merge_active_minutes" },
+            { dataTypeName: "com.google.heart_minutes", dataSourceId: "derived:com.google.heart_minutes:com.google.android.gms:merge_heart_minutes" },
+        ],
+        bucketByTime: { durationMillis: endTimeMillis - startTimeMillis },
+        startTimeMillis: startTimeMillis,
+        endTimeMillis: endTimeMillis,
+    };
+
+    try {
+        const fitResponse = await fetch(fitApiUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${oauthAccessToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+        });
+
+        if (!fitResponse.ok) {
+            const errorText = await fitResponse.text();
+            console.error("Erreur de l'API Google Fit:", fitResponse.status, errorText);
+            return null;
+        }
+
+        const data = await fitResponse.json();
+        
+        const fitData: FitData = {
+            steps: 0,
+            distance: 0,
+            moveMinutes: 0,
+            heartPoints: 0,
+        };
+
+        data.bucket[0]?.dataset.forEach((d: any) => {
+            if (d.point[0]?.value[0]) {
+                const value = d.point[0].value[0];
+                if (d.dataSourceId.includes('step_count')) fitData.steps = value.intVal || 0;
+                if (d.dataSourceId.includes('distance')) fitData.distance = value.fpVal || 0;
+                if (d.dataSourceId.includes('active_minutes')) fitData.moveMinutes = value.intVal || 0;
+                if (d.dataSourceId.includes('heart_minutes')) fitData.heartPoints = value.fpVal || 0;
+            }
+        });
+
+        return fitData;
 
     } catch (error) {
-        console.error("Error fetching Google Fit data:", error);
+        console.error("Erreur lors de la récupération des données Google Fit:", error);
         return null;
     }
 }
