@@ -74,8 +74,6 @@ async function getFitAccessToken(): Promise<string | null> {
     if (!user) return null;
 
     try {
-        // Attempt to get an access token from a recent redirect result.
-        // This is a common pattern after a login/link flow.
         const result = await getRedirectResult(auth);
         if (result) {
             const credential = GoogleAuthProvider.credentialFromResult(result);
@@ -83,28 +81,9 @@ async function getFitAccessToken(): Promise<string | null> {
                 return credential.accessToken;
             }
         }
-    
-        // If no redirect result, we assume the user is already logged in and linked.
-        // A more complex client-side implementation would require storing and refreshing tokens,
-        // which is best handled by a backend. For this client-side only app,
-        // we'll rely on the user having a recent-enough session.
-        // We will not force a new popup here to prevent annoying UX.
-        // If the token is expired, the API call will fail, and the app will handle it gracefully.
-        
-        // This is a simplified way to get a token, but it might be stale.
-        // The correct, robust way is to use a backend to manage OAuth tokens.
-        const idTokenResult = await user.getIdTokenResult(true); // Force refresh of the ID token
-        // The access token is NOT directly available in idTokenResult.
-        // This is a common misconception. The access token is obtained during the OAuth flow.
-        // We return null here and let the data fetching fail if we can't get a fresh token.
-        
-        // Let's retry with a silent popup which might work if the user has an active Google session
-        const credential = await signInWithPopup(user, fitProvider).catch(() => null);
-        if (credential) {
-          const resultCredential = GoogleAuthProvider.credentialFromResult(credential);
-          return resultCredential?.accessToken || null;
-        }
 
+        // We can't reliably get the access token on the client side without triggering a popup
+        // which is a bad UX. We return null and let the data fetching function handle it.
         return null;
 
     } catch (error) {
@@ -123,25 +102,31 @@ export async function fetchTodayFitData(): Promise<FitData | null> {
     const user = auth.currentUser;
     if (!user) return null;
     
-    // This is a placeholder for getting a valid access token.
-    // In a real-world application, you would need a robust mechanism to get and refresh this token,
-    // likely involving a backend server. The simplified client-side approach is prone to failure
-    // if the token expires. For now, we attempt a silent re-authentication to get a fresh token.
-    let oauthAccessToken: string | null = null;
-    try {
-        const credential = await signInWithPopup(auth.currentUser!, fitProvider).catch(() => null);
-        if (credential) {
-            const resultCredential = GoogleAuthProvider.credentialFromResult(credential);
-            oauthAccessToken = resultCredential?.accessToken || null;
+    let oauthAccessToken: string | null = await getFitAccessToken();
+
+    if (!oauthAccessToken) {
+        try {
+            // This is a workaround for client-side token management. It's not ideal.
+            // A backend-based token exchange would be more robust.
+            const result = await getRedirectResult(auth);
+            if (result) {
+                const credential = GoogleAuthProvider.credentialFromResult(result);
+                oauthAccessToken = credential?.accessToken || null;
+            }
+        } catch (error: any) {
+            if (error.code !== 'auth/no-redirect-operation') {
+                console.error("Error getting access token for Fit:", error.code);
+            }
+             // This is expected if the user closes the popup. We can ignore it here.
+            if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+              return null;
+            }
         }
-    } catch(e) {
-        // This is okay. It will fail if the user closes the popup.
-        console.log("Could not get a fresh access token silently.");
     }
 
 
     if (!oauthAccessToken) {
-        console.log("OAuth Access Token for Google Fit is not available for data fetching.");
+        // We cannot fetch data without a token. Return null and let UI handle it.
         return null;
     }
 
