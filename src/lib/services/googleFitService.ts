@@ -73,15 +73,23 @@ async function getFitAccessToken(): Promise<string | null> {
     if (!user) return null;
 
     try {
-        const result = await signInWithPopup(auth, fitProvider);
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        return credential?.accessToken || null;
+        const idTokenResult = await getIdTokenResult(user, true);
+        const providerData = user.providerData.find(p => p.providerId === 'google.com');
+
+        if (providerData) {
+            // This is a simplification. In a real-world scenario with long-lived sessions,
+            // you'd need to handle token refresh securely on a backend.
+            // For this client-side example, we'll re-authenticate silently if needed.
+            // A more robust solution involves a backend to exchange the auth code for a refresh token.
+            const result = await signInWithPopup(auth, fitProvider);
+            const credential = GoogleAuthProvider.credentialFromResult(result);
+            return credential?.accessToken || null;
+        }
+        return null;
     } catch (error: any) {
-        if (error.code === 'auth/credential-already-in-use') {
-             console.log("Credential already in use, trying to get token again.");
-             const result = await signInWithPopup(auth, fitProvider);
-             const credential = GoogleAuthProvider.credentialFromResult(result);
-             return credential?.accessToken || null;
+        if(error.code === 'auth/popup-blocked') {
+            console.error("Popup blocked. Cannot refresh token without user interaction.");
+            return null; // Can't get token without user interaction
         }
         console.error("Could not get access token", error);
         throw error;
@@ -94,12 +102,20 @@ async function getFitAccessToken(): Promise<string | null> {
  * @returns {Promise<FitData | null>} An object with steps, distance, moveMinutes, and heartPoints, or null.
  */
 export async function fetchTodayFitData(): Promise<FitData | null> {
-    const oauthAccessToken = await getFitAccessToken();
-    
+    const user = auth.currentUser;
+    if (!user) return null;
+
+    const idTokenResult = await getIdTokenResult(user, true);
+    // signInWithPopup is necessary to get a fresh OAuth access token.
+    const result = await signInWithPopup(auth, fitProvider);
+    const credential = GoogleAuthProvider.credentialFromResult(result);
+    const oauthAccessToken = credential?.accessToken;
+
     if (!oauthAccessToken) {
         console.log("OAuth Access Token for Google Fit is not available.");
         return null;
     }
+
 
     const today = new Date();
     const startTimeMillis = new Date(today.setHours(0, 0, 0, 0)).getTime();

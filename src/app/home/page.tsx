@@ -64,18 +64,18 @@ export default function HomePage() {
             
             const hasPermission = await checkGoogleFitPermission();
             if (hasPermission) {
-                const data = await fetchTodayFitData();
-                setFitData(data);
+                try {
+                    const data = await fetchTodayFitData();
+                    setFitData(data);
+                } catch(fitError: any) {
+                    // Non-blocking error for the user, maybe token expired or permissions revoked.
+                     console.error("Could not fetch Google Fit data on Home page:", fitError.message);
+                }
             }
 
         } catch(e: any) {
             console.error("Error on home page data fetch:", e.message);
-            // Non-blocking error for the user
-            if (e.message.includes("permission")) {
-              console.log("Google Fit permission not yet granted or fetch failed.");
-            } else {
-              toast({ title: "Erreur de chargement", description: e.message, variant: "destructive" });
-            }
+            toast({ title: "Erreur de chargement", description: e.message, variant: "destructive" });
         } finally {
             setLoading(false);
         }
@@ -153,7 +153,7 @@ export default function HomePage() {
               macroGoals={macroGoals}
             />
 
-            {fitData && (
+            {fitData ? (
               <Card>
                 <CardContent className="p-3">
                    <p className="text-sm font-semibold text-muted-foreground mb-2">Activité du jour (via Google Fit)</p>
@@ -189,6 +189,15 @@ export default function HomePage() {
                    </div>
                 </CardContent>
               </Card>
+            ) : (
+                <Card className="bg-muted">
+                    <CardContent className="p-3 text-center">
+                        <p className="text-sm text-muted-foreground">Connectez Google Fit pour voir votre activité ici.</p>
+                        <Button variant="link" size="sm" asChild>
+                            <Link href="/profile">Se connecter depuis le profil</Link>
+                        </Button>
+                    </CardContent>
+                </Card>
             )}
             
             <div className="grid grid-cols-2 gap-4">
