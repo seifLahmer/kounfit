@@ -1,9 +1,12 @@
 
 "use client";
 
-import { GoogleAuthProvider, linkWithPopup, User } from "firebase/auth";
+import { GoogleAuthProvider, linkWithCredential, User, signInWithRedirect } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { AuthErrorCodes } from "firebase/auth";
+import { Capacitor } from "@capacitor/core";
+import { FirebaseAuthentication, User as CapacitorFirebaseUser } from '@capacitor-firebase/authentication';
+
 
 const fitProvider = new GoogleAuthProvider();
 fitProvider.addScope('https://www.googleapis.com/auth/fitness.activity.read');
@@ -23,8 +26,15 @@ export async function handleGoogleFitSignIn(): Promise<boolean> {
   }
   
   try {
-    // Attempts to link the Google account to the existing Firebase account.
-    await linkWithPopup(user, fitProvider);
+     if (Capacitor.isNativePlatform()) {
+        const result = await FirebaseAuthentication.signInWithGoogle();
+        const credential = GoogleAuthProvider.credential(result.credential?.idToken);
+        if (credential) {
+          await linkWithCredential(user, credential);
+        }
+    } else {
+        await signInWithRedirect(auth, fitProvider);
+    }
     return true;
 
   } catch (error: any) {
@@ -35,7 +45,7 @@ export async function handleGoogleFitSignIn(): Promise<boolean> {
     if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
       throw new Error("The sign-in window was closed before completing.");
     }
-    console.error("Google Fit Sign-In/Link Error:", error.code);
+    console.error("Google Fit Sign-In/Link Error:", error);
     throw new Error("Failed to sign in or link with Google Fit.");
   }
 }
