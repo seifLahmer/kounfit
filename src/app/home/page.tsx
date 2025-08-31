@@ -6,7 +6,6 @@ import { Loader2, Bell } from "lucide-react"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { auth, db } from "@/lib/firebase"
-import { getUserProfile } from "@/lib/services/userService"
 import type { User, DailyPlan, Meal } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
@@ -66,14 +65,25 @@ export default function HomePage() {
 
     setLoading(true);
     
-    // Set initial plan from localStorage
+    const fetchAndSetFitData = async () => {
+        try {
+            const hasPermission = await checkGoogleFitPermission();
+            setHasFitPermission(hasPermission);
+            if (hasPermission) {
+                const data = await fetchTodayFitData();
+                setFitData(data);
+            }
+        } catch (fitError) {
+            console.error("Could not fetch Google Fit data on Home page:", fitError);
+        }
+    };
+
+    fetchAndSetFitData();
     setDailyPlan(getUnconfirmedPlan());
 
-    // Listener for localStorage changes
     const handleStorageChange = () => setDailyPlan(getUnconfirmedPlan());
     window.addEventListener('storage', handleStorageChange);
 
-    // Listener for confirmed meals from Firestore
     const todayStr = new Date().toISOString().split('T')[0];
     const userDocRef = doc(db, "users", firebaseUser.uid);
     const unsubscribeSnapshot = onSnapshot(userDocRef, (doc) => {
@@ -85,20 +95,6 @@ export default function HomePage() {
         } else {
             toast({ title: "Erreur", description: "Profil utilisateur non trouvé", variant: "destructive"});
         }
-    });
-
-    // Check Fit permission and fetch data if available
-    checkGoogleFitPermission().then(hasPermission => {
-        setHasFitPermission(hasPermission);
-        if (hasPermission) {
-            fetchTodayFitData().catch(fitError => {
-                console.error("Could not fetch Google Fit data on Home page:", fitError);
-                toast({ title: "Erreur Google Fit", description: "Impossible de récupérer les données d'activité.", variant: "destructive" });
-            }).then(data => {
-                if (data) setFitData(data);
-            });
-        }
-    }).finally(() => {
         setLoading(false);
     });
 
