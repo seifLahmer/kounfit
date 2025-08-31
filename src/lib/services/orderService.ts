@@ -12,13 +12,15 @@ import {
   writeBatch,
   updateDoc,
   getDoc,
-  orderBy
+  orderBy,
+  arrayUnion
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { Order, User, Meal } from "@/lib/types";
 import { createNotification } from "./notificationService";
 
 const ORDERS_COLLECTION = "orders";
+const USERS_COLLECTION = "users";
 
 
 type PlaceOrderInput = Omit<Order, 'id' | 'orderDate' | 'deliveryDate' | 'status' | 'catererIds'> & {
@@ -32,34 +34,59 @@ type PlaceOrderInput = Omit<Order, 'id' | 'orderDate' | 'deliveryDate' | 'status
 };
 
 /**
- * Creates a new order in the Firestore 'orders' collection.
+ * Creates a new order and saves the consumed meals to the user's profile for that day.
  * @param orderData The order data to save.
  * @returns The ID of the newly created order document.
  */
 export async function placeOrder(orderData: PlaceOrderInput): Promise<string> {
+  const batch = writeBatch(db);
+
   try {
-    // Get unique caterer IDs from the items
     const catererIds = [...new Set(orderData.items.map(item => item.catererId))];
 
     const orderWithTimestamp = {
       ...orderData,
       status: 'pending' as const,
       orderDate: serverTimestamp(),
-      deliveryDate: serverTimestamp(), // Placeholder, can be updated later
-      deliveryTime: 35, // Default delivery time, can be updated by caterer
-      catererIds: catererIds, // Add the array of caterer IDs
+      deliveryDate: serverTimestamp(),
+      deliveryTime: 35,
+      catererIds: catererIds,
     };
 
-    const docRef = await addDoc(collection(db, ORDERS_COLLECTION), orderWithTimestamp);
+    // 1. Create a new order document
+    const orderRef = doc(collection(db, ORDERS_COLLECTION));
+    batch.set(orderRef, orderWithTimestamp);
+
+    // 2. Save the ordered meals to the user's daily intake log
+    const userRef = doc(db, USERS_COLLECTION, orderData.clientId);
+    const todayStr = new Date().toISOString().split('T')[0];
+    const dailyIntakeField = `dailyIntake.${todayStr}`;
+
+    const mealsToSave = orderData.items.map(item => ({
+        id: item.mealId,
+        name: item.mealName,
+        price: item.unitPrice,
+        // You might need to fetch the full meal object if more details are needed
+        // For now, we save what's available
+        calories: 0, // Placeholder, ideally fetch this
+        macros: { protein: 0, carbs: 0, fat: 0 }, // Placeholder
+    }));
     
-    const notificationMessage = `Vous avez une nouvelle commande #${docRef.id.substring(0,5)} de ${orderData.clientName}.`;
-    
-    // Notify each caterer involved in the order
+    // We use arrayUnion to add meals without creating duplicates if the order is somehow placed twice.
+    batch.update(userRef, {
+        [dailyIntakeField]: arrayUnion(...orderData.items)
+    });
+
+    // 3. Commit all writes to the database
+    await batch.commit();
+
+    // 4. Send notifications after the transaction is successful
+    const notificationMessage = `Vous avez une nouvelle commande #${orderRef.id.substring(0,5)} de ${orderData.clientName}.`;
     for (const catererId of catererIds) {
         await createNotification(catererId, notificationMessage);
     }
 
-    return docRef.id;
+    return orderRef.id;
   } catch (error) {
     console.error("Error placing order: ", error);
     throw new Error("Could not place the order.");

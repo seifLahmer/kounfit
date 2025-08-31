@@ -5,9 +5,9 @@ import { useState, useEffect, useCallback } from "react"
 import { Loader2, Bell } from "lucide-react"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
-import { auth } from "@/lib/firebase"
+import { auth, db } from "@/lib/firebase"
 import { getUserProfile } from "@/lib/services/userService"
-import type { User, DailyPlan } from "@/lib/types"
+import type { User, DailyPlan, Meal } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -17,6 +17,7 @@ import { NutritionSummary, MealCard } from "@/components/home-page-components";
 import Link from "next/link";
 import { fetchTodayFitData, type FitData, checkGoogleFitPermission } from "@/lib/services/googleFitService"
 import { StepsIcon, DistanceIcon, MoveMinutesIcon, HeartPointsIcon } from "@/components/icons"
+import { doc, onSnapshot } from "firebase/firestore"
 
 const emptyPlan: DailyPlan = { breakfast: [], lunch: [], snack: [], dinner: [] };
 
@@ -26,8 +27,11 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const [fitData, setFitData] = useState<FitData | null>(null);
-  
-  const getInitialDailyPlan = useCallback((): DailyPlan => {
+  const [dailyPlan, setDailyPlan] = useState<DailyPlan>(emptyPlan);
+  const [confirmedMeals, setConfirmedMeals] = useState<Meal[]>([]);
+
+  // Function to get unconfirmed meals from localStorage
+  const getUnconfirmedPlan = useCallback((): DailyPlan => {
     if (typeof window === "undefined") return emptyPlan;
     try {
       const savedData = localStorage.getItem("dailyPlanData");
@@ -49,53 +53,68 @@ export default function HomePage() {
     }
     return emptyPlan;
   }, []);
-  
-  const [dailyPlan, setDailyPlan] = useState<DailyPlan>(emptyPlan);
 
+  // Effect to listen for changes in localStorage and user's confirmed meals
   useEffect(() => {
-    setDailyPlan(getInitialDailyPlan());
-
-    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
-      if (firebaseUser) {
-        try {
-            const userProfile = await getUserProfile(firebaseUser.uid)
-            if (!userProfile) throw new Error("User profile not found");
-            setUser(userProfile);
-            
-            const hasPermission = await checkGoogleFitPermission();
-            if (hasPermission) {
-                try {
-                    const data = await fetchTodayFitData();
-                    setFitData(data);
-                } catch(fitError: any) {
-                    // Non-blocking error for the user, maybe token expired or permissions revoked.
-                     console.error("Could not fetch Google Fit data on Home page:", fitError.message);
-                }
-            }
-
-        } catch(e: any) {
-            console.error("Error on home page data fetch:", e.message);
-            toast({ title: "Erreur de chargement", description: e.message, variant: "destructive" });
-        } finally {
-            setLoading(false);
-        }
-      } else {
-        setUser(null)
-        setLoading(false)
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) {
+        setLoading(false);
         router.replace('/welcome');
-      }
-    })
+        return;
+    }
+
+    setLoading(true);
     
-    return () => unsubscribe()
-  }, [toast, router, getInitialDailyPlan])
+    // Set initial plan from localStorage
+    setDailyPlan(getUnconfirmedPlan());
+
+    // Listener for localStorage changes
+    const handleStorageChange = () => setDailyPlan(getUnconfirmedPlan());
+    window.addEventListener('storage', handleStorageChange);
+
+    // Listener for confirmed meals from Firestore
+    const todayStr = new Date().toISOString().split('T')[0];
+    const userDocRef = doc(db, "users", firebaseUser.uid);
+    const unsubscribeSnapshot = onSnapshot(userDocRef, (doc) => {
+        const userData = doc.data() as User;
+        if (userData) {
+            setUser(userData);
+            const todaysIntake = userData.dailyIntake?.[todayStr] || [];
+            setConfirmedMeals(todaysIntake);
+        } else {
+            toast({ title: "Erreur", description: "Profil utilisateur non trouvé", variant: "destructive"});
+        }
+    });
+
+    // Fetch Google Fit data once
+    checkGoogleFitPermission().then(hasPermission => {
+        if (hasPermission) {
+            fetchTodayFitData().catch(fitError => {
+                console.error("Could not fetch Google Fit data on Home page:", fitError);
+            }).then(data => {
+                if (data) setFitData(data);
+            });
+        }
+    }).finally(() => {
+        setLoading(false);
+    });
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      unsubscribeSnapshot();
+    }
+  }, [router, toast, getUnconfirmedPlan]);
+
 
   const handleAddMeal = (mealType: keyof DailyPlan) => {
     router.push(`/home/add-meal/${mealType}`);
   };
 
-  const allMeals = Object.values(dailyPlan).flat();
-  const consumedCalories = allMeals.reduce((acc, meal) => acc + (meal?.calories || 0), 0);
-  const consumedMacros = allMeals.reduce((acc, meal) => {
+  const allUnconfirmedMeals = Object.values(dailyPlan).flat();
+  const allMealsForToday = [...confirmedMeals, ...allUnconfirmedMeals];
+
+  const consumedCalories = allMealsForToday.reduce((acc, meal) => acc + (meal?.calories || 0), 0);
+  const consumedMacros = allMealsForToday.reduce((acc, meal) => {
     acc.protein += meal?.macros.protein || 0;
     acc.carbs += meal?.macros.carbs || 0;
     acc.fat += meal?.macros.fat || 0;
@@ -201,10 +220,10 @@ export default function HomePage() {
             )}
             
             <div className="grid grid-cols-2 gap-4">
-                <MealCard title="Petit déjeuner" meals={dailyPlan.breakfast} onAdd={() => handleAddMeal('breakfast')} defaultImage="/img home/petit-dejeuner.png" />
-                <MealCard title="Déjeuner" meals={dailyPlan.lunch} onAdd={() => handleAddMeal('lunch')} defaultImage="/img home/dejeuner.png" />
-                <MealCard title="Dîner" meals={dailyPlan.dinner} onAdd={() => handleAddMeal('dinner')} defaultImage="/img home/dinner.png" />
-                <MealCard title="Collation" meals={dailyPlan.snack} onAdd={() => handleAddMeal('snack')} defaultImage="/img home-page/snacks.png" />
+                <MealCard title="Petit déjeuner" meals={[...(user?.dailyIntake?.[new Date().toISOString().split('T')[0]]?.filter(m => m.category === 'breakfast') || []), ...dailyPlan.breakfast]} onAdd={() => handleAddMeal('breakfast')} defaultImage="/img home/petit-dejeuner.png" />
+                <MealCard title="Déjeuner" meals={[...(user?.dailyIntake?.[new Date().toISOString().split('T')[0]]?.filter(m => m.category === 'lunch') || []), ...dailyPlan.lunch]} onAdd={() => handleAddMeal('lunch')} defaultImage="/img home/dejeuner.png" />
+                <MealCard title="Dîner" meals={[...(user?.dailyIntake?.[new Date().toISOString().split('T')[0]]?.filter(m => m.category === 'dinner') || []), ...dailyPlan.dinner]} onAdd={() => handleAddMeal('dinner')} defaultImage="/img home/dinner.png" />
+                <MealCard title="Collation" meals={[...(user?.dailyIntake?.[new Date().toISOString().split('T')[0]]?.filter(m => m.category === 'snack') || []), ...dailyPlan.snack]} onAdd={() => handleAddMeal('snack')} defaultImage="/img home-page/snacks.png" />
             </div>
           </CardContent>
         </Card>

@@ -20,6 +20,9 @@ export type User = {
   };
   favoriteMealIds?: string[];
   role: "client" | "caterer" | "admin" | "delivery";
+  dailyIntake?: {
+    [date: string]: Meal[]; // e.g. "2024-05-21": [Meal, Meal, ...]
+  };
   createdAt?: any;
   updatedAt?: any;
 };
@@ -88,13 +91,7 @@ export type Order = {
   clientId: string;
   clientName: string;
   clientRegion: string;
-  items: {
-    mealId: string;
-    mealName: string;
-    quantity: number;
-    unitPrice: number;
-    catererId: string;
-  }[];
+  items: Array<Meal & { quantity: number; unitPrice: number; catererId: string; }>;
   catererIds: string[]; // List of caterer UIDs involved in the order
   deliveryPersonId?: string; // The UID of the assigned delivery person
   totalPrice: number;

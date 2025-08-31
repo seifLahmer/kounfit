@@ -24,6 +24,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import LocationPicker from "@/components/location-picker"
+import { getMealById } from "@/lib/services/mealService"
 
 
 type CartItem = Meal & { quantity: number };
@@ -169,18 +170,24 @@ export default function ShoppingCartPage() {
             return;
           }
 
+          const detailedCartItems = await Promise.all(
+            cartItems.map(async (item) => {
+                const mealDetails = await getMealById(item.id);
+                return {
+                    ...item,
+                    ...mealDetails, // Add full details
+                    unitPrice: item.price,
+                    catererId: item.createdBy,
+                };
+            })
+          );
+          
           await placeOrder({
               clientId: user.uid,
               clientName: userProfile.fullName,
               clientRegion: userProfile.region || 'Non spécifiée',
               deliveryAddress: deliveryAddress,
-              items: cartItems.map(item => ({
-                  mealId: item.id,
-                  mealName: item.name,
-                  quantity: item.quantity,
-                  unitPrice: item.price,
-                  catererId: item.createdBy,
-              })),
+              items: detailedCartItems as any,
               totalPrice: total,
           });
 
@@ -316,7 +323,7 @@ export default function ShoppingCartPage() {
           )}
         </div>
         {cartItems.length > 0 && (
-             <footer className="p-4 bg-white border-t mb-12">
+             <footer className="p-4 bg-white border-t mb-20">
                   <Button 
                     className="w-full bg-primary hover:bg-primary/90 text-white font-bold text-lg h-14 rounded-button"
                     onClick={handlePlaceOrder}
