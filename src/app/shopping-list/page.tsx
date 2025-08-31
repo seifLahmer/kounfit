@@ -6,13 +6,15 @@ import Image from "next/image"
 import { MainLayout } from "@/components/main-layout"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Loader2, Frown, CheckCircle, Trash2 } from "lucide-react"
+import { Loader2, Frown, CheckCircle, Trash2, MapPin } from "lucide-react"
 import { auth } from "@/lib/firebase"
 import { useRouter } from "next/navigation"
-import type { Meal, DailyPlan } from "@/lib/types"
+import type { Meal, DailyPlan, User } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import { placeOrder } from "@/lib/services/orderService"
-import { getUserProfile } from "@/lib/services/userService"
+import { getUserProfile, updateUserProfile } from "@/lib/services/userService"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 
 type CartItem = Meal & { quantity: number };
 
@@ -21,6 +23,8 @@ export default function ShoppingCartPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [userProfile, setUserProfile] = useState<User | null>(null);
+  const [deliveryAddress, setDeliveryAddress] = useState("");
   const { toast } = useToast();
 
   const loadCartFromStorage = () => {
@@ -60,12 +64,17 @@ export default function ShoppingCartPage() {
       if (!user) {
         router.replace("/welcome");
       } else {
+        setLoading(true);
+        const profile = await getUserProfile(user.uid);
+        setUserProfile(profile);
+        if (profile?.deliveryAddress) {
+          setDeliveryAddress(profile.deliveryAddress);
+        }
         loadCartFromStorage();
         setLoading(false);
       }
     });
 
-    // Listen for storage changes to update the cart in real-time
     const handleStorageChange = () => loadCartFromStorage();
     window.addEventListener('storage', handleStorageChange);
 
@@ -86,8 +95,8 @@ export default function ShoppingCartPage() {
             for (const key in plan) {
                 const mealType = key as keyof DailyPlan;
                 const meals = plan[mealType] as Meal[];
-                // Find the first occurrence of the meal to remove
                 const indexToRemove = meals.findIndex(m => m.id === mealId);
+                
                 if (indexToRemove > -1 && !itemRemoved) {
                     newPlan[mealType] = [...meals.slice(0, indexToRemove), ...meals.slice(indexToRemove + 1)];
                     itemRemoved = true;
@@ -95,19 +104,13 @@ export default function ShoppingCartPage() {
                     newPlan[mealType] = meals;
                 }
             }
-            
-            if(itemRemoved) {
-                localStorage.setItem("dailyPlanData", JSON.stringify({ date, plan: newPlan }));
-                loadCartFromStorage(); // Reload the cart to reflect the change
-            } else {
-                 // Fallback to remove all items with that id if single removal fails
-                for (const key in newPlan) {
+             for (const key in newPlan) {
                    const mealType = key as keyof DailyPlan;
                    newPlan[mealType] = (newPlan[mealType] as Meal[]).filter(m => m.id !== mealId);
                 }
-                localStorage.setItem("dailyPlanData", JSON.stringify({ date, plan: newPlan }));
-                loadCartFromStorage();
-            }
+            
+            localStorage.setItem("dailyPlanData", JSON.stringify({ date, plan: newPlan }));
+            loadCartFromStorage();
         }
     } catch (e) {
         console.error("Error removing item", e);
@@ -115,33 +118,40 @@ export default function ShoppingCartPage() {
     }
   };
 
+  const handleAddressSave = async () => {
+      if (!userProfile) return;
+      try {
+        await updateUserProfile(userProfile.uid, { deliveryAddress });
+        toast({ title: "Adresse enregistrée", description: "Votre adresse de livraison a été mise à jour."});
+      } catch (error) {
+        toast({ title: "Erreur", description: "Impossible de sauvegarder l'adresse.", variant: "destructive" });
+      }
+  }
+
 
   const handlePlaceOrder = async () => {
       const user = auth.currentUser;
-      if (!user || cartItems.length === 0) return;
+      if (!user || !userProfile || cartItems.length === 0) return;
 
       setIsPlacingOrder(true);
       try {
-          const userProfile = await getUserProfile(user.uid);
-          if (!userProfile) {
-              throw new Error("Profil utilisateur non trouvé.");
-          }
-
-          if (!userProfile.deliveryAddress) {
+          if (!deliveryAddress) {
             toast({
                 title: "Adresse de livraison manquante",
-                description: "Veuillez ajouter une adresse dans votre profil avant de commander.",
+                description: "Veuillez ajouter une adresse de livraison avant de commander.",
                 variant: "destructive",
             });
             setIsPlacingOrder(false);
             return;
           }
 
+          await updateUserProfile(user.uid, { deliveryAddress });
+
           await placeOrder({
               clientId: user.uid,
               clientName: userProfile.fullName,
               clientRegion: userProfile.region || 'Non spécifiée',
-              deliveryAddress: userProfile.deliveryAddress,
+              deliveryAddress: deliveryAddress,
               items: cartItems.map(item => ({
                   mealId: item.id,
                   mealName: item.name,
@@ -227,7 +237,23 @@ export default function ShoppingCartPage() {
           )}
 
           {cartItems.length > 0 && (
-              <div className="pt-6">
+              <div className="pt-6 space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="deliveryAddress">Adresse de livraison</Label>
+                     <p className="text-xs text-muted-foreground">(la localisation doit etre appartient au region selectionner si non la commande ne sera pas traiter)</p>
+                    <div className="relative">
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <Input
+                            id="deliveryAddress"
+                            value={deliveryAddress}
+                            onChange={(e) => setDeliveryAddress(e.target.value)}
+                            onBlur={handleAddressSave}
+                            placeholder="Entrez votre adresse complète"
+                            className="pl-10"
+                        />
+                    </div>
+                </div>
+
                 <div className="space-y-2 text-muted-foreground">
                     <div className="flex justify-between">
                         <span>Sous-total</span>

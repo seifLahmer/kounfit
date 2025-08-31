@@ -9,7 +9,7 @@ export type User = {
   weight: number; // in kg
   height: number; // in cm
   deliveryAddress?: string;
-  region?: string;
+  region: string;
   activityLevel: "sedentary" | "lightly_active" | "moderately_active" | "very_active" | "extremely_active";
   mainGoal: "lose_weight" | "maintain" | "gain_muscle";
   calorieGoal: number;

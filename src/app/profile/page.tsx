@@ -1,3 +1,4 @@
+
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -35,8 +36,6 @@ import type { User } from "@/lib/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { GoogleIcon } from "@/components/icons"
-import LocationPicker from "@/components/location-picker"
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { handleGoogleFitSignIn, checkGoogleFitPermission } from "@/lib/services/googleFitService"
 
 
@@ -48,8 +47,7 @@ const profileFormSchema = z.object({
   }),
   weight: z.coerce.number().min(30, "Le poids doit être un nombre positif."),
   height: z.coerce.number().min(100, "La taille doit être un nombre positif."),
-  deliveryAddress: z.string().optional(),
-  region: z.string().optional(),
+  region: z.string({ required_error: "Veuillez sélectionner une région." }),
   activityLevel: z.enum(["sedentary", "lightly_active", "moderately_active", "very_active", "extremely_active"], {
     required_error: "Veuillez sélectionner un niveau d'activité.",
   }),
@@ -70,7 +68,6 @@ export default function ProfilePage() {
     const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
     const isMounted = useRef(false);
-    const [isMapOpen, setIsMapOpen] = useState(false);
     const [isFitConnected, setIsFitConnected] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
 
@@ -82,8 +79,7 @@ export default function ProfilePage() {
             biologicalSex: "male",
             weight: 0,
             height: 0,
-            deliveryAddress: "",
-            region: "",
+            region: "tunis",
             activityLevel: undefined,
             mainGoal: undefined,
             photoURL: null,
@@ -100,8 +96,7 @@ export default function ProfilePage() {
                     if (userProfile && isMounted.current) {
                         const formValues = {
                             ...userProfile,
-                            deliveryAddress: userProfile.deliveryAddress || "",
-                            region: userProfile.region || ""
+                            region: userProfile.region || "tunis"
                         };
                         form.reset(formValues as ProfileFormValues);
                         if (userProfile.photoURL) {
@@ -152,6 +147,17 @@ export default function ProfilePage() {
       }
     };
 
+    const handleRegionChange = (newRegion: string) => {
+        const oldRegion = form.getValues('region');
+        if (newRegion !== oldRegion) {
+            localStorage.removeItem('dailyPlanData');
+            toast({
+                title: "Panier vidé",
+                description: "Votre panier a été réinitialisé car vous avez changé de région.",
+            });
+        }
+    }
+
     const handleAutoSave = async (data: Partial<ProfileFormValues>) => {
         const currentUser = auth.currentUser;
         if (!currentUser) return;
@@ -177,7 +183,7 @@ export default function ProfilePage() {
 
             const userProfileData: Partial<User> = {
                 ...fullData,
-                ...data, // Ensure the latest change is included
+                ...data, 
                 calorieGoal: nutritionalNeeds.calories,
                 macroRatio: nutritionalNeeds.macros,
             };
@@ -317,36 +323,38 @@ export default function ProfilePage() {
                                       )}
                                     />
                                </div>
-
-                                <Dialog open={isMapOpen} onOpenChange={setIsMapOpen}>
-                                    <DialogTrigger asChild>
-                                        <div className="space-y-2">
-                                            <FormLabel>Adresse de livraison</FormLabel>
-                                            <div className="relative">
-                                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                                                <Input
-                                                    readOnly
-                                                    value={user.deliveryAddress || "Cliquez pour définir l'adresse"}
-                                                    className="pl-10 cursor-pointer"
-                                                />
-                                            </div>
-                                        </div>
-                                    </DialogTrigger>
-                                    <DialogContent className="w-full h-full max-w-full max-h-full p-0 gap-0">
-                                         <DialogTitle className="sr-only">Choisir une adresse de livraison</DialogTitle>
-                                         <LocationPicker
-                                            initialAddress={user.deliveryAddress}
-                                            onLocationSelect={(address, region) => {
-                                                form.setValue('deliveryAddress', address, { shouldDirty: true });
-                                                form.setValue('region', region, { shouldDirty: true });
-                                                handleAutoSave({ deliveryAddress: address, region: region });
-                                                setIsMapOpen(false); // Close the map
-                                            }}
-                                            onClose={() => setIsMapOpen(false)}
-                                        />
-                                    </DialogContent>
-                                </Dialog>
                                
+                               <FormField
+                                  control={form.control}
+                                  name="region"
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Région</FormLabel>
+                                      <Select onValueChange={(value) => {
+                                          handleRegionChange(value);
+                                          field.onChange(value);
+                                          handleAutoSave({ ...form.getValues(), region: value as any });
+                                      }} value={field.value}>
+                                        <FormControl>
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Sélectionnez votre région de livraison" />
+                                          </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="tunis">Tunis</SelectItem>
+                                            <SelectItem value="ariana">Ariana</SelectItem>
+                                            <SelectItem value="ben arous">Ben Arous</SelectItem>
+                                            <SelectItem value="manouba">La Manouba</SelectItem>
+                                            <SelectItem value="nabeul">Nabeul</SelectItem>
+                                            <SelectItem value="sousse">Sousse</SelectItem>
+                                            <SelectItem value="sfax">Sfax</SelectItem>
+                                            <SelectItem value="bizerte">Bizerte</SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
 
                                 <FormField
                                   control={form.control}
