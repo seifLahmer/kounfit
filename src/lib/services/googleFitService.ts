@@ -1,5 +1,5 @@
 
-import { GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo, linkWithCredential, User, getIdTokenResult, linkWithPopup } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo, linkWithCredential, User, getIdTokenResult, linkWithPopup, getRedirectResult } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
 const fitProvider = new GoogleAuthProvider();
@@ -72,22 +72,20 @@ async function getFitAccessToken(): Promise<string | null> {
         const providerData = user.providerData.find(p => p.providerId === 'google.com');
 
         if (providerData) {
-            // This is a simplification. In a real-world scenario with long-lived sessions,
-            // you'd need to handle token refresh securely on a backend.
-            // For this client-side example, we'll re-authenticate silently if needed.
             // A more robust solution involves a backend to exchange the auth code for a refresh token.
-            const result = await signInWithPopup(auth, fitProvider);
-            const credential = GoogleAuthProvider.credentialFromResult(result);
-            return credential?.accessToken || null;
+            const result = await getRedirectResult(auth);
+            if(result) {
+              const credential = GoogleAuthProvider.credentialFromResult(result);
+              return credential?.accessToken || null;
+            }
+            // If no redirect result, we might not have a fresh token.
+            // For now, we will let the API call fail, which is better than forcing a popup.
+            return null;
         }
         return null;
     } catch (error: any) {
-        if(error.code === 'auth/popup-blocked') {
-            console.error("Popup blocked. Cannot refresh token without user interaction.");
-            return null; // Can't get token without user interaction
-        }
         console.error("Could not get access token", error);
-        throw error;
+        return null;
     }
 }
 
@@ -99,22 +97,31 @@ async function getFitAccessToken(): Promise<string | null> {
 export async function fetchTodayFitData(): Promise<FitData | null> {
     const user = auth.currentUser;
     if (!user) return null;
-
-    // A backend service is required to securely manage and refresh OAuth tokens.
-    // The current client-side approach with signInWithPopup to get a new token is not ideal
-    // as it requires user interaction and can be blocked.
-    // For this prototype, we'll proceed but acknowledge this limitation.
     
-    // Attempt to get a fresh OAuth access token. This may trigger a popup.
     let oauthAccessToken: string | null = null;
     try {
-      const result = await signInWithPopup(auth, fitProvider);
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      oauthAccessToken = credential?.accessToken || null;
+      // First, try to get a token from a potential redirect
+      const result = await getRedirectResult(auth);
+      if (result) {
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        oauthAccessToken = credential?.accessToken || null;
+      }
+      
+      // If no token, maybe we already have one from a previous sign-in
+      // THIS PART IS TRICKY on client-side and is the reason for most issues.
+      // A backend is the correct way to handle refresh tokens.
+      // As a fallback, we will prompt for a popup, but we'll catch the error if cancelled.
+      if (!oauthAccessToken) {
+        const popupResult = await signInWithPopup(auth, fitProvider);
+        const credential = GoogleAuthProvider.credentialFromResult(popupResult);
+        oauthAccessToken = credential?.accessToken || null;
+      }
+
     } catch (error: any) {
-        console.error("Error getting fresh access token:", error);
-        if (error.code === 'auth/popup-blocked') {
-             throw new Error("Google Fit permission denied. Please reconnect from your profile.");
+        console.error("Error getting access token for Fit:", error.code);
+        // This is expected if the user closes the popup. We can ignore it here.
+        if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+          return null;
         }
         throw new Error("Could not get authorization for Google Fit.");
     }
