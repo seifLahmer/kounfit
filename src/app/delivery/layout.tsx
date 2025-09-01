@@ -7,9 +7,8 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { getUserRole } from "@/lib/services/roleService";
 import { cn } from "@/lib/utils";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot, Unsubscribe } from "firebase/firestore";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,33 +33,37 @@ export default function DeliveryLayout({
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    let profileUnsubscribe: Unsubscribe | undefined;
+    const authUnsubscribe = onAuthStateChanged(auth, (user) => {
+      if (profileUnsubscribe) profileUnsubscribe();
+
       if (user) {
-        try {
-          const role = await getUserRole(user.uid);
-          if (role === 'delivery') {
-            const deliveryDocRef = doc(db, 'deliveryPeople', user.uid);
-            const deliverySnap = await getDoc(deliveryDocRef);
-            if(deliverySnap.exists() && deliverySnap.data().status === 'approved') {
-                setIsAuthorized(true);
-            } else {
-                router.replace('/login');
-            }
+        setIsLoading(true);
+        profileUnsubscribe = onSnapshot(doc(db, 'deliveryPeople', user.uid), (docSnap) => {
+          if (docSnap.exists() && docSnap.data().status === 'approved') {
+            setIsAuthorized(true);
           } else {
+            setIsAuthorized(false);
             router.replace('/login');
           }
-        } catch (error) {
-            console.error("Delivery layout auth error:", error);
-            router.replace('/login');
-        } finally {
-            setIsLoading(false);
-        }
+          setIsLoading(false);
+        }, (error) => {
+          console.error("Delivery auth listener error:", error);
+          setIsAuthorized(false);
+          setIsLoading(false);
+          router.replace('/login');
+        });
       } else {
+        setIsAuthorized(false);
+        setIsLoading(false);
         router.replace('/login');
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      authUnsubscribe();
+      if (profileUnsubscribe) profileUnsubscribe();
+    };
   }, [router]);
   
   const handleLogout = async () => {
