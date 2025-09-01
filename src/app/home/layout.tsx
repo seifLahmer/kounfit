@@ -2,14 +2,14 @@
 "use client";
 
 import { MainLayout } from "@/components/main-layout";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
-import { auth } from "@/lib/firebase";
-import { getUserProfile } from "@/lib/services/userService";
+import { auth, db } from "@/lib/firebase";
 import { getUserRole } from "@/lib/services/roleService";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { doc, onSnapshot, Unsubscribe } from "firebase/firestore";
 
 export default function ClientLayout({
   children,
@@ -22,44 +22,71 @@ export default function ClientLayout({
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    let profileUnsubscribe: Unsubscribe | undefined;
+
+    const authUnsubscribe = onAuthStateChanged(auth, (user) => {
+      // If a previous user was being listened to, unsubscribe first.
+      if (profileUnsubscribe) {
+        profileUnsubscribe();
+      }
+
       if (user) {
-        try {
-          const role = await getUserRole(user.uid);
-          
-          if (role === 'client') {
-            const profile = await getUserProfile(user.uid);
-            if (!profile?.age || !profile.mainGoal) { 
-              // Profile is incomplete, redirect to step 2
-              router.replace('/signup/step2');
+        const userDocRef = doc(db, "users", user.uid);
+        
+        profileUnsubscribe = onSnapshot(userDocRef, async (docSnap) => {
+          try {
+            if (docSnap.exists()) {
+              const profile = docSnap.data();
+              if (profile?.age && profile.mainGoal) {
+                setIsAuthorized(true);
+                setIsLoading(false);
+              } else {
+                // Profile exists but is incomplete
+                setIsAuthorized(false);
+                router.replace('/signup/step2');
+                setIsLoading(false);
+              }
             } else {
-              // Profile is complete, authorize access
-              setIsAuthorized(true);
+              // User is authenticated but has no 'client' profile doc.
+              // This means they need to complete onboarding.
+              const role = await getUserRole(user.uid);
+              if (role === 'unknown' || role === 'client') {
+                 router.replace('/signup/step2');
+              } else {
+                 // User has another role (caterer, etc.), redirect them.
+                 router.replace('/login');
+              }
+              setIsAuthorized(false);
+              setIsLoading(false);
             }
-          } else if (role !== 'unknown') {
-            // This is a user with a defined role that is NOT client (e.g., caterer, admin).
-            // Do not authorize them here. Redirect them away from the client area.
-            router.replace('/login');
-          } else {
-            // Role is 'unknown'. This could be a new user from Google Sign-In.
-            // Redirect them to step 2 to complete their profile.
-            router.replace('/signup/step2');
+          } catch (error) {
+            console.error("Error processing user profile snapshot:", error);
+            toast({ title: "Erreur", description: "Impossible de vérifier votre profil.", variant: "destructive" });
+            auth.signOut();
+            setIsAuthorized(false);
+            setIsLoading(false);
           }
-        } catch (error) {
-           console.error("ClientLayout auth check failed:", error);
-           toast({ title: "Erreur", description: "Impossible de vérifier votre session.", variant: "destructive" });
-           await auth.signOut();
-           router.replace('/login');
-        } finally {
-          setIsLoading(false);
-        }
+        }, (error) => {
+            console.error("Firestore snapshot listener error:", error);
+            toast({ title: "Erreur de connexion", description: "Impossible de synchroniser votre profil.", variant: "destructive" });
+            auth.signOut();
+            setIsLoading(false);
+        });
+
       } else {
-        // No user is logged in, send them to the welcome page.
-        router.replace('/login');
+        // No user is logged in
+        setIsAuthorized(false);
+        setIsLoading(false);
+        router.replace('/welcome');
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      authUnsubscribe();
+      if (profileUnsubscribe) {
+        profileUnsubscribe();
+      }
+    };
   }, [router, toast]);
   
   if (isLoading) {
@@ -70,7 +97,6 @@ export default function ClientLayout({
     );
   }
 
-  // Only render the client layout if the user is a fully onboarded client.
   if (isAuthorized) {
     return (
       <MainLayout>
@@ -79,6 +105,5 @@ export default function ClientLayout({
     );
   }
 
-  // If not authorized, render nothing. This prevents flicker and content flashes.
   return null;
 }
