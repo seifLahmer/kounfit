@@ -1,0 +1,35 @@
+mutation CreateReview($userId: UUID!, $mealId: UUID!, $comment: String, $rating: Int!) @auth(level: USER) {
+  review_insert(data: {
+    userId: $userId,
+    mealId: $mealId,
+    comment: $comment,
+    rating: $rating
+  })
+}
+
+query ListMeals @auth(level: PUBLIC) {
+  meals {
+    id
+    name
+    description
+    price
+    calories
+    imageUrl
+  }
+}
+
+mutation UpdateOrder($id: UUID!, $status: String) @auth(level: USER) {
+  order_update(key: {id: $id}, data: {
+    status: $status
+  })
+}
+
+query GetUserOrders($userId: UUID!) @auth(level: USER) {
+  orders(where: {userId: {eq: $userId}}) {
+    id
+    orderDate
+    deliveryAddress
+    totalAmount
+    status
+  }
+}

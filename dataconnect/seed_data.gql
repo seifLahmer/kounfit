@@ -1,0 +1,10 @@
+mutation SeedDatabase @auth(level: USER) {
+  dietaryPreference_upsertMany(
+    data: [
+      { name: "Vegan" }
+      { name: "Vegetarian" }
+      { name: "Gluten-Free" }
+      { name: "Dairy-Free" }
+    ]
+  )
+}

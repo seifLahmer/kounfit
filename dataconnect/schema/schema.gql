@@ -1,0 +1,58 @@
+type User @table {
+  displayName: String!
+  email: String!
+  createdAt: Timestamp!
+  photoUrl: String
+  address: String
+  phone: String
+}
+
+type Meal @table {
+  name: String!
+  description: String!
+  price: Float!
+  calories: Int!
+  createdAt: Timestamp!
+  imageUrl: String
+  ingredients: String
+  allergens: String
+  cuisineType: String
+}
+
+type DietaryPreference @table {
+  name: String!
+  createdAt: Timestamp!
+}
+
+type MealDietaryPreference @table(key: ["meal", "dietaryPreference"]) {
+  meal: Meal!
+  dietaryPreference: DietaryPreference!
+  createdAt: Timestamp!
+}
+
+type Order @table {
+  user: User
+  orderDate: Date!
+  totalAmount: Float!
+  deliveryAddress: String!
+  deliveryTimeSlot: String!
+  status: String!
+  createdAt: Timestamp!
+  notes: String
+}
+
+type OrderItem @table(key: ["order", "meal"]) {
+  order: Order!
+  meal: Meal!
+  quantity: Int!
+  unitPrice: Float!
+  createdAt: Timestamp!
+}
+
+type Review @table(key: ["user", "meal"]) {
+  user: User!
+  meal: Meal!
+  rating: Int!
+  createdAt: Timestamp!
+  comment: String
+}
