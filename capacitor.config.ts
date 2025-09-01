@@ -4,7 +4,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.kounfit.app',
   appName: 'Kounfit',
-  webDir: '.next',
+  webDir: 'out',
   server: {
     hostname: 'fithelath.web.app',
     androidScheme: 'https',
