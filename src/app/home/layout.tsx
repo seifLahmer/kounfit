@@ -4,7 +4,7 @@
 import { MainLayout } from "@/components/main-layout";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { getUserRole } from "@/lib/services/roleService";
 import { Loader2 } from "lucide-react";
@@ -25,7 +25,6 @@ export default function ClientLayout({
     let profileUnsubscribe: Unsubscribe | undefined;
 
     const authUnsubscribe = onAuthStateChanged(auth, (user) => {
-      // If a previous user was being listened to, unsubscribe first.
       if (profileUnsubscribe) {
         profileUnsubscribe();
       }
@@ -35,46 +34,46 @@ export default function ClientLayout({
         
         profileUnsubscribe = onSnapshot(userDocRef, async (docSnap) => {
           try {
+            // This is the key fix: if a write from the client is still pending,
+            // we wait for the next snapshot after the write is confirmed by the server.
+            // This prevents the race condition after signup.
+            if (docSnap.metadata.hasPendingWrites) {
+              setIsLoading(true);
+              return;
+            }
+
             if (docSnap.exists()) {
               const profile = docSnap.data();
               if (profile?.age && profile.mainGoal) {
                 setIsAuthorized(true);
-                setIsLoading(false);
               } else {
-                // Profile exists but is incomplete
                 setIsAuthorized(false);
                 router.replace('/signup/step2');
-                setIsLoading(false);
               }
             } else {
-              // User is authenticated but has no 'client' profile doc.
-              // This means they need to complete onboarding.
               const role = await getUserRole(user.uid);
-              if (role === 'unknown' || role === 'client') {
-                 router.replace('/signup/step2');
+              if (role === 'client' || role === 'unknown') {
+                router.replace('/signup/step2');
               } else {
-                 // User has another role (caterer, etc.), redirect them.
-                 router.replace('/login');
+                router.replace('/login');
               }
               setIsAuthorized(false);
-              setIsLoading(false);
             }
           } catch (error) {
-            console.error("Error processing user profile snapshot:", error);
+            console.error("Error processing user profile:", error);
             toast({ title: "Erreur", description: "Impossible de vérifier votre profil.", variant: "destructive" });
             auth.signOut();
             setIsAuthorized(false);
+          } finally {
             setIsLoading(false);
           }
         }, (error) => {
-            console.error("Firestore snapshot listener error:", error);
+            console.error("Firestore listener error:", error);
             toast({ title: "Erreur de connexion", description: "Impossible de synchroniser votre profil.", variant: "destructive" });
             auth.signOut();
             setIsLoading(false);
         });
-
       } else {
-        // No user is logged in
         setIsAuthorized(false);
         setIsLoading(false);
         router.replace('/welcome');
