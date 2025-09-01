@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -56,6 +56,7 @@ import { useRouter } from 'next/navigation';
 import { Separator } from '@/components/ui/separator';
 import { cn } from "@/lib/utils";
 
+type MealWithQuantity = Meal & { quantity: number };
 
 export default function CatererPage() {
   const [caterer, setCaterer] = useState<Caterer | null>(null);
@@ -65,12 +66,12 @@ export default function CatererPage() {
   const [selectedDeliveryPerson, setSelectedDeliveryPerson] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [selectedOrderMeals, setSelectedOrderMeals] = useState<Meal[]>([]);
+  const [selectedOrderMeals, setSelectedOrderMeals] = useState<MealWithQuantity[]>([]);
   const [isMealDetailsLoading, setIsMealDetailsLoading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
-  const fetchCatererData = async () => {
+  const fetchCatererData = useCallback(async () => {
     const user = auth.currentUser;
     if (user) {
         setLoading(true);
@@ -104,7 +105,7 @@ export default function CatererPage() {
             setLoading(false);
         }
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -113,7 +114,7 @@ export default function CatererPage() {
         }
     });
     return () => unsubscribe();
-  }, []);
+  }, [fetchCatererData]);
   
   const handleDeleteMeal = async (meal: Meal) => {
     if (!meal) return;
@@ -159,15 +160,17 @@ export default function CatererPage() {
     try {
       const mealPromises = order.items.map(item => getMealById(item.mealId));
       const mealsDetails = await Promise.all(mealPromises);
-      const validMeals = mealsDetails.filter((m): m is Meal => m !== null);
       
-      const mealsWithQuantities = validMeals.map(meal => {
-        const orderItem = order.items.find(item => item.mealId === meal.id);
-        return {
-          ...meal,
-          quantity: orderItem?.quantity || 0,
-        };
-      });
+      const mealsWithQuantities = mealsDetails.reduce((acc, mealDetail, index) => {
+        if (mealDetail) {
+          const orderItem = order.items[index];
+          acc.push({
+            ...mealDetail,
+            quantity: orderItem?.quantity || 0,
+          });
+        }
+        return acc;
+      }, [] as MealWithQuantity[]);
       
       setSelectedOrderMeals(mealsWithQuantities);
     } catch (error) {
@@ -381,7 +384,7 @@ export default function CatererPage() {
                     <div className="space-y-4">
                         {selectedOrderMeals.map(meal => (
                             <div key={meal.id} className="space-y-2">
-                                <h3 className="font-semibold text-lg text-primary">{(meal as any).quantity}x {meal.name}</h3>
+                                <h3 className="font-semibold text-lg text-primary">{meal.quantity}x {meal.name}</h3>
                                 <div className="pl-4 border-l-2 border-primary/50 space-y-1 text-sm">
                                     {meal.ingredients.map((ing, index) => (
                                         <div key={`${ing.name}-${index}`} className="flex justify-between">

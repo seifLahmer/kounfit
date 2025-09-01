@@ -14,7 +14,6 @@ import { auth, db } from "@/lib/firebase";
 import type { Meal, DailyPlan, User } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
-import { getUserProfile } from "@/lib/services/userService";
 import { cn } from "@/lib/utils";
 import { CalorieIcon } from "@/components/icons";
 import { Separator } from "@/components/ui/separator";
@@ -28,7 +27,7 @@ const mealTypeTranslations: { [key: string]: string } = {
   snack: 'Collation'
 };
 
-const MealGrid = ({ meals, favoriteMealIds, onAddMeal, onToggleFavorite, showAddButton = true }: { meals: Meal[], favoriteMealIds: string[], onAddMeal: (meal: Meal) => void, onToggleFavorite: (mealId: string) => void, showAddButton?: boolean }) => {
+const MealGrid = ({ meals, favoriteMealIds, onToggleFavorite, showAddButton = true, onAddMeal }: { meals: Meal[], favoriteMealIds: string[], onToggleFavorite: (mealId: string) => void, showAddButton?: boolean, onAddMeal?: (meal: Meal) => void }) => {
     if (meals.length === 0) {
         return (
             <div className="text-center text-muted-foreground py-8">
@@ -73,7 +72,7 @@ const MealGrid = ({ meals, favoriteMealIds, onAddMeal, onToggleFavorite, showAdd
                                 <Heart className={cn("w-6 h-6", favoriteMealIds.includes(meal.id) ? "text-red-500 fill-current" : "text-white")}/>
                             </Button>
                         </div>
-                        {showAddButton && (
+                        {showAddButton && onAddMeal && (
                             <div className="absolute bottom-2 right-2 z-20">
                                 <Button size="icon" className="bg-primary/80 hover:bg-primary text-white rounded-full w-8 h-8 flex items-center justify-center shrink-0" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onAddMeal(meal); }}>
                                     <Plus className="w-5 h-5"/>
@@ -299,7 +298,6 @@ export default function AddMealClientPage() {
                     <MealGrid 
                         meals={filteredAddedMeals} 
                         favoriteMealIds={favoriteMealIds} 
-                        onAddMeal={handleAddMeal}
                         onToggleFavorite={handleToggleFavorite}
                         showAddButton={false}
                     />

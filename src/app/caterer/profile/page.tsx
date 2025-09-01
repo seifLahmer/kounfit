@@ -46,17 +46,11 @@ export default function CatererProfilePage() {
     mode: "onBlur",
   });
 
-  const fetchProfileData = useCallback(async () => {
-    const user = auth.currentUser;
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-    
+  const fetchProfileData = useCallback(async (userUid: string) => {
     if (isMounted.current) setLoading(true);
 
     try {
-      const catererDocRef = doc(db, 'caterers', user.uid);
+      const catererDocRef = doc(db, 'caterers', userUid);
       const catererSnap = await getDoc(catererDocRef);
       if (catererSnap.exists() && isMounted.current) {
         const catererData = catererSnap.data() as Caterer;
@@ -79,13 +73,14 @@ export default function CatererProfilePage() {
     } finally {
       if (isMounted.current) setLoading(false);
     }
-  }, [router, toast, form]);
+  }, [toast, form]);
+
 
   useEffect(() => {
     isMounted.current = true;
     const unsubscribe = auth.onAuthStateChanged((user) => {
         if(user) {
-            fetchProfileData();
+            fetchProfileData(user.uid);
         } else {
             router.push('/login');
         }

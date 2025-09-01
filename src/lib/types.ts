@@ -66,7 +66,7 @@ export interface Meal {
     average: number;
     count: number;
   };
-  createdAt: any;
+  createdAt?: any;
 }
 
 export type Caterer = {
@@ -106,7 +106,7 @@ export type Order = {
   totalPrice: number;
   status: "pending" | "in_preparation" | "ready_for_delivery" | "in_delivery" | "delivered" | "cancelled";
   orderDate: any;
-  deliveryDate: any;
+  deliveryDate?: any;
   deliveryTime?: number; // Estimated delivery time in minutes
   deliveryAddress: string;
 };

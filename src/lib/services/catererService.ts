@@ -1,5 +1,5 @@
 
-import { collection, doc, getDocs, setDoc, deleteDoc, updateDoc, query, where } from "firebase/firestore";
+import { collection, doc, getDocs, setDoc, deleteDoc, updateDoc, query, where, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { Caterer } from "@/lib/types";
 
@@ -23,6 +23,31 @@ export async function addCaterer(catererData: Omit<Caterer, 'turnover'>): Promis
     throw new Error("Could not add the caterer.");
   }
 }
+
+/**
+ * Retrieves a caterer's profile from Firestore.
+ * @param uid The caterer's unique ID.
+ * @returns The caterer data or null if not found.
+ */
+export async function getCatererProfile(uid: string): Promise<Caterer | null> {
+    try {
+        if (!uid) {
+            return null;
+        }
+        const catererRef = doc(db, CATERERS_COLLECTION, uid);
+        const docSnap = await getDoc(catererRef);
+
+        if (docSnap.exists()) {
+            return docSnap.data() as Caterer;
+        } else {
+            return null;
+        }
+    } catch (error) {
+        console.error("Could not fetch caterer profile.", error);
+        throw new Error("Could not fetch caterer profile.");
+    }
+}
+
 
 /**
  * Updates a caterer's profile data.
