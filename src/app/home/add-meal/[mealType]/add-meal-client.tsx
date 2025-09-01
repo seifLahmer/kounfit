@@ -13,7 +13,6 @@ import { toggleFavoriteMeal } from "@/lib/services/userService";
 import { auth, db } from "@/lib/firebase";
 import type { Meal, DailyPlan, User } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { CalorieIcon } from "@/components/icons";
 import { Separator } from "@/components/ui/separator";
