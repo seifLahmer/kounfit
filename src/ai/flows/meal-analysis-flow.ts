@@ -1,4 +1,3 @@
-'use server';
 
 /**
  * @fileOverview An AI flow to analyze a meal from its name, 
@@ -55,7 +54,7 @@ const prompt = ai.definePrompt({
 
     Follow these steps:
     1.  **Estimate Ingredients**: Based on the meal name, create a realistic list of common ingredients and their estimated quantities in grams for a single serving.
-    2.  **Calculate Nutrition**: For each ingredient, estimate its nutritional values (calories, protein, carbs, fat, fibers). Then, sum them up to get the total nutritional profile for the entire dish.
+    2.  **Calculate Nutrition**: For each ingredient, estimate its nutritional values (calories, protein, carbs, fat, fibers). Then, sum them up to get the total nutritional profile for the entire meal.
     3.  **Generate Description**: Write a short, appealing marketing description for the meal, highlighting its key features (e.g., "healthy", "protein-rich", "delicious").
     4.  **Format Output**: Return the data in the specified JSON format.
 
