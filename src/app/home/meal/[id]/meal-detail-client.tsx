@@ -13,6 +13,7 @@ import type { Meal, DailyPlan } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { auth } from '@/lib/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getMealDetails } from './_actions';
 
 
 export default function MealDetailClient({ mealId }: { mealId: string }) {
@@ -28,11 +29,10 @@ export default function MealDetailClient({ mealId }: { mealId: string }) {
     const fetchMeal = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`/api/meal/${mealId}`);
-        if (!response.ok) {
+        const data = await getMealDetails(mealId);
+        if (!data) {
           throw new Error('Failed to fetch meal details');
         }
-        const data: Meal = await response.json();
         setMealData(data);
       } catch (error) {
         console.error(error);
@@ -72,9 +72,13 @@ export default function MealDetailClient({ mealId }: { mealId: string }) {
   
   const handleAddToCart = () => {
     if (!mealData) return;
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) return;
+
 
     try {
-      const savedData = localStorage.getItem("dailyPlanData");
+      const storageKey = `dailyPlanData_${firebaseUser.uid}`;
+      const savedData = localStorage.getItem(storageKey);
       const todayStr = new Date().toISOString().split('T')[0];
       
       let currentPlan: DailyPlan;
@@ -98,7 +102,8 @@ export default function MealDetailClient({ mealId }: { mealId: string }) {
       }
       currentPlan[targetMealType].push(mealData);
       
-      localStorage.setItem("dailyPlanData", JSON.stringify({ date: todayStr, plan: currentPlan }));
+      localStorage.setItem(storageKey, JSON.stringify({ date: todayStr, plan: currentPlan }));
+      window.dispatchEvent(new Event('storage')); // Dispatch event to notify other tabs/components
       
       toast({
           title: "Repas ajouté!",
