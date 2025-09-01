@@ -171,7 +171,7 @@ export default function HomePage() {
                 <MealCard title="Petit déjeuner" meals={getMealsForCategory('breakfast')} onAdd={() => handleAddMeal('breakfast')} defaultImage="/img home/petit-dejeuner.png" />
                 <MealCard title="Déjeuner" meals={getMealsForCategory('lunch')} onAdd={() => handleAddMeal('lunch')} defaultImage="/img home/dejeuner.png" />
                 <MealCard title="Dîner" meals={getMealsForCategory('dinner')} onAdd={() => handleAddMeal('dinner')} defaultImage="/img home/dinner.png" />
-                <MealCard title="Collation" meals={getMealsForCategory('snack')} onAdd={() => handleAddMeal('snack')} defaultImage="/img home-page/snacks.png" />
+                <MealCard title="Collation" meals={getMealsForCategory('snack')} onAdd={() => handleAddMeal('snack')} defaultImage="/img home/snacks.png" />
             </div>
           </CardContent>
         </Card>
