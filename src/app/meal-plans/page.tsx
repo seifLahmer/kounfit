@@ -1,3 +1,4 @@
+
 "use client"
 
 import { MainLayout } from "@/components/main-layout"
@@ -75,7 +76,7 @@ export default function MealPlansPage() {
             <div className="grid grid-cols-2 gap-4">
             {favoriteMeals.map((meal) => (
                 <Card key={meal.id} className="relative overflow-hidden rounded-2xl border shadow-sm h-56 group">
-                     <Link href={`/home/meal/${meal.id}`} className="absolute inset-0 z-0">
+                     <div className="absolute inset-0 z-0">
                            <Image
                                 src={meal.imageUrl}
                                 alt={meal.name}
@@ -85,7 +86,7 @@ export default function MealPlansPage() {
                                 data-ai-hint="healthy food"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
-                        </Link>
+                        </div>
 
                         <CardContent className="relative z-10 p-3 flex flex-col justify-end h-full text-white">
                             <div>
