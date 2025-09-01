@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build"
+    "build": "next build",
+    "prebuild": "rm -rf .next"
   },
   "dependencies": {
     "@capacitor-firebase/authentication": "^7.0.0",
