@@ -4,10 +4,10 @@ import { getMealById } from '@/lib/services/mealService';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    const { id } = context.params;
 
     if (!id) {
       return NextResponse.json({ error: 'Meal ID is required' }, { status: 400 });
@@ -21,7 +21,7 @@ export async function GET(
 
     return NextResponse.json(meal);
   } catch (error: any) {
-    console.error(`Error fetching meal ${params.id}:`, error);
+    console.error(`Error fetching meal ${context.params.id}:`, error);
     return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
   }
 }
