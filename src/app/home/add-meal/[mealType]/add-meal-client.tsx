@@ -93,7 +93,7 @@ export default function AddMealClientPage() {
   const mealType = (Array.isArray(params.mealType) ? params.mealType[0] : params.mealType) as keyof DailyPlan;
 
   const [recommendedMeals, setRecommendedMeals] = useState<Meal[]>([]);
-  const [unconfirmedMeals, setUnconfirmedMeals] = useState<Meal[]>([]);
+  const [unconfirmedPlan, setUnconfirmedPlan] = useState<DailyPlan>({ breakfast: [], lunch: [], snack: [], dinner: [] });
   const [confirmedMeals, setConfirmedMeals] = useState<Meal[]>([]);
 
   const [loading, setLoading] = useState(true);
@@ -111,7 +111,12 @@ export default function AddMealClientPage() {
       if (savedData) {
         const { date, plan } = JSON.parse(savedData);
         if (date === new Date().toISOString().split('T')[0]) {
-          return plan;
+          return {
+            breakfast: Array.isArray(plan.breakfast) ? plan.breakfast : [],
+            lunch: Array.isArray(plan.lunch) ? plan.lunch : [],
+            snack: Array.isArray(plan.snack) ? plan.snack : [],
+            dinner: Array.isArray(plan.dinner) ? plan.dinner : [],
+          };
         }
       }
     } catch (error) {
@@ -166,8 +171,7 @@ export default function AddMealClientPage() {
     });
 
     const handleStorageChange = () => {
-        const plan = getUnconfirmedPlanFromStorage();
-        setUnconfirmedMeals(Object.values(plan).flat());
+        setUnconfirmedPlan(getUnconfirmedPlanFromStorage());
     };
     window.addEventListener('storage', handleStorageChange);
     handleStorageChange(); // Initial load
@@ -189,23 +193,7 @@ export default function AddMealClientPage() {
 
     try {
       const storageKey = `dailyPlanData_${firebaseUser.uid}`;
-      const savedData = localStorage.getItem(storageKey);
-      const todayStr = new Date().toISOString().split('T')[0];
-      
-      let currentPlan: DailyPlan;
-      
-      if (savedData) {
-        const parsedData = JSON.parse(savedData);
-        const plan = (parsedData.date === todayStr) ? parsedData.plan : {};
-        currentPlan = {
-          breakfast: Array.isArray(plan.breakfast) ? plan.breakfast : [],
-          lunch: Array.isArray(plan.lunch) ? plan.lunch : [],
-          snack: Array.isArray(plan.snack) ? plan.snack : [],
-          dinner: Array.isArray(plan.dinner) ? plan.dinner : [],
-        };
-      } else {
-        currentPlan = { breakfast: [], lunch: [], snack: [], dinner: [] };
-      }
+      const currentPlan = getUnconfirmedPlanFromStorage();
       
       const targetMealType = meal.category as keyof DailyPlan;
       
@@ -213,10 +201,11 @@ export default function AddMealClientPage() {
           currentPlan[targetMealType] = [];
       }
       currentPlan[targetMealType].push(meal);
-      
+
+      const todayStr = new Date().toISOString().split('T')[0];
       localStorage.setItem(storageKey, JSON.stringify({ date: todayStr, plan: currentPlan }));
       
-      setUnconfirmedMeals(Object.values(currentPlan).flat());
+      setUnconfirmedPlan(currentPlan);
 
       toast({
           title: "Repas ajouté !",
@@ -253,13 +242,18 @@ export default function AddMealClientPage() {
     }
   };
 
-  const allAddedMeals = useMemo(() => {
-    const combinedMeals: { [id: string]: Meal } = {};
-    [...confirmedMeals, ...unconfirmedMeals].forEach(meal => {
-        if(meal) combinedMeals[meal.id] = meal;
+  const addedMealsForThisCategory = useMemo(() => {
+    const confirmedForCategory = confirmedMeals.filter(m => m && m.category === mealType);
+    const unconfirmedForCategory = unconfirmedPlan[mealType] || [];
+    const combined = [...confirmedForCategory, ...unconfirmedForCategory];
+
+    const uniqueMeals: { [id: string]: Meal } = {};
+    combined.forEach(meal => {
+        if(meal) uniqueMeals[meal.id] = meal;
     });
-    return Object.values(combinedMeals);
-  }, [confirmedMeals, unconfirmedMeals]);
+    return Object.values(uniqueMeals);
+  }, [confirmedMeals, unconfirmedPlan, mealType]);
+
 
   const filteredRecommendedMeals = useMemo(() => {
     return recommendedMeals.filter(meal => 
@@ -268,10 +262,10 @@ export default function AddMealClientPage() {
   }, [recommendedMeals, searchTerm]);
 
   const filteredAddedMeals = useMemo(() => {
-    return allAddedMeals.filter(meal => 
+    return addedMealsForThisCategory.filter(meal => 
         meal.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
-  }, [allAddedMeals, searchTerm]);
+  }, [addedMealsForThisCategory, searchTerm]);
 
   return (
     <div className="flex flex-col h-screen bg-gradient-to-b from-[#a2fcdc] to-background">
