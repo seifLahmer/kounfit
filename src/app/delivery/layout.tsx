@@ -53,7 +53,7 @@ export default function DeliveryLayout({
     return () => {
       authUnsubscribe();
     };
-  }, []);
+  }, [router]);
   
   const handleLogout = async () => {
     await auth.signOut();
@@ -68,7 +68,7 @@ export default function DeliveryLayout({
     );
   }
 
-  if (authStatus === 'unauthorized') {
+  if (authStatus !== 'authorized') {
     router.replace('/login');
     return null;
   }

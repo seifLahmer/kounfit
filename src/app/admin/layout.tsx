@@ -36,7 +36,7 @@ export default function AdminLayout({
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [router]);
   
   const handleLogout = async () => {
     await auth.signOut();
@@ -51,7 +51,7 @@ export default function AdminLayout({
     );
   }
   
-  if (authStatus === 'unauthorized') {
+  if (authStatus !== 'authorized') {
      router.replace('/login');
      return null;
   }

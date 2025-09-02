@@ -54,7 +54,7 @@ export default function CatererLayout({
     return () => {
       authUnsubscribe();
     };
-  }, []);
+  }, [router]);
   
   const handleLogout = async () => {
     await auth.signOut();
@@ -69,7 +69,7 @@ export default function CatererLayout({
     );
   }
 
-  if (authStatus === 'unauthorized') {
+  if (authStatus !== 'authorized') {
     router.replace('/login');
     return null;
   }
