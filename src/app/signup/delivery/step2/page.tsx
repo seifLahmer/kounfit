@@ -50,7 +50,7 @@ export default function SignupDeliveryStep2Page() {
     resolver: zodResolver(deliveryStep2Schema),
     defaultValues: {
       vehicleType: "scooter",
-      region: "tunis",
+      region: "grand tunis",
     },
   });
   
@@ -167,10 +167,7 @@ export default function SignupDeliveryStep2Page() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="tunis">Tunis</SelectItem>
-                        <SelectItem value="ariana">Ariana</SelectItem>
-                        <SelectItem value="ben arous">Ben Arous</SelectItem>
-                        <SelectItem value="manouba">La Manouba</SelectItem>
+                        <SelectItem value="grand tunis">Grand Tunis</SelectItem>
                         <SelectItem value="nabeul">Nabeul</SelectItem>
                         <SelectItem value="sousse">Sousse</SelectItem>
                         <SelectItem value="sfax">Sfax</SelectItem>

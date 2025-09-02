@@ -277,10 +277,11 @@ export default function AdminDashboardPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Toutes les régions</SelectItem>
-                    <SelectItem value="tunis">Tunis</SelectItem>
-                    <SelectItem value="ariana">Ariana</SelectItem>
-                    <SelectItem value="ben arous">Ben Arous</SelectItem>
-                    <SelectItem value="manouba">La Manouba</SelectItem>
+                    <SelectItem value="grand tunis">Grand Tunis</SelectItem>
+                    <SelectItem value="nabeul">Nabeul</SelectItem>
+                    <SelectItem value="sousse">Sousse</SelectItem>
+                    <SelectItem value="sfax">Sfax</SelectItem>
+                    <SelectItem value="bizerte">Bizerte</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

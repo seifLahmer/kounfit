@@ -65,7 +65,7 @@ export default function SignupStep2Page() {
       weight: 70,
       age: 25,
       biologicalSex: "male",
-      region: "tunis",
+      region: "grand tunis",
       activityLevel: "lightly_active",
       mainGoal: "maintain",
     },
@@ -236,10 +236,7 @@ export default function SignupStep2Page() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="tunis">Tunis</SelectItem>
-                        <SelectItem value="ariana">Ariana</SelectItem>
-                        <SelectItem value="ben arous">Ben Arous</SelectItem>
-                        <SelectItem value="manouba">La Manouba</SelectItem>
+                        <SelectItem value="grand tunis">Grand Tunis</SelectItem>
                         <SelectItem value="nabeul">Nabeul</SelectItem>
                         <SelectItem value="sousse">Sousse</SelectItem>
                         <SelectItem value="sfax">Sfax</SelectItem>
@@ -347,5 +344,3 @@ export default function SignupStep2Page() {
     </div>
   );
 }
-
-    

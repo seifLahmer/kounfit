@@ -44,7 +44,12 @@ export default function LocationPicker({ initialAddress, onLocationSelect, onClo
   const getRegionFromComponents = (components: google.maps.GeocoderAddressComponent[]): string => {
       const regionComponent = components.find(c => c.types.includes('administrative_area_level_1'));
       if (regionComponent) {
-          return regionComponent.long_name.toLowerCase().replace('governorate', '').trim();
+          const regionName = regionComponent.long_name.toLowerCase().replace('governorate', '').trim();
+          const grandTunisRegions = ['tunis', 'ariana', 'ben arous', 'manouba'];
+          if (grandTunisRegions.includes(regionName)) {
+              return 'grand tunis';
+          }
+          return regionName;
       }
       return "";
   }

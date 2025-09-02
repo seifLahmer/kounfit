@@ -90,7 +90,7 @@ export default function ProfilePage() {
             biologicalSex: "male",
             weight: 0,
             height: 0,
-            region: "tunis",
+            region: "grand tunis",
             activityLevel: undefined,
             mainGoal: undefined,
             photoURL: null,
@@ -108,7 +108,7 @@ export default function ProfilePage() {
                         const formValues = {
                             ...userProfile,
                             phoneNumber: userProfile.phoneNumber || "",
-                            region: userProfile.region || "tunis"
+                            region: userProfile.region || "grand tunis"
                         };
                         form.reset(formValues as ProfileFormValues);
                         if (userProfile.photoURL) {
@@ -353,10 +353,7 @@ export default function ProfilePage() {
                                           </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            <SelectItem value="tunis">Tunis</SelectItem>
-                                            <SelectItem value="ariana">Ariana</SelectItem>
-                                            <SelectItem value="ben arous">Ben Arous</SelectItem>
-                                            <SelectItem value="manouba">La Manouba</SelectItem>
+                                            <SelectItem value="grand tunis">Grand Tunis</SelectItem>
                                             <SelectItem value="nabeul">Nabeul</SelectItem>
                                             <SelectItem value="sousse">Sousse</SelectItem>
                                             <SelectItem value="sfax">Sfax</SelectItem>
