@@ -88,6 +88,7 @@ export default function LoginPage() {
             }
         }
         
+        // Redirection based on role
         switch (role) {
             case 'admin':
                 router.replace('/admin');
@@ -99,9 +100,16 @@ export default function LoginPage() {
                 router.replace('/delivery');
                 break;
             case 'client':
-                router.replace('/home');
+                // For clients, also check if their profile is complete
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                if (userDoc.exists() && userDoc.data().mainGoal) {
+                    router.replace('/home');
+                } else {
+                    router.replace('/signup/step2');
+                }
                 break;
             default:
+                // This covers 'unknown' role, typically a new user.
                 router.replace('/signup/step2');
                 break;
         }
@@ -318,3 +326,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    
