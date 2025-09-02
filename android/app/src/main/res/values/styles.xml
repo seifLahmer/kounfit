@@ -19,5 +19,9 @@
     <style name="AppTheme.NoActionBarLaunch" parent="AppTheme.NoActionBar">
         <!-- This is the initial launch theme, it also uses the splash drawable -->
         <item name="android:windowBackground">@drawable/splash</item>
+        <!-- For Android 12+, ensure a blank splash screen -->
+        <item name="android:windowSplashScreenBackground">@color/splash_background_color</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@null</item>
+        <item name="android:windowSplashScreenBrandingImage">@null</item>
     </style>
 </resources>
