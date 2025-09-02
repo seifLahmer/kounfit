@@ -51,10 +51,8 @@ export default function DeliveryLayout({
       }
     });
 
-    return () => {
-      authUnsubscribe();
-    };
-  }, []);
+    return () => authUnsubscribe();
+  }, [router]);
   
   const handleLogout = async () => {
     await auth.signOut();

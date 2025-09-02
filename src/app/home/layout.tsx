@@ -36,8 +36,9 @@ export default function ClientLayout({
               setAuthStatus('incomplete_profile');
             }
           } else {
-            // This case handles a new user who has just signed up via email/password
-            // but hasn't created a user document yet.
+             // This case handles a new user who has just signed up
+             // or a different role (caterer/delivery) that doesn't have a doc here.
+             // We'll redirect them to complete their client profile if they land here.
              setAuthStatus('incomplete_profile');
           }
         } catch (error) {
@@ -51,10 +52,8 @@ export default function ClientLayout({
       }
     });
 
-    return () => {
-      authUnsubscribe();
-    };
-  }, [toast]);
+    return () => authUnsubscribe();
+  }, [router, toast]);
   
   if (authStatus === 'loading') {
     return (

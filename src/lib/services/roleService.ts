@@ -13,7 +13,7 @@ export async function getUserRole(uid: string): Promise<'admin' | 'caterer' | 'c
   if (!uid) return 'unknown';
 
   try {
-    // Check in order of priority
+    // Check in order of priority to avoid conflicts
     const adminRef = doc(db, "admins", uid);
     const adminSnap = await getDoc(adminRef);
     if (adminSnap.exists()) {
@@ -41,7 +41,7 @@ export async function getUserRole(uid: string): Promise<'admin' | 'caterer' | 'c
     return 'unknown';
   } catch (error) {
     console.error("Error getting user role: ", error);
-    // In case of a permissions error during the check, it's safer to return 'unknown'
+    // In case of a permissions error or network issue, it's safer to return 'unknown'
     // than to let the login flow break.
     return 'unknown';
   }

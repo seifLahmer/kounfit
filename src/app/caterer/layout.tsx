@@ -52,10 +52,8 @@ export default function CatererLayout({
       }
     });
 
-    return () => {
-      authUnsubscribe();
-    };
-  }, []);
+    return () => authUnsubscribe();
+  }, [router]);
   
   const handleLogout = async () => {
     await auth.signOut();

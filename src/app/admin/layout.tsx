@@ -37,7 +37,7 @@ export default function AdminLayout({
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [router]);
   
   const handleLogout = async () => {
     await auth.signOut();
