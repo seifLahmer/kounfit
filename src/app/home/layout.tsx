@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
-import { getUserRole } from "@/lib/services/roleService";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { doc, getDoc } from "firebase/firestore";
@@ -18,8 +17,7 @@ export default function ClientLayout({
 }) {
   const router = useRouter();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [authStatus, setAuthStatus] = useState<'loading' | 'authorized' | 'unauthorized' | 'incomplete_profile'>('loading');
 
   useEffect(() => {
     const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -32,47 +30,33 @@ export default function ClientLayout({
             const profile = docSnap.data();
             // Check if profile is complete
             if (profile?.age && profile.mainGoal) {
-              setIsAuthorized(true);
+              setAuthStatus('authorized');
             } else {
               // Profile exists but is incomplete, send to step 2
-              setIsAuthorized(false);
-              router.replace('/signup/step2');
+              setAuthStatus('incomplete_profile');
             }
           } else {
-            // Document doesn't exist, this could be a new signup
-            // or a different user type trying to access /home.
-            // Check their role to decide.
-            const role = await getUserRole(user.uid);
-            if (role === 'client' || role === 'unknown') {
-              router.replace('/signup/step2');
-            } else {
-              // It's a caterer, admin, or delivery person; they shouldn't be here.
-              router.replace('/login');
-            }
-            setIsAuthorized(false);
+            // This case handles a new user who has just signed up via email/password
+            // but hasn't created a user document yet.
+             setAuthStatus('incomplete_profile');
           }
         } catch (error) {
           console.error("Error processing user profile:", error);
           toast({ title: "Erreur", description: "Impossible de vérifier votre profil.", variant: "destructive" });
-          auth.signOut();
-          setIsAuthorized(false);
-        } finally {
-          setIsLoading(false);
+          setAuthStatus('unauthorized');
         }
       } else {
         // No user is logged in.
-        setIsAuthorized(false);
-        setIsLoading(false);
-        router.replace('/welcome');
+        setAuthStatus('unauthorized');
       }
     });
 
     return () => {
       authUnsubscribe();
     };
-  }, [router, toast]);
+  }, [toast]);
   
-  if (isLoading) {
+  if (authStatus === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -80,7 +64,7 @@ export default function ClientLayout({
     );
   }
 
-  if (isAuthorized) {
+  if (authStatus === 'authorized') {
     return (
       <MainLayout>
         {children}
@@ -88,6 +72,12 @@ export default function ClientLayout({
     );
   }
 
-  // Return null while redirects are happening to prevent flashing content
+  if (authStatus === 'incomplete_profile') {
+      router.replace('/signup/step2');
+      return null;
+  }
+  
+  // This covers 'unauthorized'
+  router.replace('/welcome');
   return null;
 }

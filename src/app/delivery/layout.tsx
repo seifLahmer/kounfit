@@ -29,8 +29,7 @@ export default function DeliveryLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [authStatus, setAuthStatus] = useState<'loading' | 'authorized' | 'unauthorized'>('loading');
 
   useEffect(() => {
     const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -39,33 +38,30 @@ export default function DeliveryLayout({
           const docRef = doc(db, 'deliveryPeople', user.uid);
           const docSnap = await getDoc(docRef);
           if (docSnap.exists() && docSnap.data().status === 'approved') {
-            setIsAuthorized(true);
+            setAuthStatus('authorized');
           } else {
-            setIsAuthorized(false);
+            setAuthStatus('unauthorized');
           }
         } catch (error) {
           console.error("Delivery auth check error:", error);
-          setIsAuthorized(false);
-        } finally {
-          setIsLoading(false);
+          setAuthStatus('unauthorized');
         }
       } else {
-        setIsAuthorized(false);
-        setIsLoading(false);
+        setAuthStatus('unauthorized');
       }
     });
 
     return () => {
       authUnsubscribe();
     };
-  }, [router]);
+  }, []);
   
   const handleLogout = async () => {
     await auth.signOut();
     router.push('/welcome');
   };
 
-  if (isLoading) {
+  if (authStatus === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -73,7 +69,7 @@ export default function DeliveryLayout({
     );
   }
 
-  if (!isAuthorized) {
+  if (authStatus === 'unauthorized') {
     router.replace('/login');
     return null;
   }

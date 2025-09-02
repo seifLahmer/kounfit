@@ -29,8 +29,7 @@ export default function CatererLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [authStatus, setAuthStatus] = useState<'loading' | 'authorized' | 'unauthorized'>('loading');
 
   useEffect(() => {
     const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -40,36 +39,30 @@ export default function CatererLayout({
           const docSnap = await getDoc(docRef);
           
           if (docSnap.exists() && docSnap.data().status === 'approved') {
-            setIsAuthorized(true);
+            setAuthStatus('authorized');
           } else {
-            // This covers cases where the doc doesn't exist, or status is pending/rejected.
-            // A pending user will be redirected by the login page logic to the pending screen.
-            setIsAuthorized(false);
+            setAuthStatus('unauthorized');
           }
         } catch (error) {
           console.error("Caterer auth check error:", error);
-          setIsAuthorized(false);
-        } finally {
-          setIsLoading(false);
+          setAuthStatus('unauthorized');
         }
       } else {
-        // No user is logged in.
-        setIsAuthorized(false);
-        setIsLoading(false);
+        setAuthStatus('unauthorized');
       }
     });
 
     return () => {
       authUnsubscribe();
     };
-  }, [router]);
+  }, []);
   
   const handleLogout = async () => {
     await auth.signOut();
     router.push('/welcome');
   };
 
-  if (isLoading) {
+  if (authStatus === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -77,7 +70,7 @@ export default function CatererLayout({
     );
   }
 
-  if (!isAuthorized) {
+  if (authStatus === 'unauthorized') {
     router.replace('/login');
     return null;
   }
