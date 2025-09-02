@@ -1,21 +1,23 @@
 {
   "name": "Kounfit",
   "short_name": "Kounfit",
+  "description": "Suivez vos calories et obtenez des plans de repas personnalisés.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#22C58B",
   "icons": [
     {
-      "src": "/icons/web-app-manifest-192x192.png",
+      "src": "/k/k%20green.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     },
     {
-      "src": "/icons/web-app-manifest-192x192.png",
+      "src": "/k/k%20green.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
-  ],
-  "theme_color": "#22C58B",
-  "background_color": "#22C58B",
-  "display": "standalone"
+  ]
 }
