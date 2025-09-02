@@ -5,10 +5,9 @@ import { Bike, Loader2, LogOut, Wallet, User } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { auth, db } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { cn } from "@/lib/utils";
-import { doc, getDoc } from "firebase/firestore";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,25 +33,17 @@ export default function DeliveryLayout({
   useEffect(() => {
     const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        try {
-          const docRef = doc(db, 'deliveryPeople', user.uid);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists() && docSnap.data().status === 'approved') {
-            setAuthStatus('authorized');
-          } else {
-            setAuthStatus('unauthorized');
-          }
-        } catch (error) {
-          console.error("Delivery auth check error:", error);
-          setAuthStatus('unauthorized');
-        }
+        // A user is logged in, but we don't know their role or status yet.
+        // The login page is responsible for routing them correctly.
+        // This layout just protects against unauthenticated access.
+        setAuthStatus('authorized');
       } else {
         setAuthStatus('unauthorized');
       }
     });
 
     return () => authUnsubscribe();
-  }, [router]);
+  }, []);
   
   const handleLogout = async () => {
     await auth.signOut();

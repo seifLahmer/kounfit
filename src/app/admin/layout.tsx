@@ -20,24 +20,22 @@ export default function AdminLayout({
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        try {
-          const role = await getUserRole(user.uid);
-          if (role === 'admin') {
-            setAuthStatus('authorized');
-          } else {
-            setAuthStatus('unauthorized');
-          }
-        } catch (error) {
-           console.error("Error verifying admin role:", error);
-           setAuthStatus('unauthorized');
+        // User is logged in, now we need to verify their role.
+        const role = await getUserRole(user.uid);
+        if (role === 'admin') {
+          setAuthStatus('authorized');
+        } else {
+          // Logged in, but not an admin.
+          setAuthStatus('unauthorized');
         }
       } else {
+        // No user is logged in.
         setAuthStatus('unauthorized');
       }
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, []); // Removed router from dependencies to prevent re-running on navigation
   
   const handleLogout = async () => {
     await auth.signOut();
