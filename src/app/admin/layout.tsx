@@ -26,6 +26,7 @@ export default function AdminLayout({
           if (role === 'admin') {
             setIsAuthorized(true);
           } else {
+            // If not an admin, they are not authorized for this layout.
             setIsAuthorized(false);
           }
         } catch (error) {
@@ -35,6 +36,7 @@ export default function AdminLayout({
           setIsLoading(false);
         }
       } else {
+        // No user logged in, not authorized.
         setIsAuthorized(false);
         setIsLoading(false);
       }

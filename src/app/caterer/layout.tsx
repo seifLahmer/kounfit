@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Utensils, Loader2, LogOut, BarChart2, User } from "lucide-react";
@@ -37,9 +38,12 @@ export default function CatererLayout({
         try {
           const docRef = doc(db, 'caterers', user.uid);
           const docSnap = await getDoc(docRef);
+          
           if (docSnap.exists() && docSnap.data().status === 'approved') {
             setIsAuthorized(true);
           } else {
+            // This covers cases where the doc doesn't exist, or status is pending/rejected.
+            // A pending user will be redirected by the login page logic to the pending screen.
             setIsAuthorized(false);
           }
         } catch (error) {
@@ -49,6 +53,7 @@ export default function CatererLayout({
           setIsLoading(false);
         }
       } else {
+        // No user is logged in.
         setIsAuthorized(false);
         setIsLoading(false);
       }

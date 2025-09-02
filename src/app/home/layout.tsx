@@ -1,3 +1,4 @@
+
 "use client";
 
 import { MainLayout } from "@/components/main-layout";
@@ -33,17 +34,19 @@ export default function ClientLayout({
             if (profile?.age && profile.mainGoal) {
               setIsAuthorized(true);
             } else {
+              // Profile exists but is incomplete, send to step 2
               setIsAuthorized(false);
               router.replace('/signup/step2');
             }
           } else {
-            // This case handles users who signed up but haven't completed step 2,
-            // or other roles trying to access client pages.
+            // Document doesn't exist, this could be a new signup
+            // or a different user type trying to access /home.
+            // Check their role to decide.
             const role = await getUserRole(user.uid);
             if (role === 'client' || role === 'unknown') {
               router.replace('/signup/step2');
             } else {
-              // It's a caterer or other role, send them away.
+              // It's a caterer, admin, or delivery person; they shouldn't be here.
               router.replace('/login');
             }
             setIsAuthorized(false);
