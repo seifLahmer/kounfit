@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Utensils, Loader2, LogOut, BarChart2, User } from "lucide-react";
@@ -8,7 +7,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { cn } from "@/lib/utils";
-import { doc, onSnapshot, Unsubscribe } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,23 +32,22 @@ export default function CatererLayout({
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    let profileUnsubscribe: Unsubscribe | undefined;
-    const authUnsubscribe = onAuthStateChanged(auth, (user) => {
-      if (profileUnsubscribe) profileUnsubscribe();
-
+    const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        profileUnsubscribe = onSnapshot(doc(db, 'caterers', user.uid), (docSnap) => {
+        try {
+          const docRef = doc(db, 'caterers', user.uid);
+          const docSnap = await getDoc(docRef);
           if (docSnap.exists() && docSnap.data().status === 'approved') {
             setIsAuthorized(true);
           } else {
             setIsAuthorized(false);
           }
-          setIsLoading(false);
-        }, (error) => {
-          console.error("Caterer auth listener error:", error);
+        } catch (error) {
+          console.error("Caterer auth check error:", error);
           setIsAuthorized(false);
+        } finally {
           setIsLoading(false);
-        });
+        }
       } else {
         setIsAuthorized(false);
         setIsLoading(false);
@@ -58,9 +56,8 @@ export default function CatererLayout({
 
     return () => {
       authUnsubscribe();
-      if (profileUnsubscribe) profileUnsubscribe();
     };
-  }, []);
+  }, [router]);
   
   const handleLogout = async () => {
     await auth.signOut();

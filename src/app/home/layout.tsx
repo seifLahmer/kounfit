@@ -1,4 +1,3 @@
-
 "use client";
 
 import { MainLayout } from "@/components/main-layout";
@@ -9,7 +8,7 @@ import { auth, db } from "@/lib/firebase";
 import { getUserRole } from "@/lib/services/roleService";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { doc, onSnapshot, Unsubscribe } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 
 export default function ClientLayout({
   children,
@@ -22,58 +21,43 @@ export default function ClientLayout({
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    let profileUnsubscribe: Unsubscribe | undefined;
-
-    const authUnsubscribe = onAuthStateChanged(auth, (user) => {
-      if (profileUnsubscribe) {
-        profileUnsubscribe();
-      }
-
+    const authUnsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        const userDocRef = doc(db, "users", user.uid);
-        
-        profileUnsubscribe = onSnapshot(userDocRef, async (docSnap) => {
-          try {
-            // This is the key fix: if a write from the client is still pending,
-            // we wait for the next snapshot after the write is confirmed by the server.
-            // This prevents the race condition after signup.
-            if (docSnap.metadata.hasPendingWrites) {
-              setIsLoading(true);
-              return;
-            }
+        try {
+          const userDocRef = doc(db, "users", user.uid);
+          const docSnap = await getDoc(userDocRef);
 
-            if (docSnap.exists()) {
-              const profile = docSnap.data();
-              if (profile?.age && profile.mainGoal) {
-                setIsAuthorized(true);
-              } else {
-                setIsAuthorized(false);
-                router.replace('/signup/step2');
-              }
+          if (docSnap.exists()) {
+            const profile = docSnap.data();
+            // Check if profile is complete
+            if (profile?.age && profile.mainGoal) {
+              setIsAuthorized(true);
             } else {
-              const role = await getUserRole(user.uid);
-              if (role === 'client' || role === 'unknown') {
-                router.replace('/signup/step2');
-              } else {
-                router.replace('/login');
-              }
               setIsAuthorized(false);
+              router.replace('/signup/step2');
             }
-          } catch (error) {
-            console.error("Error processing user profile:", error);
-            toast({ title: "Erreur", description: "Impossible de vérifier votre profil.", variant: "destructive" });
-            auth.signOut();
+          } else {
+            // This case handles users who signed up but haven't completed step 2,
+            // or other roles trying to access client pages.
+            const role = await getUserRole(user.uid);
+            if (role === 'client' || role === 'unknown') {
+              router.replace('/signup/step2');
+            } else {
+              // It's a caterer or other role, send them away.
+              router.replace('/login');
+            }
             setIsAuthorized(false);
-          } finally {
-            setIsLoading(false);
           }
-        }, (error) => {
-            console.error("Firestore listener error:", error);
-            toast({ title: "Erreur de connexion", description: "Impossible de synchroniser votre profil.", variant: "destructive" });
-            auth.signOut();
-            setIsLoading(false);
-        });
+        } catch (error) {
+          console.error("Error processing user profile:", error);
+          toast({ title: "Erreur", description: "Impossible de vérifier votre profil.", variant: "destructive" });
+          auth.signOut();
+          setIsAuthorized(false);
+        } finally {
+          setIsLoading(false);
+        }
       } else {
+        // No user is logged in.
         setIsAuthorized(false);
         setIsLoading(false);
         router.replace('/welcome');
@@ -82,9 +66,6 @@ export default function ClientLayout({
 
     return () => {
       authUnsubscribe();
-      if (profileUnsubscribe) {
-        profileUnsubscribe();
-      }
     };
   }, [router, toast]);
   
@@ -104,5 +85,6 @@ export default function ClientLayout({
     );
   }
 
+  // Return null while redirects are happening to prevent flashing content
   return null;
 }
