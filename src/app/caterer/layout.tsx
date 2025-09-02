@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Utensils, Loader2, LogOut, BarChart2, User } from "lucide-react";
