@@ -43,15 +43,16 @@ export default function DeliveryLayout({
           if (docSnap.exists() && docSnap.data().status === 'approved') {
             setIsAuthorized(true);
           } else {
+            // If not approved, just block access. 
+            // The login page is responsible for redirecting to the correct page (e.g., pending-approval).
+            // This prevents a redirect loop.
             setIsAuthorized(false);
-            router.replace('/login');
           }
           setIsLoading(false);
         }, (error) => {
           console.error("Delivery auth listener error:", error);
           setIsAuthorized(false);
           setIsLoading(false);
-          router.replace('/login');
         });
       } else {
         setIsAuthorized(false);
@@ -80,6 +81,8 @@ export default function DeliveryLayout({
   }
 
   if (!isAuthorized) {
+    // Render nothing, or a generic "Not Authorized" page if you have one.
+    // This prevents the layout from showing and stops the redirect loop.
     return null;
   }
   

@@ -43,17 +43,16 @@ export default function CatererLayout({
           if (docSnap.exists() && docSnap.data().status === 'approved') {
             setIsAuthorized(true);
           } else {
+            // If not approved, just block access. 
+            // The login page is responsible for redirecting to the correct page (e.g., pending-approval).
+            // This prevents a redirect loop.
             setIsAuthorized(false);
-            // The login page itself will handle redirecting to pending-approval.
-            // If they land here somehow, /login is a safe fallback.
-            router.replace('/login');
           }
           setIsLoading(false);
         }, (error) => {
           console.error("Caterer auth listener error:", error);
           setIsAuthorized(false);
           setIsLoading(false);
-          router.replace('/login');
         });
       } else {
         setIsAuthorized(false);
@@ -82,6 +81,8 @@ export default function CatererLayout({
   }
 
   if (!isAuthorized) {
+    // Render nothing, or a generic "Not Authorized" page if you have one.
+    // This prevents the layout from showing and stops the redirect loop.
     return null;
   }
 
