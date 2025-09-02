@@ -23,26 +23,25 @@ export default function AdminLayout({
       if (user) {
         try {
           const role = await getUserRole(user.uid);
-          if (role !== 'admin') {
-            router.replace('/login');
-            return;
-          } else {
+          if (role === 'admin') {
             setIsAuthorized(true);
+          } else {
+            setIsAuthorized(false);
           }
         } catch (error) {
            console.error("Error verifying admin role:", error);
-           router.replace('/login');
-           return;
+           setIsAuthorized(false);
         } finally {
           setIsLoading(false);
         }
       } else {
-        router.replace('/login');
+        setIsAuthorized(false);
+        setIsLoading(false);
       }
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, []);
   
   const handleLogout = async () => {
     await auth.signOut();
@@ -58,6 +57,7 @@ export default function AdminLayout({
   }
   
   if (!isAuthorized) {
+     router.replace('/login');
      return null;
   }
 
