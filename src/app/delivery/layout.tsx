@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Bike, Loader2, LogOut, Wallet, User } from "lucide-react";
@@ -53,7 +54,7 @@ export default function DeliveryLayout({
     return () => {
       authUnsubscribe();
     };
-  }, [router]);
+  }, []);
   
   const handleLogout = async () => {
     await auth.signOut();

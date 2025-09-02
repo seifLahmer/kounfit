@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Shield, LogOut, Loader2 } from "lucide-react";
@@ -36,7 +37,7 @@ export default function AdminLayout({
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, []);
   
   const handleLogout = async () => {
     await auth.signOut();

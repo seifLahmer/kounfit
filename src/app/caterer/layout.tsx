@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Utensils, Loader2, LogOut, BarChart2, User } from "lucide-react";
@@ -54,7 +55,7 @@ export default function CatererLayout({
     return () => {
       authUnsubscribe();
     };
-  }, [router]);
+  }, []);
   
   const handleLogout = async () => {
     await auth.signOut();
