@@ -16,8 +16,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { signInWithEmailAndPassword, signInWithRedirect, User as FirebaseUser, getRedirectResult, OAuthProvider, GoogleAuthProvider, linkWithCredential, AuthErrorCodes, fetchSignInMethodsForEmail } from "firebase/auth";
+import { signInWithPopup,signInWithEmailAndPassword, signInWithRedirect, User as FirebaseUser, getRedirectResult, OAuthProvider, GoogleAuthProvider, linkWithCredential, AuthErrorCodes, fetchSignInMethodsForEmail } from "firebase/auth";
 import { auth, db, googleProvider } from "@/lib/firebase";
+
+
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication, User as CapacitorFirebaseUser } from '@capacitor-firebase/authentication';
 import { useToast } from "@/hooks/use-toast";
@@ -89,6 +91,7 @@ export default function LoginPage() {
         }
         
         // Redirection based on role
+        console.log("Role:", role)
         switch (role) {
             case 'admin':
                 router.replace('/admin');
@@ -137,7 +140,7 @@ export default function LoginPage() {
         } catch (error: any) {
              if (!isMounted) return;
 
-             if (error.code === AuthErrorCodes.ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL) {
+             if (error.code === AuthErrorCodes.NEED_CONFIRMATION) {
                 const credential = GoogleAuthProvider.credentialFromError(error);
                 if (credential) {
                     googleCredentialRef.current = credential;
@@ -202,11 +205,17 @@ export default function LoginPage() {
               setIsSubmitting(false);
             }
         } else {
-            await signInWithRedirect(auth, googleProvider);
+             // Remplacer signInWithRedirect par signInWithPopup
+    const result = await signInWithPopup(auth,googleProvider);
+    if (result.user) {
+        await handleUserLogin(result.user);
+    } else {
+        setIsSubmitting(false);
+    }
         }
     } catch (error: any) {
         console.error("Google Sign-In Error:", error);
-        if (error.code === AuthErrorCodes.ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL) {
+        if (error.code === AuthErrorCodes.NEED_CONFIRMATION) {
             const credential = GoogleAuthProvider.credentialFromError(error);
             if (credential) {
                 googleCredentialRef.current = credential;
