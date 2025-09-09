@@ -365,7 +365,7 @@ export default function CatererPage() {
                 ))}
                 </div>
                 )}
-                <Button className="w-full bg-secondary hover:bg-secondary/90 text-white rounded-lg h-12" onClick={() => router.push('/caterer/add-meal')}>
+                <Button className="w-full bg-secondary hover:bg-secondary/90 text-white rounded-lg h-12" onClick={() => router.push('/caterer/meal-ai')}>
                 <PlusCircle className="mr-2"/> Ajouter un repas
                 </Button>
             </TabsContent>

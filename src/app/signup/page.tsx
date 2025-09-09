@@ -14,21 +14,23 @@ import {
   FormControl,
 } from "@/components/ui/form";
 import { useState, useCallback } from "react";
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithPopup, 
-  GoogleAuthProvider, 
-  updateProfile, 
-  AuthError 
+import {
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  updateProfile,
+  AuthError
 } from "firebase/auth";
 import { auth, googleProvider, db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, User, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { getUserRole } from "@/lib/services/roleService";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import { GoogleIcon } from "@/components/icons";
+import { GoogleIcon , FacebookIcon } from "@/components/icons";
+import { fetchSignInMethodsForEmail } from "firebase/auth";
+import { FacebookAuthProvider } from "firebase/auth";
 
 const signupSchema = z.object({
   fullName: z.string().min(2, "Le nom complet doit comporter au moins 2 caractères."),
@@ -49,6 +51,8 @@ export default function SignupPage() {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [selectedRole, setSelectedRole] = useState("client");
+  const facebookProvider = new FacebookAuthProvider();
+  facebookProvider.addScope("email");
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -119,10 +123,29 @@ export default function SignupPage() {
   const onSubmit = async (data: SignupFormValues) => {
     setIsSubmitting(true);
     try {
+
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
 
       await updateProfile(userCredential.user, { displayName: data.fullName });
+      let status = "active"; // par défaut client est actif
+      let collectionName = "users";
 
+      if (selectedRole === "caterer") {
+        collectionName = "caterers";
+        status = "pending"; // en attente de validation admin
+      } else if (selectedRole === "delivery") {
+        collectionName = "deliveryPeople";
+        status = "pending"; // en attente de validation admin
+      }
+
+      // 📌 Créer le document dans la bonne collection
+      await setDoc(doc(db, collectionName, userCredential.user.uid), {
+        name: data.fullName,
+        email: data.email,
+        role: selectedRole,
+        status,
+        createdAt: new Date(),
+      });
       await handlePostSignup(userCredential.user);
 
     } catch (error: any) {
@@ -156,6 +179,30 @@ export default function SignupPage() {
       setIsSubmitting(false);
     }
   };
+  const handleFacebookSignup = async () => {
+    setIsSubmitting(true);
+    try {
+      const result = await signInWithPopup(auth, facebookProvider);
+      if (result.user) {
+        // Met à jour le nom si disponible
+        if (result.user.displayName) {
+          await updateProfile(result.user, { displayName: result.user.displayName });
+        }
+        await handlePostSignup(result.user);
+      }
+    } catch (error: any) {
+      console.error(error)
+      console.error("Facebook Signup Error:", error);
+      toast({
+        title: "Erreur Facebook",
+        description: error.message || "Impossible de se connecter avec Facebook.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
 
   const RoleButton = ({ role, label, icon: Icon }: { role: string; label: string; icon: React.ElementType }) => (
     <button
@@ -200,6 +247,7 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-[#F6F8F7] flex flex-col">
+
       <div className="relative bg-gradient-to-b from-[#22C58B] to-[#4FD6B3] text-white pb-10" style={{ clipPath: "ellipse(100% 70% at 50% 30%)" }}>
         <div className="text-center pt-10 px-4 space-y-4">
           <div className="flex items-center justify-between">
@@ -207,6 +255,14 @@ export default function SignupPage() {
             <h2 className="text-2xl font-semibold absolute left-1/2 -translate-x-1/2">Inscription - Étape 1/2</h2>
           </div>
         </div>
+        <div className="mt-6">
+          <div className="grid grid-cols-3 gap-3">
+            <RoleButton role="client" label="Client" icon={User} />
+            <RoleButton role="caterer" label="Caterer" icon={User} />
+            <RoleButton role="delivery" label="Delivery" icon={User} />
+          </div>
+        </div>
+
       </div>
 
       <div className="w-full max-w-md mx-auto px-4 flex-1 -mt-8">
@@ -252,6 +308,16 @@ export default function SignupPage() {
         <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white" onClick={handleGoogleSignup} disabled={isSubmitting}>
           <GoogleIcon className="mr-3 h-6 w-6" /> Google
         </Button>
+        <Button
+          variant="outline"
+          className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white mt-3"
+          onClick={handleFacebookSignup}
+          disabled={isSubmitting}
+        >
+          <FacebookIcon className="mr-3 h-6 w-6" />
+          Facebook
+        </Button>
+
 
         <p className="mt-8 text-center text-sm text-muted-foreground">
           Déjà un compte?{" "}

@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "prebuild": "rm -rf .next"
+    "prebuild": "rm -rf .next",
+    "export": "next export"
   },
   "dependencies": {
     "@capacitor-firebase/authentication": "^7.0.0",

@@ -16,11 +16,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ChefHat, Bot, Sparkles, Loader2, Trash2, Plus, CheckCircle, ImagePlus, DollarSign, ShoppingBasket, ClipboardList } from "lucide-react";
-import { analyzeMeal, MealAnalysis } from "@/ai/flows/meal-analysis-flow";
 import { addMeal, getMealsByCaterer, deleteMeal } from "@/lib/services/mealService";
 import { getOrdersByCaterer, updateOrderStatus } from "@/lib/services/orderService";
 import { uploadMealImage } from "@/lib/services/storageService";
-import type { Meal, Order, User, Caterer } from "@/lib/types";
+import type { Meal, Order, User, Caterer, MealAnalysis } from "@/lib/types";
 import { auth, db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -121,11 +120,24 @@ export default function CatererPage() {
       setMealImagePreview(null);
       setPrice(0);
       try {
-        const result = await analyzeMeal({ mealName: mealDescription });
+        const response = await fetch('/api/meal-analysis', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ mealName: mealDescription }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `API error: ${response.statusText}`);
+        }
+
+        const result: MealAnalysis = await response.json();
         setAnalysisResult(result);
       } catch (error) {
         console.error("Failed to analyze meal:", error);
-        toast({ title: "Erreur d'analyse", description: "L'IA n'a pas pu analyser le repas. Veuillez réessayer.", variant: "destructive" });
+        toast({ title: "Erreur d'analyse", description: (error as Error).message || "L'IA n'a pas pu analyser le repas. Veuillez réessayer.", variant: "destructive" });
       } finally {
         setIsGenerating(false);
       }

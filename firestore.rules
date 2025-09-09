@@ -1,45 +1,58 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Admins: Seuls les autres administrateurs peuvent lire (géré via les fonctions cloud en pratique)
-    match /admins/{adminId} {
-      allow read, write: if false; // Normalement géré par le backend ou les fonctions cloud
+
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // Users: Un utilisateur peut créer, lire et modifier son propre profil.
-    match /users/{userId} {
-      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+    function isCaterer() {
+      return exists(/databases/$(database)/documents/caterers/$(request.auth.uid));
+    }
+
+    function isDelivery() {
+      return exists(/databases/$(database)/documents/deliveryPeople/$(request.auth.uid));
+    }
+
+    function isClient() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    match /admins/{adminId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == adminId;
       allow create: if request.auth != null;
     }
 
-    // Caterers: Tout utilisateur authentifié peut créer un profil (inscription).
-    // Seul le traiteur lui-même ou un admin peut lire ou modifier son profil.
+    match /users/{userId} {
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+    }
+
     match /caterers/{catererId} {
       allow create: if request.auth != null;
-      allow read, update: if request.auth != null && (request.auth.uid == catererId || (get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin'));
+      allow read, update: if request.auth != null && (request.auth.uid == catererId || isAdmin());
     }
 
-    // DeliveryPeople: Même logique que les traiteurs.
     match /deliveryPeople/{deliveryId} {
       allow create: if request.auth != null;
-      allow read, update: if request.auth != null && (request.auth.uid == deliveryId || (get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin'));
+      allow update: if request.auth != null && (request.auth.uid == deliveryId || isAdmin());
+      allow read: if request.auth != null && (request.auth.uid == deliveryId || isAdmin() || isCaterer());
     }
 
-    // Meals: N'importe quel utilisateur authentifié peut lire les repas.
-    // Seul le traiteur qui l'a créé peut le modifier/supprimer.
+    // Meals: Any authenticated user (client, caterer, admin, etc.) can read meals.
     match /meals/{mealId} {
-      allow read: if request.auth != null;
-      allow create, update, delete: if request.auth != null && request.auth.uid == request.resource.data.createdBy;
+      allow read: if request.auth != null && (isClient() || isCaterer() || isAdmin() || isDelivery());
+      allow create, update, delete: if request.auth != null && isCaterer() && request.auth.uid == request.resource.data.createdBy;
     }
 
-    // Orders: Le client peut créer sa commande. Seules les personnes concernées peuvent la voir ou la modifier.
     match /orders/{orderId} {
       allow create: if request.auth != null && request.resource.data.clientId == request.auth.uid;
-      allow read: if request.auth != null && (request.auth.uid == resource.data.clientId || request.auth.uid in resource.data.catererIds || request.auth.uid == resource.data.deliveryPersonId || (get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin'));
-      allow update: if request.auth != null && (request.auth.uid in resource.data.catererIds || request.auth.uid == resource.data.deliveryPersonId || (get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin'));
+      allow read: if request.auth != null && (request.auth.uid == resource.data.clientId || request.auth.uid in resource.data.catererIds || request.auth.uid == resource.data.deliveryPersonId || isAdmin());
+      allow update: if request.auth != null && (request.auth.uid in resource.data.catererIds || request.auth.uid == resource.data.deliveryPersonId || isAdmin());
     }
     
-    // Notifications: L'utilisateur concerné peut lire/mettre à jour ses notifications. La création est gérée côté serveur.
     match /notifications/{notificationId} {
       allow read, update: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if false; 

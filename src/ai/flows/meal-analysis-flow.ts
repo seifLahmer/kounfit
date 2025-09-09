@@ -14,7 +14,6 @@ import { z } from 'genkit';
 const MealAnalysisInputSchema = z.object({
   mealName: z.string().describe('The name of the meal to analyze. e.g., "Couscous au poulet"'),
 });
-export type MealAnalysisInput = z.infer<typeof MealAnalysisInputSchema>;
 
 const IngredientSchema = z.object({
     name: z.string().describe("The name of the ingredient, e.g., 'Semoule de blé dur'"),
@@ -35,10 +34,9 @@ const MealAnalysisSchema = z.object({
   ingredients: z.array(IngredientSchema).describe("An array of estimated ingredients for the meal."),
   totalMacros: TotalMacrosSchema.describe("The calculated total nutritional information for the entire meal."),
 });
-export type MealAnalysis = z.infer<typeof MealAnalysisSchema>;
 
 
-export async function analyzeMeal(input: MealAnalysisInput): Promise<MealAnalysis> {
+export async function analyzeMeal(input: z.infer<typeof MealAnalysisInputSchema>): Promise<z.infer<typeof MealAnalysisSchema>> {
   return mealAnalysisFlow(input);
 }
 

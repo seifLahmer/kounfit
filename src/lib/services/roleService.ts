@@ -4,45 +4,50 @@ import { db } from "@/lib/firebase";
 
 /**
  * Checks for a user's role by checking collections in a specific order.
- * This is more robust for assigning a definitive role.
+ * This function is designed to work with Firestore security rules where a user may not have 
+ * permission to read a collection that does not correspond to their role.
  * Order: admin > caterer > delivery > client
  * @param uid The user's UID from Firebase Auth.
- * @returns A promise that resolves to the user's role or 'unknown'.
+ * @returns A promise that resolves to the user's role. Defaults to 'client' if no role is found. Returns 'unknown' on unexpected errors.
  */
-export async function getUserRole(uid: string): Promise<'admin' | 'caterer' | 'client' | 'delivery' | 'unknown'> {
+export async function getUserRole(uid: string): Promise<'admin' | 'caterer' | 'client' | 'delivery' | 'unknown' | 'error'> {
   if (!uid) return 'unknown';
+  console.log(uid)
+  // The order defines the role priority.
+  const collectionsToCheck: Array<{ name: 'admins' | 'caterers' | 'deliveryPeople' | 'users'; role: 'admin' | 'caterer' | 'delivery' | 'client' }> = [
+    { name: 'admins', role: 'admin' },
+    { name: 'caterers', role: 'caterer' },
+    { name: 'deliveryPeople', role: 'delivery' },
+    { name: 'users', role: 'client' },
+  ];
 
-  try {
-    // Check in order of priority to avoid conflicts
-    const adminRef = doc(db, "admins", uid);
-    const adminSnap = await getDoc(adminRef);
-    if (adminSnap.exists()) {
-      return 'admin';
+  for (const collection of collectionsToCheck) {
+    console.log ("hiiiiiii")
+    try {
+      const docRef = doc(db, collection.name, uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        // User found in a collection, this is their role.
+        console.log(collection.role)
+        return collection.role;
+      }
+    } catch (error: any) {
+      // A 'permission-denied' error is an expected outcome if the user's security rules
+      // prevent them from reading a collection they don't belong to. We can ignore it.
+      if (error.code === 'permission-denied') {
+        console.log("hello")
+        continue; // This is not the user's role, try the next collection.
+      } else {
+        // For other errors (e.g., network issues, service unavailable), we should fail.
+        console.error(`Error checking role in '${collection.name}':`, error);
+        return 'unknown'; // Fail safely on unexpected errors.
+      }
     }
-
-    const catererRef = doc(db, "caterers", uid);
-    const catererSnap = await getDoc(catererRef);
-    if (catererSnap.exists()) {
-      return 'caterer';
-    }
-
-    const deliveryRef = doc(db, "deliveryPeople", uid);
-    const deliverySnap = await getDoc(deliveryRef);
-    if (deliverySnap.exists()) {
-      return 'delivery';
-    }
-
-    const userRef = doc(db, "users", uid);
-    const userSnap = await getDoc(userRef);
-    if (userSnap.exists()) {
-      return 'client';
-    }
-
-    return 'unknown';
-  } catch (error) {
-    console.error("Error getting user role: ", error);
-    // In case of a permissions error or network issue, it's safer to return 'unknown'
-    // than to let the login flow break.
-    return 'unknown';
   }
+
+  // If the user's UID is not found in any of the primary role collections
+  // (e.g., during the signup process before a user document is created),
+  // we default to 'client'. This allows them to proceed to the next step
+  // of signup where the 'users' document will be created.
+  return 'error';
 }

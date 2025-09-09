@@ -1,13 +1,16 @@
 import { mealAnalysisFlow } from './flows/meal-analysis-flow';
-import {genkit} from 'genkit';
-import {googleAI} from '@genkit-ai/googleai';
+import { genkit } from 'genkit';
+import { googleAI } from '@genkit-ai/googleai';
 
-// This is a dev-only server to run Genkit flows locally.
-// You must run `genkit start` in a separate terminal.
-// The client will then proxy requests to this server.
-export default genkit({
-  plugins: [googleAI()],
-  flows: [mealAnalysisFlow],
-  logLevel: 'debug',
-  enableTracingAndMetrics: true,
+// Initialise Genkit
+const ai = genkit({
+  plugins: [googleAI()]
+ 
+  // enableTracingAndMetrics n’existe pas non plus dans GenkitOptions
+  // mais tu peux activer la trace en configurant tes flows.
 });
+
+// Enregistre ton flow
+ai.defineFlow('mealAnalysis', mealAnalysisFlow);
+
+export default ai;

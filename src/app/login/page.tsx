@@ -68,7 +68,9 @@ export default function LoginPage() {
   const handleUserLogin = useCallback(async (user: FirebaseUser | CapacitorFirebaseUser) => {
     setIsSubmitting(true);
     try {
+      console.log(0)
         const role = await getUserRole(user.uid);
+        console.log(1)
 
         if (role === 'caterer' || role === 'delivery') {
             const collectionName = role === 'caterer' ? 'caterers' : 'deliveryPeople';
@@ -105,6 +107,7 @@ export default function LoginPage() {
             case 'client':
                 // For clients, also check if their profile is complete
                 const userDoc = await getDoc(doc(db, 'users', user.uid));
+                console.log("i m here")
                 if (userDoc.exists() && userDoc.data().mainGoal) {
                     router.replace('/home');
                 } else {

@@ -220,7 +220,7 @@ export default function StatsPage() {
   return (
     <div className="bg-primary">
        <header className="p-4 pt-8 text-white bg-gradient-to-br from-primary via-primary to-background/30">
-        <Image src="/kounfit-white.png" alt="Kounfit Logo" width={100} height={25} />
+        <Image src="/kounfit/kounfit-white.png" alt="Kounfit Logo" width={100} height={25} />
         <h1 className="text-3xl font-bold font-serif mt-2">Statistiques</h1>
       </header>
 

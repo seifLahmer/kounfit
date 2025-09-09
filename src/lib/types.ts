@@ -127,3 +127,21 @@ export type DailyPlan = {
     snack: Meal[];
     dinner: Meal[];
 };
+
+// This type comes from the AI Flow and is used to structure the analysis result.
+// It is used in the frontend to display the AI's suggestions.
+export interface MealAnalysis {
+  mealName: string;
+  description: string;
+  ingredients: {
+    name: string;
+    grams: number;
+  }[];
+  totalMacros: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fibers?: number;
+  };
+}
