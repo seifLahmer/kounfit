@@ -22,20 +22,60 @@ export default function MealWizard() {
     if (!mealName) return;
     setIsGenerating(true);
     try {
-      const response = await fetch("/api/meal-analysis", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ mealName }),
-      });
-      if (!response.ok) throw new Error("Erreur d'analyse IA");
+      const prompt = `
+        You are an expert nutritionist and chef for a meal delivery service.
+        Your task is to analyze a meal based on its name to estimate its ingredients and calculate its nutritional profile.
+
+        The user will provide a meal name: "${mealName}".
+
+        Follow these steps:
+        1.  **Estimate Ingredients**: Based on the meal name, create a realistic list of common ingredients and their estimated quantities in grams for a single serving.
+        2.  **Calculate Nutrition**: For each ingredient, estimate its nutritional values (calories, protein, carbs, fat, fibers). Then, sum them up to get the total nutritional profile for the entire meal.
+        3.  **Generate Description**: Write a short, appealing marketing description for the meal, highlighting its key features (e.g., "healthy", "protein-rich", "delicious").
+        4.  **Format Output**: Return ONLY the data in the specified JSON format, without any markdown, backticks or "json" specifier.
+
+        The JSON output should have this structure:
+        {
+          "mealName": "string",
+          "description": "string",
+          "ingredients": [{ "name": "string", "grams": "number" }],
+          "totalMacros": { "calories": "number", "protein": "number", "carbs": "number", "fat": "number", "fibers": "number" }
+        }
+
+        Now, analyze the following meal: "${mealName}"
+      `;
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.NEXT_PUBLIC_GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        console.error("API response:", await response.text());
+        throw new Error("Erreur d'analyse IA");
+      }
+
       const result = await response.json();
-      setAnalysisResult(result);
+      
+      const analysisText = result.candidates[0].content.parts[0].text;
+      
+      const cleanedJsonText = analysisText.replace(/```json/g, '').replace(/```/g, '').trim();
+
+      const analysisObject = JSON.parse(cleanedJsonText);
+
+      setAnalysisResult(analysisObject);
       setStep(2); // Passe à l'étape suivante
-    } catch (error) {
-      alert(error || "L'IA n'a pas pu générer le plat.");
-      console.log (error)
+    } catch (error: any) {
+      alert(error.message || "L'IA n'a pas pu générer le plat.");
+      console.error(error);
     } finally {
       setIsGenerating(false);
     }

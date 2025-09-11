@@ -19,7 +19,9 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   updateProfile,
-  AuthError
+  fetchSignInMethodsForEmail,
+  FacebookAuthProvider,
+  AuthError,
 } from "firebase/auth";
 import { auth, googleProvider, db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
@@ -28,19 +30,19 @@ import { getUserRole } from "@/lib/services/roleService";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import { GoogleIcon , FacebookIcon } from "@/components/icons";
-import { fetchSignInMethodsForEmail } from "firebase/auth";
-import { FacebookAuthProvider } from "firebase/auth";
+import { GoogleIcon, FacebookIcon } from "@/components/icons";
 
-const signupSchema = z.object({
-  fullName: z.string().min(2, "Le nom complet doit comporter au moins 2 caractères."),
-  email: z.string().email("Veuillez saisir une adresse e-mail valide."),
-  password: z.string().min(6, "Le mot de passe doit comporter au moins 6 caractères."),
-  confirmPassword: z.string(),
-}).refine(data => data.password === data.confirmPassword, {
-  message: "Les mots de passe ne correspondent pas.",
-  path: ["confirmPassword"],
-});
+const signupSchema = z
+  .object({
+    fullName: z.string().min(2, "Le nom complet doit comporter au moins 2 caractères."),
+    email: z.string().email("Veuillez saisir une adresse e-mail valide."),
+    password: z.string().min(6, "Le mot de passe doit comporter au moins 6 caractères."),
+    confirmPassword: z.string(),
+  })
+  .refine(data => data.password === data.confirmPassword, {
+    message: "Les mots de passe ne correspondent pas.",
+    path: ["confirmPassword"],
+  });
 
 type SignupFormValues = z.infer<typeof signupSchema>;
 
@@ -51,6 +53,7 @@ export default function SignupPage() {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [selectedRole, setSelectedRole] = useState("client");
+
   const facebookProvider = new FacebookAuthProvider();
   facebookProvider.addScope("email");
 
@@ -64,81 +67,81 @@ export default function SignupPage() {
     },
   });
 
-  // Fonction pour redirection et validation après signup
-  const handlePostSignup = useCallback(async (user: any) => {
-    try {
-      const role = await getUserRole(user.uid);
+  const handlePostSignup = useCallback(
+    async (user: any) => {
+      try {
+        const role = await getUserRole(user.uid);
 
-      if (role === 'caterer' || role === 'delivery') {
-        const collectionName = role === 'caterer' ? 'caterers' : 'deliveryPeople';
-        const docRef = doc(db, collectionName, user.uid);
-        const docSnap = await getDoc(docRef);
+        if (role === "caterer" || role === "delivery") {
+          const collectionName = role === "caterer" ? "caterers" : "deliveryPeople";
+          const docRef = doc(db, collectionName, user.uid);
+          const docSnap = await getDoc(docRef);
 
-        if (docSnap.exists()) {
-          const status = docSnap.data().status;
-          if (status === 'pending') {
-            router.replace('/signup/pending-approval');
-            return;
-          }
-          if (status === 'rejected') {
-            await auth.signOut();
-            toast({ title: "Accès refusé", description: "Votre compte a été rejeté.", variant: "destructive" });
-            setIsSubmitting(false);
-            return;
+          if (docSnap.exists()) {
+            const status = docSnap.data().status;
+            if (status === "pending") {
+              router.replace("/signup/pending-approval");
+              return;
+            }
+            if (status === "rejected") {
+              await auth.signOut();
+              toast({ title: "Accès refusé", description: "Votre compte a été rejeté.", variant: "destructive" });
+              setIsSubmitting(false);
+              return;
+            }
           }
         }
-      }
 
-      // Redirection selon rôle
-      switch (role) {
-        case 'admin':
-          router.replace('/admin');
-          break;
-        case 'caterer':
-          router.replace('/caterer');
-          break;
-        case 'delivery':
-          router.replace('/delivery');
-          break;
-        case 'client':
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (userDoc.exists() && userDoc.data().mainGoal) {
-            router.replace('/home');
-          } else {
-            router.replace('/signup/step2');
-          }
-          break;
-        default:
-          router.replace('/signup/step2');
-          break;
+        // Redirection selon rôle
+        switch (role) {
+          case "admin":
+            router.replace("/admin");
+            break;
+          case "caterer":
+            router.replace("/caterer");
+            break;
+          case "delivery":
+            router.replace("/delivery");
+            break;
+          case "client":
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            if (userDoc.exists() && userDoc.data().mainGoal) {
+              router.replace("/home");
+            } else {
+              router.replace("/signup/step2");
+            }
+            break;
+          default:
+            router.replace("/signup/step2");
+            break;
+        }
+      } catch (error) {
+        console.error("Erreur après signup :", error);
+        toast({ title: "Erreur", description: "Impossible de vérifier le rôle ou le statut.", variant: "destructive" });
+        setIsSubmitting(false);
       }
-    } catch (error) {
-      console.error("Erreur après signup :", error);
-      toast({ title: "Erreur", description: "Impossible de vérifier le rôle ou le statut.", variant: "destructive" });
-      setIsSubmitting(false);
-    }
-  }, [router, toast]);
+    },
+    [router, toast]
+  );
 
-  // Signup avec email et mot de passe
+  // Signup email/password
   const onSubmit = async (data: SignupFormValues) => {
     setIsSubmitting(true);
     try {
-
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-
       await updateProfile(userCredential.user, { displayName: data.fullName });
-      let status = "active"; // par défaut client est actif
+
+      let status = "active";
       let collectionName = "users";
 
       if (selectedRole === "caterer") {
         collectionName = "caterers";
-        status = "pending"; // en attente de validation admin
+        status = "pending";
       } else if (selectedRole === "delivery") {
         collectionName = "deliveryPeople";
-        status = "pending"; // en attente de validation admin
+        status = "pending";
       }
 
-      // 📌 Créer le document dans la bonne collection
       await setDoc(doc(db, collectionName, userCredential.user.uid), {
         name: data.fullName,
         email: data.email,
@@ -146,13 +149,13 @@ export default function SignupPage() {
         status,
         createdAt: new Date(),
       });
-      await handlePostSignup(userCredential.user);
 
+      await handlePostSignup(userCredential.user);
     } catch (error: any) {
       console.error("Signup Error:", error);
       let description = "Une erreur s'est produite lors de l'inscription.";
-      if (error.code === 'auth/email-already-in-use') {
-        description = "Cette adresse e-mail est déjà utilisée. Veuillez essayer de vous connecter.";
+      if (error.code === "auth/email-already-in-use") {
+        description = "Cette adresse e-mail est déjà utilisée. Veuillez vous connecter.";
       }
       toast({ title: "Erreur d'inscription", description, variant: "destructive" });
     } finally {
@@ -160,14 +163,12 @@ export default function SignupPage() {
     }
   };
 
-  // Signup avec Google (popup)
+  // Signup Google
   const handleGoogleSignup = async () => {
     setIsSubmitting(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      if (result.user) {
-        await handlePostSignup(result.user);
-      }
+      if (result.user) await handlePostSignup(result.user);
     } catch (error: any) {
       console.error("Google Signup Error:", error);
       toast({
@@ -179,20 +180,32 @@ export default function SignupPage() {
       setIsSubmitting(false);
     }
   };
+
+  // Signup Facebook
   const handleFacebookSignup = async () => {
     setIsSubmitting(true);
     try {
       const result = await signInWithPopup(auth, facebookProvider);
+
       if (result.user) {
-        // Met à jour le nom si disponible
-        if (result.user.displayName) {
-          await updateProfile(result.user, { displayName: result.user.displayName });
+        // Mettre à jour le displayName si dispo
+        if (!result.user.displayName) {
+          await updateProfile(result.user, { displayName: "Utilisateur Facebook" });
         }
+        console.log("User signed in:", result.user); // ✅ log email here
+
         await handlePostSignup(result.user);
       }
     } catch (error: any) {
-      console.error(error)
       console.error("Facebook Signup Error:", error);
+
+      // Si utilisateur ferme le popup, juste reset loader
+      if (error.code === "auth/popup-closed-by-user") {
+        console.log("Popup Facebook fermé par l'utilisateur");
+        setIsSubmitting(false);
+        return;
+      }
+
       toast({
         title: "Erreur Facebook",
         description: error.message || "Impossible de se connecter avec Facebook.",
@@ -202,7 +215,6 @@ export default function SignupPage() {
       setIsSubmitting(false);
     }
   };
-
 
   const RoleButton = ({ role, label, icon: Icon }: { role: string; label: string; icon: React.ElementType }) => (
     <button
@@ -247,7 +259,6 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-[#F6F8F7] flex flex-col">
-
       <div className="relative bg-gradient-to-b from-[#22C58B] to-[#4FD6B3] text-white pb-10" style={{ clipPath: "ellipse(100% 70% at 50% 30%)" }}>
         <div className="text-center pt-10 px-4 space-y-4">
           <div className="flex items-center justify-between">
@@ -255,14 +266,11 @@ export default function SignupPage() {
             <h2 className="text-2xl font-semibold absolute left-1/2 -translate-x-1/2">Inscription - Étape 1/2</h2>
           </div>
         </div>
-        <div className="mt-6">
-          <div className="grid grid-cols-3 gap-3">
-            <RoleButton role="client" label="Client" icon={User} />
-            <RoleButton role="caterer" label="Caterer" icon={User} />
-            <RoleButton role="delivery" label="Delivery" icon={User} />
-          </div>
+        <div className="mt-6 grid grid-cols-3 gap-3 px-4">
+          <RoleButton role="client" label="Client" icon={User} />
+          <RoleButton role="caterer" label="Caterer" icon={User} />
+          <RoleButton role="delivery" label="Delivery" icon={User} />
         </div>
-
       </div>
 
       <div className="w-full max-w-md mx-auto px-4 flex-1 -mt-8">
@@ -297,9 +305,7 @@ export default function SignupPage() {
         </Form>
 
         <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
+          <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-[#F6F8F7] px-2 text-muted-foreground">Ou s'inscrire avec</span>
           </div>
@@ -308,16 +314,10 @@ export default function SignupPage() {
         <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white" onClick={handleGoogleSignup} disabled={isSubmitting}>
           <GoogleIcon className="mr-3 h-6 w-6" /> Google
         </Button>
-        <Button
-          variant="outline"
-          className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white mt-3"
-          onClick={handleFacebookSignup}
-          disabled={isSubmitting}
-        >
-          <FacebookIcon className="mr-3 h-6 w-6" />
-          Facebook
-        </Button>
 
+        <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white mt-3" onClick={handleFacebookSignup} disabled={isSubmitting}>
+          <FacebookIcon className="mr-3 h-6 w-6" /> Facebook
+        </Button>
 
         <p className="mt-8 text-center text-sm text-muted-foreground">
           Déjà un compte?{" "}

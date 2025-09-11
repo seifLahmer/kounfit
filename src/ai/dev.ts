@@ -4,8 +4,11 @@ import { googleAI } from '@genkit-ai/googleai';
 
 // Initialise Genkit
 const ai = genkit({
-  plugins: [googleAI()]
- 
+  plugins: [
+    googleAI({
+      apiKey: process.env.GEMINI_API_KEY,
+    }),
+  ],
   // enableTracingAndMetrics n’existe pas non plus dans GenkitOptions
   // mais tu peux activer la trace en configurant tes flows.
 });
