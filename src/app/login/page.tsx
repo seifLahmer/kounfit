@@ -507,6 +507,12 @@ export default function LoginPage() {
             </Button>
           )}
         </div>
+        <p className="mt-8 text-center text-sm text-muted-foreground">
+          Vous n'avez pas de compte ?{" "}
+          <Link href="/signup" className="font-semibold text-primary underline">
+            S'inscrire
+          </Link>
+        </p>
       </div>
       {/* ---- Reset Password Dialog ---- */}
       <AlertDialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen}>
@@ -587,3 +593,5 @@ declare global {
     recaptchaVerifier: RecaptchaVerifier;
   }
 }
+
+    
