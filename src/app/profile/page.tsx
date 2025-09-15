@@ -14,7 +14,6 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
@@ -25,14 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-  SheetClose,
-} from "@/components/ui/sheet"
 import { MainLayout } from "@/components/main-layout"
 import { useToast } from "@/hooks/use-toast"
 import { updateUserProfile, getUserProfile } from "@/lib/services/userService"
@@ -42,6 +33,7 @@ import { calculateNutritionalNeeds } from "@/lib/services/nutritionService"
 import type { User as UserType } from "@/lib/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 
 const profileFormSchema = z.object({
   fullName: z.string().min(2, "Le nom doit contenir au moins 2 caractères."),
@@ -65,14 +57,32 @@ const profileFormSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileFormSchema>
 type EditableField = keyof ProfileFormValues;
 
-const ProfileRow = ({ label, value, onClick, icon: Icon }: { label: string, value: string, onClick: () => void, icon: React.ElementType }) => (
-    <button onClick={onClick} className="flex w-full items-center justify-between py-4 text-left border-b border-gray-200 last:border-b-0 hover:bg-gray-50">
+const profileFields: { name: EditableField; label: string; icon: React.ElementType; type: 'text' | 'tel' | 'number' | 'select'; options?: any[] }[] = [
+    { name: 'fullName', label: 'Nom complet', icon: User, type: 'text' },
+    { name: 'phoneNumber', label: 'Numéro de téléphone', icon: Phone, type: 'tel' },
+    { name: 'age', label: 'Âge', icon: CalendarDays, type: 'number' },
+    { name: 'biologicalSex', label: 'Sexe biologique', icon: Users, type: 'select', options: [{value: "male", label: "Homme"}, {value: "female", label: "Femme"}] },
+    { name: 'height', label: 'Taille (cm)', icon: BarChartHorizontal, type: 'number' },
+    { name: 'weight', label: 'Poids (kg)', icon: Weight, type: 'number' },
+    { name: 'region', label: 'Région', icon: MapPin, type: 'select', options: ["grand tunis", "nabeul", "sousse", "sfax", "bizerte"] },
+    { name: 'activityLevel', label: "Niveau d'activité", icon: Activity, type: 'select', options: [
+        {value: 'sedentary', label: 'Sédentaire'}, {value: 'lightly_active', label: 'Légèrement actif'},
+        {value: 'moderately_active', label: 'Modérément actif'}, {value: 'very_active', label: 'Très actif'},
+        {value: 'extremely_active', label: 'Extrêmement actif'}
+    ]},
+    { name: 'mainGoal', label: 'Objectif Principal', icon: Target, type: 'select', options: [
+        {value: 'lose_weight', label: 'Perdre du poids'}, {value: 'maintain', label: 'Maintien'}, {value: 'gain_muscle', label: 'Prendre du muscle'}
+    ]},
+];
+
+const ProfileRow = ({ label, value, icon: Icon, onEdit }: { label: string; value: string; icon: React.ElementType; onEdit: () => void; }) => (
+    <button onClick={onEdit} className="flex w-full items-center justify-between py-4 text-left border-b border-gray-100 last:border-b-0 hover:bg-gray-50/50 px-2 rounded-lg transition-colors duration-150">
         <div className="flex items-center gap-4">
             <Icon className="w-5 h-5 text-muted-foreground" />
             <span className="font-medium text-gray-800">{label}</span>
         </div>
         <div className="flex items-center gap-2">
-            <span className="text-muted-foreground max-w-[120px] truncate">{value}</span>
+            <span className="text-muted-foreground max-w-[120px] truncate sm:max-w-xs">{value}</span>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
         </div>
     </button>
@@ -165,7 +175,7 @@ export default function ProfilePage() {
             toast({ title: "Erreur de sauvegarde", description: "Vos modifications n'ont pas pu être enregistrées.", variant: "destructive" });
         }
     };
-
+    
     const handleImageClick = () => fileInputRef.current?.click();
 
     const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -190,7 +200,67 @@ export default function ProfilePage() {
         }
     };
     
-    const user = form.watch();
+    const getDisplayValue = (fieldName: EditableField) => {
+        const value = form.watch(fieldName);
+        if (!value) return "Non défini";
+
+        const fieldConfig = profileFields.find(f => f.name === fieldName);
+        if (fieldConfig?.type === 'select') {
+            const option = (fieldConfig.options as any[]).find(opt => typeof opt === 'string' ? opt === value : opt.value === value);
+            return typeof option === 'string' ? option.charAt(0).toUpperCase() + option.slice(1) : option?.label || value;
+        }
+        return String(value);
+    };
+
+    const renderFormControl = (key: EditableField | null) => {
+      if (!key) return null;
+      const config = profileFields.find(f => f.name === key);
+      if (!config) return null;
+
+       switch (config.type) {
+            case "select":
+                return (
+                    <FormField
+                        control={form.control}
+                        name={key}
+                        render={({ field }) => (
+                            <FormItem>
+                                <Select onValueChange={field.onChange} value={field.value as string}>
+                                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        {(config.options as any[]).map(option => (
+                                            <SelectItem key={typeof option === 'string' ? option : option.value} value={typeof option === 'string' ? option : option.value}>
+                                                {typeof option === 'string' ? option.charAt(0).toUpperCase() + option.slice(1) : option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                );
+            case "text":
+            case "tel":
+            case "number":
+                return (
+                     <FormField
+                        control={form.control}
+                        name={key}
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormControl>
+                                <Input type={config.type} {...field as any} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                );
+            default:
+                return null;
+       }
+    };
 
     if (loading) {
         return (
@@ -200,36 +270,6 @@ export default function ProfilePage() {
                 </div>
             </MainLayout>
         );
-    }
-    
-    const fieldConfig: Record<EditableField, { label: string; icon: React.ElementType; type: 'text' | 'number' | 'select' | 'radio'; options?: any[] }> = {
-      fullName: { label: "Nom complet", icon: User, type: "text" },
-      phoneNumber: { label: "Numéro de téléphone", icon: Phone, type: "tel" },
-      age: { label: "Âge", icon: CalendarDays, type: "number" },
-      biologicalSex: { label: "Sexe biologique", icon: Users, type: "radio", options: [{value: "male", label: "Homme"}, {value: "female", label: "Femme"}] },
-      height: { label: "Taille (cm)", icon: BarChartHorizontal, type: "number" },
-      weight: { label: "Poids (kg)", icon: Weight, type: "number" },
-      region: { label: "Région", icon: MapPin, type: "select", options: ["grand tunis", "nabeul", "sousse", "sfax", "bizerte"] },
-      activityLevel: { label: "Niveau d'activité", icon: Activity, type: "select", options: [
-          {value: "sedentary", label: "Sédentaire"}, {value: "lightly_active", label: "Légèrement actif"}, 
-          {value: "moderately_active", label: "Modérément actif"}, {value: "very_active", label: "Très actif"}, 
-          {value: "extremely_active", label: "Extrêmement actif"}
-      ] },
-      mainGoal: { label: "Objectif Principal", icon: Target, type: "select", options: [
-          {value: "lose_weight", label: "Perdre du poids"}, {value: "maintain", label: "Maintien"}, {value: "gain_muscle", label: "Prendre du muscle"}
-      ] },
-      photoURL: { label: "Photo", icon: Camera, type: "text" },
-    };
-    
-    const renderValue = (fieldName: EditableField) => {
-        const value = user[fieldName];
-        if (!value) return "Non défini";
-        const config = fieldConfig[fieldName];
-        if (config.type === 'select' || config.type === 'radio') {
-            const option = (config.options as any[]).find(opt => typeof opt === 'string' ? opt === value : opt.value === value);
-            return typeof option === 'string' ? option.charAt(0).toUpperCase() + option.slice(1) : option?.label || value;
-        }
-        return String(value);
     }
     
     return (
@@ -247,89 +287,57 @@ export default function ProfilePage() {
                         <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
                         <button className="relative cursor-pointer group" onClick={handleImageClick}>
                              <Avatar className="h-20 w-20 border-4 border-white/50">
-                                <AvatarImage src={profileImagePreview || user.photoURL || ''} alt={user.fullName} />
-                                <AvatarFallback>{user.fullName?.[0]}</AvatarFallback>
+                                <AvatarImage src={profileImagePreview || form.watch("photoURL") || ''} alt={form.watch("fullName")} />
+                                <AvatarFallback>{form.watch("fullName")?.[0]}</AvatarFallback>
                             </Avatar>
+                             <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Camera className="h-6 w-6 text-white" />
+                            </div>
                         </button>
                         <div>
-                            <h2 className="text-2xl font-bold text-white">{user.fullName}</h2>
+                            <h2 className="text-2xl font-bold text-white">{form.watch("fullName")}</h2>
                             <p className="text-white/80 text-sm">{auth.currentUser?.email}</p>
                         </div>
                     </div>
                 </div>
-
-                <Card className="rounded-t-3xl mt-6">
-                    <CardContent className="p-4">
-                        <Form {...form}>
-                            {(Object.keys(fieldConfig) as EditableField[]).filter(key => key !== 'photoURL' && key !== 'biologicalSex').map((key) => (
-                                <ProfileRow
-                                    key={key}
-                                    label={fieldConfig[key].label}
-                                    value={renderValue(key)}
-                                    icon={fieldConfig[key].icon}
-                                    onClick={() => setEditingField(key)}
-                                />
-                            ))}
-                        </Form>
-                    </CardContent>
-                </Card>
             </div>
-            
-             <Sheet open={!!editingField} onOpenChange={(isOpen) => !isOpen && setEditingField(null)}>
-                <SheetContent side="bottom" className="rounded-t-2xl">
-                    <SheetHeader>
-                        <SheetTitle>Modifier: {editingField && fieldConfig[editingField].label}</SheetTitle>
-                    </SheetHeader>
-                    <div className="py-4">
-                       <Form {...form}>
-                         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
-                             {editingField && fieldConfig[editingField].type === 'select' && (
-                                 <FormField
-                                    control={form.control}
-                                    name={editingField}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                        <FormLabel>{fieldConfig[editingField].label}</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value as string}>
-                                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                            <SelectContent>
-                                                {(fieldConfig[editingField].options as any[]).map(option => (
-                                                    <SelectItem key={typeof option === 'string' ? option : option.value} value={typeof option === 'string' ? option : option.value}>
-                                                        {typeof option === 'string' ? option.charAt(0).toUpperCase() + option.slice(1) : option.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                             )}
-                             {editingField && (fieldConfig[editingField].type === 'text' || fieldConfig[editingField].type === 'tel' || fieldConfig[editingField].type === 'number') && (
-                                <FormField
-                                    control={form.control}
-                                    name={editingField}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                        <FormLabel>{fieldConfig[editingField].label}</FormLabel>
-                                        <FormControl>
-                                            <Input type={fieldConfig[editingField].type} {...field as any} />
-                                        </FormControl>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                             )}
-                              <Button type="submit" className="w-full" disabled={saveStatus === 'saving'}>
-                                {saveStatus === 'saving' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Enregistrer'}
-                             </Button>
-                         </form>
-                       </Form>
+
+            <Card className="rounded-t-3xl -mt-6">
+                <CardContent className="p-4">
+                    <div className="space-y-1">
+                        {profileFields.map((field) => (
+                           <ProfileRow
+                                key={field.name}
+                                label={field.label}
+                                icon={field.icon}
+                                value={getDisplayValue(field.name)}
+                                onEdit={() => setEditingField(field.name)}
+                            />
+                        ))}
                     </div>
-                </SheetContent>
-            </Sheet>
+                </CardContent>
+            </Card>
+
+            <Dialog open={!!editingField} onOpenChange={(isOpen) => !isOpen && setEditingField(null)}>
+                <DialogContent className="sm:max-w-[425px] rounded-2xl shadow-2xl data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95">
+                    <DialogHeader>
+                        <DialogTitle>Modifier: {editingField && profileFields.find(f => f.name === editingField)?.label}</DialogTitle>
+                    </DialogHeader>
+                    <Form {...form}>
+                        <form onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
+                            <div className="py-4">
+                                {renderFormControl(editingField)}
+                            </div>
+                            <DialogFooter>
+                                <Button type="submit" disabled={saveStatus === 'saving'}>
+                                     {saveStatus === 'saving' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Enregistrer'}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
+                </DialogContent>
+            </Dialog>
         </MainLayout>
     );
 }
-
     
