@@ -185,6 +185,7 @@ export default function SignupPage() {
       return;
     }
     setIsSubmitting(true);
+    // ... Google signup logic
   };
   
   const handleFacebookSignup = async () => {
@@ -193,6 +194,7 @@ export default function SignupPage() {
       return;
     }
     setIsSubmitting(true);
+    // ... Facebook signup logic
   };
 
 
@@ -223,7 +225,7 @@ export default function SignupPage() {
                 type={isVisible ? "text" : type}
                 placeholder={placeholder}
                 {...field}
-                className={cn("pl-12 pr-12 h-14 bg-gray-100/50 border-gray-200 rounded-xl text-base", className)}
+                className={cn("pl-12 pr-12 h-14 bg-white border-gray-200 rounded-xl text-base", className)}
               />
               {isPassword && (
                 <button type="button" onClick={onToggleVisibility} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
@@ -240,11 +242,11 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <div className="relative bg-gradient-to-b from-[#22C58B] to-[#4FD6B3] text-white rounded-b-[3rem]">
-        <div className="w-full max-w-md mx-auto px-4 pt-8 pb-20">
-            <div className="flex items-center justify-center relative h-10 mb-6">
+       <div className="relative bg-gradient-to-b from-[#22C58B] to-[#4FD6B3] text-white rounded-b-[3rem]">
+        <div className="w-full max-w-md mx-auto px-4 pt-6 pb-20">
+            <div className="flex items-center justify-center relative h-10 mb-4">
                 <Image src="/k/k white.png" alt="Kounfit Logo" width={40} height={40} className="absolute left-0" />
-                <h2 className="text-2xl font-semibold">Inscription - Étape 1/2</h2>
+                <h2 className="text-2xl font-semibold">Inscription</h2>
             </div>
             <div className="grid grid-cols-3 gap-3">
                 <RoleButton role="client" label="Client" icon={User} />
@@ -254,65 +256,68 @@ export default function SignupPage() {
         </div>
       </div>
 
-      <div className="flex-1 w-full max-w-md mx-auto px-4">
-        {selectedRole && (
-          <motion.div
-            key={selectedRole}
-            className="-mt-16"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: "circOut" }}
-          >
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <InputField name="fullName" placeholder="Nom complet" icon={User} className="bg-white/50 backdrop-blur-sm border-transparent placeholder:text-gray-700" />
-                <InputField name="email" placeholder="Email" icon={Mail} />
-                <InputField
-                  name="password"
-                  placeholder="Mot de passe"
-                  icon={Lock}
-                  type="password"
-                  isPassword
-                  isVisible={passwordVisible}
-                  onToggleVisibility={() => setPasswordVisible(!passwordVisible)}
-                />
-                <InputField
-                  name="confirmPassword"
-                  placeholder="Confirmer mot de passe"
-                  icon={Lock}
-                  type="password"
-                  isPassword
-                  isVisible={confirmPasswordVisible}
-                  onToggleVisibility={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
-                />
+       <div className="flex-1 w-full max-w-md mx-auto px-4">
+         {selectedRole ? (
+            <motion.div
+                key={selectedRole}
+                className="-mt-16"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: "circOut" }}
+            >
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <InputField name="fullName" placeholder="Nom complet" icon={User} className="bg-white/70 backdrop-blur-sm border-transparent placeholder:text-gray-600 shadow-sm" />
+                        <InputField name="email" placeholder="Email" icon={Mail} />
+                        <InputField
+                        name="password"
+                        placeholder="Mot de passe"
+                        icon={Lock}
+                        type="password"
+                        isPassword
+                        isVisible={passwordVisible}
+                        onToggleVisibility={() => setPasswordVisible(!passwordVisible)}
+                        />
+                        <InputField
+                        name="confirmPassword"
+                        placeholder="Confirmer mot de passe"
+                        icon={Lock}
+                        type="password"
+                        isPassword
+                        isVisible={confirmPasswordVisible}
+                        onToggleVisibility={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
+                        />
 
-                <Button type="submit" className="w-full h-14 text-lg font-semibold rounded-xl bg-[#0B7E58] hover:bg-[#0a6e4d]" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                  Continuer
-                </Button>
-              </form>
-            </Form>
-            
-             <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-muted-foreground">OU S'INSCRIRE AVEC</span>
-              </div>
-            </div>
+                        <Button type="submit" className="w-full h-14 text-lg font-semibold rounded-xl bg-[#0B7E58] hover:bg-[#0a6e4d]" disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                        Continuer
+                        </Button>
+                    </form>
+                </Form>
 
-            <div className="space-y-3">
-              <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white shadow-sm" onClick={handleGoogleSignup} disabled={isSubmitting}>
-                <GoogleIcon className="mr-3 h-6 w-6" /> Google
-              </Button>
-              <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white shadow-sm" onClick={handleFacebookSignup} disabled={isSubmitting}>
-                <FacebookIcon className="mr-3 h-6 w-6" /> Facebook
-              </Button>
-            </div>
+                <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-white px-2 text-muted-foreground">OU S'INSCRIRE AVEC</span>
+                    </div>
+                </div>
 
-          </motion.div>
-        )}
+                <div className="space-y-3">
+                    <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white shadow-sm" onClick={handleGoogleSignup} disabled={isSubmitting}>
+                        <GoogleIcon className="mr-3 h-6 w-6" /> Google
+                    </Button>
+                    <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white shadow-sm" onClick={handleFacebookSignup} disabled={isSubmitting}>
+                        <FacebookIcon className="mr-3 h-6 w-6" /> Facebook
+                    </Button>
+                </div>
+            </motion.div>
+          ) : (
+             <div className="text-center pt-16">
+                 <p className="text-muted-foreground">Veuillez sélectionner un rôle ci-dessus pour continuer.</p>
+             </div>
+          )}
       </div>
-      
+
        <p className="py-6 text-center text-sm text-muted-foreground">
           Déjà un compte?{" "}
           <Link href="/login" className="font-semibold text-[#0B7E58]">
@@ -321,5 +326,4 @@ export default function SignupPage() {
         </p>
     </div>
   );
-
-    
+}
