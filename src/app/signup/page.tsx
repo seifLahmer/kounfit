@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -15,16 +14,17 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import {
   createUserWithEmailAndPassword,
+  signInWithPopup,
   updateProfile,
   sendEmailVerification,
 } from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
+import { auth, googleProvider, facebookProvider, db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, User, Mail, Lock, Eye, EyeOff, ChefHat, Bike } from "lucide-react";
-import { setDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { GoogleIcon, FacebookIcon } from "@/components/icons";
@@ -32,7 +32,6 @@ import { motion } from "framer-motion";
 
 const signupSchema = z
   .object({
-    fullName: z.string().min(2, "Le nom complet doit comporter au moins 2 caractères."),
     email: z.string().email("Veuillez saisir une adresse e-mail valide."),
     password: z.string().min(6, "Le mot de passe doit comporter au moins 6 caractères."),
     confirmPassword: z.string(),
@@ -55,7 +54,6 @@ export default function SignupPage() {
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
-      fullName: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -75,7 +73,9 @@ export default function SignupPage() {
     setIsSubmitting(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-      await updateProfile(userCredential.user, { displayName: data.fullName });
+      
+      const nameFromEmail = data.email.split('@')[0];
+      await updateProfile(userCredential.user, { displayName: nameFromEmail });
 
       let status = "active";
       let collectionName = "users";
@@ -89,7 +89,7 @@ export default function SignupPage() {
       }
 
       await setDoc(doc(db, collectionName, userCredential.user.uid), {
-        name: data.fullName,
+        name: nameFromEmail,
         email: data.email,
         role: selectedRole,
         status,
@@ -179,7 +179,7 @@ export default function SignupPage() {
             className="relative bg-gradient-to-b from-[#22C58B] to-[#4FD6B3] text-white rounded-b-[3rem] md:rounded-b-[4rem] flex flex-col justify-center"
             initial={false}
             animate={{ height: selectedRole ? "auto" : "60vh" }}
-            transition={{ duration: 0.7, ease: [0.83, 0, 0.17, 1] }}
+            transition={{ duration: 0.6, ease: [0.83, 0, 0.17, 1] }}
         >
             <div className="w-full max-w-md mx-auto px-4 py-6">
                 <div className="flex items-center justify-center relative h-10 mb-4">
@@ -193,20 +193,19 @@ export default function SignupPage() {
                 </div>
             </div>
         </motion.div>
-
-        <div className="flex-1 w-full max-w-md mx-auto px-4 overflow-y-auto">
+        
+        <div className="flex-1 w-full max-w-md mx-auto px-4 -mb-8">
             {selectedRole && (
                 <motion.div
                     key={selectedRole}
                     className="-mt-16"
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3, duration: 0.5, ease: "circOut" }}
+                    transition={{ duration: 0.5, ease: "circOut", delay: 0.2 }}
                 >
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                            <InputField name="fullName" placeholder="Nom complet" icon={User} className="bg-white/50 backdrop-blur-sm border-transparent placeholder:text-gray-600 shadow-sm" />
-                            <InputField name="email" placeholder="Email" icon={Mail} />
+                            <InputField name="email" placeholder="Email" icon={Mail} className="bg-white/50 backdrop-blur-sm border-transparent placeholder:text-gray-600 shadow-sm" />
                             <InputField
                                 name="password"
                                 placeholder="Mot de passe"
@@ -232,7 +231,7 @@ export default function SignupPage() {
                             </Button>
                         </form>
                     </Form>
-
+                    
                     <div className="relative my-6">
                         <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
                         <div className="relative flex justify-center text-xs uppercase">
@@ -252,7 +251,7 @@ export default function SignupPage() {
             )}
         </div>
         
-        <p className="py-6 text-center text-sm text-muted-foreground">
+        <p className="py-6 text-center text-sm text-muted-foreground mt-auto">
             Déjà un compte?{" "}
             <Link href="/login" className="font-semibold text-[#0B7E58]">
                 Se connecter
