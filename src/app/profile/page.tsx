@@ -4,8 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { Camera, Loader2, CheckCircle, LogOut, MapPin, Check, Snowflake, Activity, Phone } from "lucide-react"
-import Image from "next/image"
+import { Camera, Loader2, CheckCircle, User, Phone, CalendarDays, BarChartHorizontal, Weight, MapPin, Activity, Target, Users, ChevronRight } from "lucide-react"
 import * as React from "react"
 import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
@@ -26,17 +25,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+  SheetClose,
+} from "@/components/ui/sheet"
 import { MainLayout } from "@/components/main-layout"
 import { useToast } from "@/hooks/use-toast"
 import { updateUserProfile, getUserProfile } from "@/lib/services/userService"
 import { auth } from "@/lib/firebase"
 import { uploadProfileImage } from "@/lib/services/storageService"
 import { calculateNutritionalNeeds } from "@/lib/services/nutritionService"
-import type { User } from "@/lib/types"
+import type { User as UserType } from "@/lib/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { cn } from "@/lib/utils"
-
 
 const profileFormSchema = z.object({
   fullName: z.string().min(2, "Le nom doit contenir au moins 2 caractères."),
@@ -58,19 +63,21 @@ const profileFormSchema = z.object({
 })
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>
+type EditableField = keyof ProfileFormValues;
 
+const ProfileRow = ({ label, value, onClick, icon: Icon }: { label: string, value: string, onClick: () => void, icon: React.ElementType }) => (
+    <button onClick={onClick} className="flex w-full items-center justify-between py-4 text-left border-b border-gray-200 last:border-b-0 hover:bg-gray-50">
+        <div className="flex items-center gap-4">
+            <Icon className="w-5 h-5 text-muted-foreground" />
+            <span className="font-medium text-gray-800">{label}</span>
+        </div>
+        <div className="flex items-center gap-2">
+            <span className="text-muted-foreground max-w-[120px] truncate">{value}</span>
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+        </div>
+    </button>
+);
 
-const IntegrationCard = ({ icon, name, onClick }: { icon: React.ReactNode, name: string, onClick?: () => void }) => {
-    return (
-        <Card 
-            className="w-full aspect-square flex flex-col items-center justify-center gap-2 cursor-pointer transition-all bg-muted hover:bg-border"
-            onClick={onClick}
-        >
-            {icon}
-            <span className="text-xs font-semibold">{name}</span>
-        </Card>
-    )
-}
 
 export default function ProfilePage() {
     const { toast } = useToast()
@@ -80,21 +87,11 @@ export default function ProfilePage() {
     const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
     const isMounted = useRef(false);
+    const [editingField, setEditingField] = useState<EditableField | null>(null);
 
     const form = useForm<ProfileFormValues>({
         resolver: zodResolver(profileFormSchema),
-        defaultValues: {
-            fullName: "",
-            phoneNumber: "",
-            age: 0,
-            biologicalSex: "male",
-            weight: 0,
-            height: 0,
-            region: "grand tunis",
-            activityLevel: undefined,
-            mainGoal: undefined,
-            photoURL: null,
-        },
+        defaultValues: {},
         mode: "onBlur",
     });
     
@@ -105,19 +102,12 @@ export default function ProfilePage() {
                 try {
                     const userProfile = await getUserProfile(user.uid);
                     if (userProfile && isMounted.current) {
-                        const formValues = {
-                            ...userProfile,
-                            phoneNumber: userProfile.phoneNumber || "",
-                            region: userProfile.region || "grand tunis"
-                        };
-                        form.reset(formValues as ProfileFormValues);
+                        form.reset(userProfile as ProfileFormValues);
                         if (userProfile.photoURL) {
                           setProfileImagePreview(userProfile.photoURL);
                         }
                     }
-
                 } catch (error) {
-                    console.error("Failed to fetch user profile", error);
                     toast({
                         title: "Erreur",
                         description: "Impossible de charger votre profil.",
@@ -136,39 +126,19 @@ export default function ProfilePage() {
         }
     }, [form, router, toast]);
 
-    const handleComingSoon = () => {
-        toast({
-            title: "Bientôt disponible",
-            description: "Cette fonctionnalité est en cours de développement.",
-        });
-    };
-
-    const handleRegionChange = (newRegion: string) => {
-        const oldRegion = form.getValues('region');
-        if (newRegion !== oldRegion) {
-            localStorage.removeItem('dailyPlanData');
-            toast({
-                title: "Panier vidé",
-                description: "Votre panier a été réinitialisé car vous avez changé de région.",
-            });
-        }
-    }
-
-    const handleAutoSave = async (data: Partial<ProfileFormValues>) => {
+    const handleSave = async () => {
         const currentUser = auth.currentUser;
-        if (!currentUser) return;
-        
-        const result = profileFormSchema.safeParse(form.getValues());
-        if (!result.success) {
-          console.log("Form validation failed:", result.error.flatten().fieldErrors);
-          return;
-        }
+        if (!currentUser || !editingField) return;
+
+        const isValid = await form.trigger(editingField);
+        if (!isValid) return;
 
         setSaveStatus("saving");
-
         try {
-            const fullData = result.data;
-            const nutritionalNeeds = calculateNutritionalNeeds({
+            const fieldData = { [editingField]: form.getValues(editingField) };
+            const fullData = form.getValues();
+
+             const nutritionalNeeds = calculateNutritionalNeeds({
                 age: fullData.age,
                 gender: fullData.biologicalSex,
                 weight: fullData.weight,
@@ -177,28 +147,26 @@ export default function ProfilePage() {
                 goal: fullData.mainGoal
             });
 
-            const userProfileData: Partial<User> = {
+            const userProfileData: Partial<UserType> = {
                 ...fullData,
-                ...data, 
+                ...fieldData, 
                 calorieGoal: nutritionalNeeds.calories,
                 macroRatio: nutritionalNeeds.macros,
             };
-            
+
             await updateUserProfile(currentUser.uid, userProfileData);
-            form.reset(form.getValues(), { keepValues: true, keepDirty: false });
-            
-            setTimeout(() => setSaveStatus("saved"), 500);
-            setTimeout(() => setSaveStatus("idle"), 2000);
+            setSaveStatus("saved");
+            setTimeout(() => {
+                setEditingField(null);
+                setSaveStatus("idle");
+            }, 1000);
         } catch (error) {
             setSaveStatus("idle");
             toast({ title: "Erreur de sauvegarde", description: "Vos modifications n'ont pas pu être enregistrées.", variant: "destructive" });
         }
     };
 
-
-    const handleImageClick = () => {
-        fileInputRef.current?.click();
-    };
+    const handleImageClick = () => fileInputRef.current?.click();
 
     const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -206,15 +174,15 @@ export default function ProfilePage() {
         if (file && currentUser) {
           setSaveStatus("saving");
           const reader = new FileReader();
-          reader.onloadend = () => {
-            setProfileImagePreview(reader.result as string);
-          };
+          reader.onloadend = () => setProfileImagePreview(reader.result as string);
           reader.readAsDataURL(file);
 
           try {
             const photoURL = await uploadProfileImage(currentUser.uid, file);
             form.setValue("photoURL", photoURL, { shouldDirty: true });
-            await handleAutoSave({ ...form.getValues(), photoURL });
+            await updateUserProfile(currentUser.uid, { photoURL });
+             setSaveStatus("saved");
+            setTimeout(() => setSaveStatus("idle"), 2000);
           } catch (error) {
             toast({ title: "Erreur de téléversement", description: "L'image n'a pas pu être sauvegardée.", variant: "destructive" });
             setSaveStatus("idle");
@@ -222,15 +190,7 @@ export default function ProfilePage() {
         }
     };
     
-    const onBlur = (fieldName: keyof ProfileFormValues) => {
-        form.trigger(fieldName).then(isValid => {
-          if (isValid) {
-            handleAutoSave(form.getValues());
-          }
-        })
-    }
-    
-    const user = form.getValues();
+    const user = form.watch();
 
     if (loading) {
         return (
@@ -241,210 +201,135 @@ export default function ProfilePage() {
             </MainLayout>
         );
     }
-
+    
+    const fieldConfig: Record<EditableField, { label: string; icon: React.ElementType; type: 'text' | 'number' | 'select' | 'radio'; options?: any[] }> = {
+      fullName: { label: "Nom complet", icon: User, type: "text" },
+      phoneNumber: { label: "Numéro de téléphone", icon: Phone, type: "tel" },
+      age: { label: "Âge", icon: CalendarDays, type: "number" },
+      biologicalSex: { label: "Sexe biologique", icon: Users, type: "radio", options: [{value: "male", label: "Homme"}, {value: "female", label: "Femme"}] },
+      height: { label: "Taille (cm)", icon: BarChartHorizontal, type: "number" },
+      weight: { label: "Poids (kg)", icon: Weight, type: "number" },
+      region: { label: "Région", icon: MapPin, type: "select", options: ["grand tunis", "nabeul", "sousse", "sfax", "bizerte"] },
+      activityLevel: { label: "Niveau d'activité", icon: Activity, type: "select", options: [
+          {value: "sedentary", label: "Sédentaire"}, {value: "lightly_active", label: "Légèrement actif"}, 
+          {value: "moderately_active", label: "Modérément actif"}, {value: "very_active", label: "Très actif"}, 
+          {value: "extremely_active", label: "Extrêmement actif"}
+      ] },
+      mainGoal: { label: "Objectif Principal", icon: Target, type: "select", options: [
+          {value: "lose_weight", label: "Perdre du poids"}, {value: "maintain", label: "Maintien"}, {value: "gain_muscle", label: "Prendre du muscle"}
+      ] },
+      photoURL: { label: "Photo", icon: Camera, type: "text" },
+    };
+    
+    const renderValue = (fieldName: EditableField) => {
+        const value = user[fieldName];
+        if (!value) return "Non défini";
+        const config = fieldConfig[fieldName];
+        if (config.type === 'select' || config.type === 'radio') {
+            const option = (config.options as any[]).find(opt => typeof opt === 'string' ? opt === value : opt.value === value);
+            return typeof option === 'string' ? option.charAt(0).toUpperCase() + option.slice(1) : option?.label || value;
+        }
+        return String(value);
+    }
+    
     return (
         <MainLayout>
             <div className="bg-primary pb-16">
                 <div className="p-4 pt-8">
                     <div className="flex justify-between items-center text-white mb-6">
                         <h1 className="text-xl font-bold">MON PROFIL</h1>
+                         <div className="h-6 flex items-center justify-center">
+                          {saveStatus === "saving" && <div className="flex items-center text-sm text-white/80"><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enregistrement...</div>}
+                          {saveStatus === "saved" && <div className="flex items-center text-sm text-white"><CheckCircle className="mr-2 h-4 w-4" />Enregistré!</div>}
+                        </div>
                     </div>
                     <div className="flex items-center gap-4">
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                            className="hidden"
-                            accept="image/*"
-                        />
-                        <div className="relative cursor-pointer group" onClick={handleImageClick}>
+                        <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
+                        <button className="relative cursor-pointer group" onClick={handleImageClick}>
                              <Avatar className="h-20 w-20 border-4 border-white/50">
                                 <AvatarImage src={profileImagePreview || user.photoURL || ''} alt={user.fullName} />
                                 <AvatarFallback>{user.fullName?.[0]}</AvatarFallback>
                             </Avatar>
-                        </div>
+                        </button>
                         <div>
                             <h2 className="text-2xl font-bold text-white">{user.fullName}</h2>
-                            <p className="text-white/80 text-sm">
-                                {auth.currentUser?.email}
-                            </p>
+                            <p className="text-white/80 text-sm">{auth.currentUser?.email}</p>
                         </div>
                     </div>
                 </div>
 
                 <Card className="rounded-t-3xl mt-6">
-                    <CardContent className="p-4 space-y-6">
-                        <div className="h-6 flex items-center justify-center">
-                          {saveStatus === "saving" && <div className="flex items-center text-sm text-muted-foreground"><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enregistrement...</div>}
-                          {saveStatus === "saved" && <div className="flex items-center text-sm text-green-600"><CheckCircle className="mr-2 h-4 w-4" />Modifications enregistrées!</div>}
-                        </div>
-                        
+                    <CardContent className="p-4">
                         <Form {...form}>
-                            <form className="space-y-6">
-                                <FormField
-                                  control={form.control}
-                                  name="phoneNumber"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Numéro de téléphone</FormLabel>
-                                      <FormControl>
-                                        <div className="relative">
-                                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                          <Input type="tel" {...field} onBlur={() => onBlur('phoneNumber')} className="pl-10" placeholder="Ex: 55123456"/>
-                                        </div>
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
+                            {(Object.keys(fieldConfig) as EditableField[]).filter(key => key !== 'photoURL' && key !== 'biologicalSex').map((key) => (
+                                <ProfileRow
+                                    key={key}
+                                    label={fieldConfig[key].label}
+                                    value={renderValue(key)}
+                                    icon={fieldConfig[key].icon}
+                                    onClick={() => setEditingField(key)}
                                 />
-                               <div className="grid grid-cols-3 gap-4">
-                                    <FormField
-                                      control={form.control}
-                                      name="age"
-                                      render={({ field }) => (
-                                        <FormItem>
-                                          <FormLabel>Âge</FormLabel>
-                                          <FormControl>
-                                            <Input type="number" {...field} onBlur={() => onBlur('age')} className="text-center" />
-                                          </FormControl>
-                                        </FormItem>
-                                      )}
-                                    />
-                                     <FormField
-                                      control={form.control}
-                                      name="height"
-                                      render={({ field }) => (
-                                        <FormItem>
-                                          <FormLabel>Taille (cm)</FormLabel>
-                                          <FormControl>
-                                            <Input type="number" {...field} onBlur={() => onBlur('height')} className="text-center" />
-                                          </FormControl>
-                                        </FormItem>
-                                      )}
-                                    />
-                                     <FormField
-                                      control={form.control}
-                                      name="weight"
-                                      render={({ field }) => (
-                                        <FormItem>
-                                          <FormLabel>Poids (kg)</FormLabel>
-                                          <FormControl>
-                                            <Input type="number" {...field} onBlur={() => onBlur('weight')} className="text-center" />
-                                          </FormControl>
-                                        </FormItem>
-                                      )}
-                                    />
-                               </div>
-                               
-                               <FormField
-                                  control={form.control}
-                                  name="region"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Région</FormLabel>
-                                      <Select onValueChange={(value) => {
-                                          handleRegionChange(value);
-                                          field.onChange(value);
-                                          handleAutoSave({ ...form.getValues(), region: value as any });
-                                      }} value={field.value}>
-                                        <FormControl>
-                                          <SelectTrigger>
-                                            <SelectValue placeholder="Sélectionnez votre région de livraison" />
-                                          </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="grand tunis">Grand Tunis</SelectItem>
-                                            <SelectItem value="nabeul">Nabeul</SelectItem>
-                                            <SelectItem value="sousse">Sousse</SelectItem>
-                                            <SelectItem value="sfax">Sfax</SelectItem>
-                                            <SelectItem value="bizerte">Bizerte</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-
-                                <FormField
-                                  control={form.control}
-                                  name="activityLevel"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Niveau d'Activité</FormLabel>
-                                      <Select onValueChange={(value) => {
-                                          field.onChange(value);
-                                          handleAutoSave({ ...form.getValues(), activityLevel: value as any });
-                                      }} value={field.value}>
-                                        <FormControl>
-                                          <SelectTrigger>
-                                            <SelectValue placeholder="Sélectionnez votre niveau d'activité" />
-                                          </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                          <SelectItem value="sedentary">Sédentaire</SelectItem>
-                                          <SelectItem value="lightly_active">Légèrement actif</SelectItem>
-                                          <SelectItem value="moderately_active">Modérément actif</SelectItem>
-                                          <SelectItem value="very_active">Très actif</SelectItem>
-                                          <SelectItem value="extremely_active">Extrêmement actif</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-
-                                <FormField
-                                  control={form.control}
-                                  name="mainGoal"
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Objectif Principal</FormLabel>
-                                      <Select onValueChange={(value) => {
-                                          field.onChange(value);
-                                          handleAutoSave({ ...form.getValues(), mainGoal: value as any });
-                                      }} value={field.value}>
-                                        <FormControl>
-                                          <SelectTrigger>
-                                            <SelectValue placeholder="Sélectionnez votre objectif principal" />
-                                          </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                          <SelectItem value="lose_weight">Perdre du poids</SelectItem>
-                                          <SelectItem value="maintain">Maintien</SelectItem>
-                                          <SelectItem value="gain_muscle">Prendre du muscle</SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                            </form>
+                            ))}
                         </Form>
-
-                        <div>
-                            <h3 className="font-bold mb-2 mt-8">INTÉGRATIONS</h3>
-                            <div className="grid grid-cols-3 gap-3">
-                                <IntegrationCard 
-                                    name="Google Fit"
-                                    icon={<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="#4285F4" d="M11.23 6.94l-3.3 3.3l-1.2-1.2l-1.42 1.41l2.62 2.62l.71-.71l.7-.7l3.3-3.3z"/><path fill="#34A853" d="M16.48 8.78l-4.54 4.54l-1.41-1.41l-1.42 1.42l2.83 2.83l.71-.71l5.24-5.24z"/><path fill="#FBBC05" d="M10.59 13.9l-2.12 2.12a2.98 2.98 0 0 0 0 4.24a2.98 2.98 0 0 0 4.24 0l4.95-4.95l-4.24-4.24l-2.83 2.83z"/><path fill="#EA4335" d="M14.83 5.17a2.98 2.98 0 0 0-4.24 0l-2.12 2.12l4.24 4.24l2.12-2.12a2.98 2.98 0 0 0 0-4.24z"/></svg>}
-                                    onClick={handleComingSoon}
-                                />
-                                <IntegrationCard 
-                                    name="Huawei"
-                                    icon={<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 16 16"><path fill="#E63422" d="M2 8a6 6 0 0 1 10.125-4.532l.338-.563a7 7 0 0 0-11.82 5.095zM12.924 3.7A6.002 6.002 0 0 1 14 8a6 6 0 0 1-5.875 5.968l-.338.563a7 7 0 0 0 6.035-6.83z"/><path fill="#E63422" d="M5.875 2.032L6.213 1.47A7 7 0 0 1 14 8a7 7 0 0 1-6.178 6.905l-.338-.563A6 6 0 0 0 12.924 3.7L5.875 2.033z"/></svg>}
-                                    onClick={handleComingSoon}
-                                />
-                                <IntegrationCard
-                                    name="S-Health"
-                                    icon={<Activity className="w-8 h-8" />}
-                                    onClick={handleComingSoon}
-                                />
-                             </div>
-                         </div>
-                        
                     </CardContent>
                 </Card>
             </div>
+            
+             <Sheet open={!!editingField} onOpenChange={(isOpen) => !isOpen && setEditingField(null)}>
+                <SheetContent side="bottom" className="rounded-t-2xl">
+                    <SheetHeader>
+                        <SheetTitle>Modifier: {editingField && fieldConfig[editingField].label}</SheetTitle>
+                    </SheetHeader>
+                    <div className="py-4">
+                       <Form {...form}>
+                         <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
+                             {editingField && fieldConfig[editingField].type === 'select' && (
+                                 <FormField
+                                    control={form.control}
+                                    name={editingField}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>{fieldConfig[editingField].label}</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value as string}>
+                                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                            <SelectContent>
+                                                {(fieldConfig[editingField].options as any[]).map(option => (
+                                                    <SelectItem key={typeof option === 'string' ? option : option.value} value={typeof option === 'string' ? option : option.value}>
+                                                        {typeof option === 'string' ? option.charAt(0).toUpperCase() + option.slice(1) : option.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                             )}
+                             {editingField && (fieldConfig[editingField].type === 'text' || fieldConfig[editingField].type === 'tel' || fieldConfig[editingField].type === 'number') && (
+                                <FormField
+                                    control={form.control}
+                                    name={editingField}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>{fieldConfig[editingField].label}</FormLabel>
+                                        <FormControl>
+                                            <Input type={fieldConfig[editingField].type} {...field as any} />
+                                        </FormControl>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                             )}
+                              <Button type="submit" className="w-full" disabled={saveStatus === 'saving'}>
+                                {saveStatus === 'saving' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Enregistrer'}
+                             </Button>
+                         </form>
+                       </Form>
+                    </div>
+                </SheetContent>
+            </Sheet>
         </MainLayout>
     );
 }
+
+    
