@@ -32,6 +32,7 @@ import { motion } from "framer-motion";
 
 const signupSchema = z
   .object({
+    fullName: z.string().min(2, "Le nom complet doit comporter au moins 2 caractères."),
     email: z.string().email("Veuillez saisir une adresse e-mail valide."),
     password: z.string().min(6, "Le mot de passe doit comporter au moins 6 caractères."),
     confirmPassword: z.string(),
@@ -54,6 +55,7 @@ export default function SignupPage() {
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
+      fullName: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -73,9 +75,7 @@ export default function SignupPage() {
     setIsSubmitting(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
-      
-      const nameFromEmail = data.email.split('@')[0];
-      await updateProfile(userCredential.user, { displayName: nameFromEmail });
+      await updateProfile(userCredential.user, { displayName: data.fullName });
 
       let status = "active";
       let collectionName = "users";
@@ -89,7 +89,7 @@ export default function SignupPage() {
       }
 
       await setDoc(doc(db, collectionName, userCredential.user.uid), {
-        name: nameFromEmail,
+        name: data.fullName,
         email: data.email,
         role: selectedRole,
         status,
@@ -181,7 +181,7 @@ export default function SignupPage() {
             animate={{ height: selectedRole ? "auto" : "60vh" }}
             transition={{ duration: 0.6, ease: [0.83, 0, 0.17, 1] }}
         >
-            <div className="w-full max-w-md mx-auto px-4 py-6">
+            <div className="w-full max-w-md mx-auto px-4 py-6 pb-20">
                 <div className="flex items-center justify-center relative h-10 mb-4">
                     <Image src="/k/k white.png" alt="Kounfit Logo" width={40} height={40} className="absolute left-0" />
                     <h2 className="text-2xl font-semibold">Inscription</h2>
@@ -193,19 +193,20 @@ export default function SignupPage() {
                 </div>
             </div>
         </motion.div>
-        
-        <div className="flex-1 w-full max-w-md mx-auto px-4 -mb-8">
+
+        <div className="flex-1 w-full max-w-md mx-auto px-4">
             {selectedRole && (
                 <motion.div
                     key={selectedRole}
-                    className="-mt-16"
+                    className="-mt-24"
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, ease: "circOut", delay: 0.2 }}
                 >
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                            <InputField name="email" placeholder="Email" icon={Mail} className="bg-white/50 backdrop-blur-sm border-transparent placeholder:text-gray-600 shadow-sm" />
+                            <InputField name="fullName" placeholder="Nom complet" icon={User} className="bg-white/50 backdrop-blur-sm border-transparent placeholder:text-gray-600 shadow-sm" />
+                            <InputField name="email" placeholder="Email" icon={Mail} />
                             <InputField
                                 name="password"
                                 placeholder="Mot de passe"
@@ -240,10 +241,10 @@ export default function SignupPage() {
                     </div>
 
                     <div className="space-y-3">
-                        <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white" onClick={handleGoogleSignup} disabled={isSubmitting}>
+                        <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white shadow-sm" onClick={handleGoogleSignup} disabled={isSubmitting}>
                             <GoogleIcon className="mr-3 h-6 w-6" /> Google
                         </Button>
-                        <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white" onClick={handleFacebookSignup} disabled={isSubmitting}>
+                        <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white shadow-sm" onClick={handleFacebookSignup} disabled={isSubmitting}>
                             <FacebookIcon className="mr-3 h-6 w-6" /> Facebook
                         </Button>
                     </div>
@@ -251,7 +252,7 @@ export default function SignupPage() {
             )}
         </div>
         
-        <p className="py-6 text-center text-sm text-muted-foreground mt-auto">
+        <p className="py-6 text-center text-sm text-muted-foreground">
             Déjà un compte?{" "}
             <Link href="/login" className="font-semibold text-[#0B7E58]">
                 Se connecter
