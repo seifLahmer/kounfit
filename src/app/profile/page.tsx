@@ -4,7 +4,8 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
-import { Camera, Loader2, CheckCircle, User, Phone, CalendarDays, BarChartHorizontalBig, Weight, MapPin, Activity, Target, Users, ChevronRight } from "lucide-react"
+import { Camera, Loader2, CheckCircle, User, Phone, CalendarDays, Weight, MapPin, Activity, Target, Users, ChevronRight } from "lucide-react"
+import { BarChartHorizontalBig } from "lucide-react"
 import * as React from "react"
 import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
@@ -31,9 +32,10 @@ import { auth } from "@/lib/firebase"
 import { uploadProfileImage } from "@/lib/services/storageService"
 import { calculateNutritionalNeeds } from "@/lib/services/nutritionService"
 import type { User as UserType } from "@/lib/types"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+
 
 const profileFormSchema = z.object({
   fullName: z.string().min(2, "Le nom doit contenir au moins 2 caractères."),
@@ -181,6 +183,8 @@ export default function ProfilePage() {
           }
         }
     };
+    
+    const user = form.watch();
 
     const profileFields: { name: EditableField; label: string; icon: React.ElementType; type?: 'text' | 'tel' | 'number' | 'select'; options?: any[] }[] = [
         { name: 'fullName', label: 'Nom complet', icon: User, type: 'text' },
@@ -262,7 +266,6 @@ export default function ProfilePage() {
        }
     };
 
-
     if (loading) {
         return (
             <MainLayout>
@@ -275,50 +278,49 @@ export default function ProfilePage() {
     
     return (
         <MainLayout>
-             <div className="flex flex-col h-full">
-                <div className="bg-primary pb-16">
-                    <div className="p-4 pt-8">
-                        <div className="flex justify-between items-center text-white mb-6">
-                            <h1 className="text-xl font-bold">MON PROFIL</h1>
-                            <div className="h-6 flex items-center justify-center">
-                            {saveStatus === "saving" && <div className="flex items-center text-sm text-white/80"><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enregistrement...</div>}
-                            {saveStatus === "saved" && <div className="flex items-center text-sm text-white"><CheckCircle className="mr-2 h-4 w-4" />Enregistré!</div>}
-                            </div>
+             <div className="bg-primary min-h-full pb-24">
+                <div className="p-4 pt-8">
+                    <div className="flex justify-between items-center text-white mb-6">
+                        <h1 className="text-xl font-bold">MON PROFIL</h1>
+                        <div className="h-6 flex items-center justify-center">
+                        {saveStatus === "saving" && <div className="flex items-center text-sm text-white/80"><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enregistrement...</div>}
+                        {saveStatus === "saved" && <div className="flex items-center text-sm text-white"><CheckCircle className="mr-2 h-4 w-4" />Enregistré!</div>}
                         </div>
-                        <div className="flex items-center gap-4">
-                            <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
-                            <button className="relative cursor-pointer group" onClick={handleImageClick}>
-                                <Avatar className="h-20 w-20 border-4 border-white/50">
-                                    <AvatarImage src={profileImagePreview || form.watch("photoURL") || ''} alt={form.watch("fullName")} />
-                                    <AvatarFallback>{form.watch("fullName")?.[0]}</AvatarFallback>
-                                </Avatar>
-                                <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Camera className="h-6 w-6 text-white" />
-                                </div>
-                            </button>
-                            <div>
-                                <h2 className="text-2xl font-bold text-white">{form.watch("fullName")}</h2>
-                                <p className="text-white/80 text-sm">{auth.currentUser?.email}</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
+                        <button className="relative cursor-pointer group" onClick={handleImageClick}>
+                            <Avatar className="h-20 w-20 border-4 border-white/50">
+                                <AvatarImage src={profileImagePreview || user.photoURL || ''} alt={user.fullName} />
+                                <AvatarFallback>{user.fullName?.[0]}</AvatarFallback>
+                            </Avatar>
+                            <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Camera className="h-6 w-6 text-white" />
                             </div>
+                        </button>
+                        <div>
+                            <h2 className="text-2xl font-bold text-white">{user.fullName}</h2>
+                            <p className="text-white/80 text-sm">{auth.currentUser?.email}</p>
                         </div>
                     </div>
                 </div>
 
-                <Card className="rounded-t-3xl -mt-6 flex-1 flex flex-col overflow-hidden">
-                    <CardContent className="p-4 flex-1">
-                        <div className="space-y-1">
-                            {profileFields.map((field) => (
+                <Card className="rounded-t-3xl -mt-6">
+                    <CardContent className="p-4">
+                       <Form {...form}>
+                        <form className="space-y-1">
+                          {profileFields.map((field) => (
                             <ProfileRow
-                                    key={field.name}
-                                    label={field.label}
-                                    icon={field.icon}
-                                    value={getDisplayValue(field.name)}
-                                    onEdit={() => setEditingField(field.name)}
-                                />
-                            ))}
-                        </div>
+                                key={field.name}
+                                label={field.label}
+                                icon={field.icon}
+                                value={getDisplayValue(field.name)}
+                                onEdit={() => setEditingField(field.name)}
+                            />
+                          ))}
+                        </form>
+                      </Form>
                     </CardContent>
-                    <CardFooter className="bg-primary h-16 p-0" />
                 </Card>
             </div>
 
@@ -345,5 +347,3 @@ export default function ProfilePage() {
         </MainLayout>
     );
 }
-
-    
