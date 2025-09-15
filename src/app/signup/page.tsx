@@ -26,12 +26,13 @@ import {
 } from "firebase/auth";
 import { auth, googleProvider, db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Loader2, User, Mail, Lock, Eye, EyeOff, ChefHat, Bike } from "lucide-react";
 import { getUserRole } from "@/lib/services/roleService";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { GoogleIcon, FacebookIcon } from "@/components/icons";
+import { motion } from "framer-motion";
 
 const signupSchema = z
   .object({
@@ -53,7 +54,7 @@ export default function SignupPage() {
   const { toast } = useToast();
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
-  const [selectedRole, setSelectedRole] = useState("client");
+  const [selectedRole, setSelectedRole] = useState<string | null>(null);
 
   const facebookProvider = new FacebookAuthProvider();
   facebookProvider.addScope("email");
@@ -119,6 +120,15 @@ export default function SignupPage() {
 
   // Signup email/password
   const onSubmit = async (data: SignupFormValues) => {
+    if (!selectedRole) {
+      toast({
+        title: "Veuillez choisir un rôle",
+        description: "Sélectionnez si vous êtes un client, un traiteur ou un livreur.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
@@ -200,20 +210,15 @@ export default function SignupPage() {
       const result = await signInWithPopup(auth, facebookProvider);
 
       if (result.user) {
-        // Mettre à jour le displayName si dispo
         if (!result.user.displayName) {
           await updateProfile(result.user, { displayName: "Utilisateur Facebook" });
         }
-        console.log("User signed in:", result.user); // ✅ log email here
-
         await handlePostSignup(result.user);
       }
     } catch (error: any) {
       console.error("Facebook Signup Error:", error);
 
-      // Si utilisateur ferme le popup, juste reset loader
       if (error.code === "auth/popup-closed-by-user") {
-        console.log("Popup Facebook fermé par l'utilisateur");
         setIsSubmitting(false);
         return;
       }
@@ -270,74 +275,87 @@ export default function SignupPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#F6F8F7] flex flex-col">
-      <div className="relative bg-gradient-to-b from-[#22C58B] to-[#4FD6B3] text-white pb-10" style={{ clipPath: "ellipse(100% 70% at 50% 30%)" }}>
-        <div className="text-center pt-10 px-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <Image src="/k/k white.png" alt="Kounfit Logo" width={40} height={40} />
-            <h2 className="text-2xl font-semibold absolute left-1/2 -translate-x-1/2">Inscription - Étape 1/2</h2>
+    <div className="min-h-screen bg-[#F6F8F7] flex flex-col items-center pt-10 px-4">
+      <div className="relative bg-gradient-to-b from-[#22C58B] to-[#4FD6B3] text-white pb-10 w-full max-w-md" style={{ clipPath: "ellipse(120% 70% at 50% 30%)" }}>
+        <div className="text-center pt-6 px-4 space-y-4">
+          <div className="flex items-center justify-center relative h-10">
+            <Image src="/k/k white.png" alt="Kounfit Logo" width={40} height={40} className="absolute left-0" />
+            <h2 className="text-2xl font-semibold">Inscription - Étape 1/2</h2>
           </div>
         </div>
         <div className="mt-6 grid grid-cols-3 gap-3 px-4">
           <RoleButton role="client" label="Client" icon={User} />
-          <RoleButton role="caterer" label="Caterer" icon={User} />
-          <RoleButton role="delivery" label="Delivery" icon={User} />
+          <RoleButton role="caterer" label="Traiteur" icon={ChefHat} />
+          <RoleButton role="delivery" label="Livreur" icon={Bike} />
         </div>
       </div>
 
-      <div className="w-full max-w-md mx-auto px-4 flex-1 -mt-8">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <InputField name="fullName" placeholder="Nom complet" icon={User} />
-            <InputField name="email" placeholder="Email" icon={Mail} />
-            <InputField
-              name="password"
-              placeholder="Mot de passe"
-              icon={Lock}
-              type="password"
-              isPassword
-              isVisible={passwordVisible}
-              onToggleVisibility={() => setPasswordVisible(!passwordVisible)}
-            />
-            <InputField
-              name="confirmPassword"
-              placeholder="Confirmer mot de passe"
-              icon={Lock}
-              type="password"
-              isPassword
-              isVisible={confirmPasswordVisible}
-              onToggleVisibility={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
-            />
+      <div className="w-full max-w-md flex-1">
+        {selectedRole && (
+          <motion.div 
+            className="-mt-8"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "circOut" }}
+          >
+            <div className="bg-white p-6 rounded-2xl shadow-lg">
+                <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <InputField name="fullName" placeholder="Nom complet" icon={User} />
+                    <InputField name="email" placeholder="Email" icon={Mail} />
+                    <InputField
+                    name="password"
+                    placeholder="Mot de passe"
+                    icon={Lock}
+                    type="password"
+                    isPassword
+                    isVisible={passwordVisible}
+                    onToggleVisibility={() => setPasswordVisible(!passwordVisible)}
+                    />
+                    <InputField
+                    name="confirmPassword"
+                    placeholder="Confirmer mot de passe"
+                    icon={Lock}
+                    type="password"
+                    isPassword
+                    isVisible={confirmPasswordVisible}
+                    onToggleVisibility={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
+                    />
 
-            <Button type="submit" className="w-full h-14 text-lg font-semibold rounded-xl bg-[#0B7E58] hover:bg-[#0a6e4d]" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-              Continuer
-            </Button>
-          </form>
-        </Form>
+                    <Button type="submit" className="w-full h-14 text-lg font-semibold rounded-xl bg-[#0B7E58] hover:bg-[#0a6e4d]" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                    Continuer
+                    </Button>
+                </form>
+                </Form>
 
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-[#F6F8F7] px-2 text-muted-foreground">Ou s'inscrire avec</span>
-          </div>
-        </div>
+                <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-2 text-muted-foreground">OU S'INSCRIRE AVEC</span>
+                </div>
+                </div>
 
-        <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white" onClick={handleGoogleSignup} disabled={isSubmitting}>
-          <GoogleIcon className="mr-3 h-6 w-6" /> Google
-        </Button>
+                <div className="space-y-3">
+                    <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white" onClick={handleGoogleSignup} disabled={isSubmitting}>
+                        <GoogleIcon className="mr-3 h-6 w-6" /> Google
+                    </Button>
 
-        <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white mt-3" onClick={handleFacebookSignup} disabled={isSubmitting}>
-          <FacebookIcon className="mr-3 h-6 w-6" /> Facebook
-        </Button>
+                    <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white" onClick={handleFacebookSignup} disabled={isSubmitting}>
+                        <FacebookIcon className="mr-3 h-6 w-6" /> Facebook
+                    </Button>
+                </div>
+            </div>
+          </motion.div>
+        )}
+      </div>
 
-        <p className="mt-8 text-center text-sm text-muted-foreground">
+       <p className="py-8 text-center text-sm text-muted-foreground">
           Déjà un compte?{" "}
           <Link href="/login" className="font-semibold text-[#0B7E58]">
             Se connecter
           </Link>
         </p>
-      </div>
     </div>
   );
 }
