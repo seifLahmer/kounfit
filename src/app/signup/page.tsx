@@ -145,7 +145,7 @@ export default function SignupPage() {
     </button>
   );
 
-  const InputField = ({ name, placeholder, icon: Icon, type = "text", isPassword = false, onToggleVisibility, isVisible = false, className }: any) => (
+  const InputField = ({ name, placeholder, icon: Icon, type = "text", isPassword = false, onToggleVisibility, isVisible = false }: any) => (
     <FormField
       control={form.control}
       name={name}
@@ -158,7 +158,7 @@ export default function SignupPage() {
                 type={isVisible ? "text" : type}
                 placeholder={placeholder}
                 {...field}
-                className={cn("pl-12 pr-12 h-14 bg-gray-100 border-gray-200 rounded-xl text-base", className)}
+                className={cn("pl-12 pr-12 h-14 bg-gray-100 border-gray-200 rounded-xl text-base")}
               />
               {isPassword && (
                 <button type="button" onClick={onToggleVisibility} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
@@ -175,89 +175,89 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col overflow-hidden">
-        <motion.div
-            className="relative bg-gradient-to-b from-[#22C58B] to-[#4FD6B3] text-white rounded-b-[3rem] md:rounded-b-[4rem] flex flex-col justify-center"
-            initial={false}
-            animate={{ height: selectedRole ? "auto" : "60vh" }}
-            transition={{ duration: 0.6, ease: [0.83, 0, 0.17, 1] }}
-        >
-            <div className="w-full max-w-md mx-auto px-4 py-6 pb-20">
-                <div className="flex items-center justify-center relative h-10 mb-4">
-                    <Image src="/k/k white.png" alt="Kounfit Logo" width={40} height={40} className="absolute left-0" />
-                    <h2 className="text-2xl font-semibold">Inscription</h2>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                    <RoleButton role="client" label="Client" icon={User} />
-                    <RoleButton role="caterer" label="Traiteur" icon={ChefHat} />
-                    <RoleButton role="delivery" label="Livreur" icon={Bike} />
-                </div>
+      <motion.div
+        className="relative bg-gradient-to-b from-[#22C58B] to-[#4FD6B3] text-white rounded-b-[3rem] md:rounded-b-[4rem] flex flex-col justify-center"
+        initial={false}
+        animate={{ height: selectedRole ? 'auto' : '60vh' }}
+        transition={{ duration: 0.6, ease: [0.83, 0, 0.17, 1] }}
+      >
+        <div className="w-full max-w-md mx-auto px-4 py-6">
+            <div className="flex items-center justify-center relative h-10 mb-4">
+                <Image src="/k/k white.png" alt="Kounfit Logo" width={40} height={40} className="absolute left-0" />
+                <h2 className="text-2xl font-semibold">Inscription</h2>
             </div>
-        </motion.div>
-
-        <div className="flex-1 w-full max-w-md mx-auto px-4">
-            {selectedRole && (
-                <motion.div
-                    key={selectedRole}
-                    className="-mt-24"
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, ease: "circOut", delay: 0.2 }}
-                >
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                            <InputField name="fullName" placeholder="Nom complet" icon={User} className="bg-white/50 backdrop-blur-sm border-transparent placeholder:text-gray-600 shadow-sm" />
-                            <InputField name="email" placeholder="Email" icon={Mail} />
-                            <InputField
-                                name="password"
-                                placeholder="Mot de passe"
-                                icon={Lock}
-                                type="password"
-                                isPassword
-                                isVisible={passwordVisible}
-                                onToggleVisibility={() => setPasswordVisible(!passwordVisible)}
-                            />
-                            <InputField
-                                name="confirmPassword"
-                                placeholder="Confirmer mot de passe"
-                                icon={Lock}
-                                type="password"
-                                isPassword
-                                isVisible={confirmPasswordVisible}
-                                onToggleVisibility={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
-                            />
-
-                            <Button type="submit" className="w-full h-14 text-lg font-semibold rounded-xl bg-[#0B7E58] hover:bg-[#0a6e4d]" disabled={isSubmitting}>
-                                {isSubmitting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                                Continuer
-                            </Button>
-                        </form>
-                    </Form>
-                    
-                    <div className="relative my-6">
-                        <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-white px-2 text-muted-foreground">OU S'INSCRIRE AVEC</span>
-                        </div>
-                    </div>
-
-                    <div className="space-y-3">
-                        <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white shadow-sm" onClick={handleGoogleSignup} disabled={isSubmitting}>
-                            <GoogleIcon className="mr-3 h-6 w-6" /> Google
-                        </Button>
-                        <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white shadow-sm" onClick={handleFacebookSignup} disabled={isSubmitting}>
-                            <FacebookIcon className="mr-3 h-6 w-6" /> Facebook
-                        </Button>
-                    </div>
-                </motion.div>
-            )}
+            <div className="grid grid-cols-3 gap-3">
+                <RoleButton role="client" label="Client" icon={User} />
+                <RoleButton role="caterer" label="Traiteur" icon={ChefHat} />
+                <RoleButton role="delivery" label="Livreur" icon={Bike} />
+            </div>
         </div>
-        
-        <p className="py-6 text-center text-sm text-muted-foreground">
-            Déjà un compte?{" "}
-            <Link href="/login" className="font-semibold text-[#0B7E58]">
-                Se connecter
-            </Link>
-        </p>
+      </motion.div>
+
+      <div className="flex-1 w-full max-w-md mx-auto px-4 overflow-y-auto">
+        {selectedRole && (
+          <motion.div
+            key={selectedRole}
+            className="pt-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+          >
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <InputField name="fullName" placeholder="Nom complet" icon={User} />
+                <InputField name="email" placeholder="Email" icon={Mail} />
+                <InputField
+                  name="password"
+                  placeholder="Mot de passe"
+                  icon={Lock}
+                  type="password"
+                  isPassword
+                  isVisible={passwordVisible}
+                  onToggleVisibility={() => setPasswordVisible(!passwordVisible)}
+                />
+                <InputField
+                  name="confirmPassword"
+                  placeholder="Confirmer mot de passe"
+                  icon={Lock}
+                  type="password"
+                  isPassword
+                  isVisible={confirmPasswordVisible}
+                  onToggleVisibility={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
+                />
+
+                <Button type="submit" className="w-full h-14 text-lg font-semibold rounded-xl bg-[#0B7E58] hover:bg-[#0a6e4d]" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                  Continuer
+                </Button>
+              </form>
+            </Form>
+            
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-muted-foreground">OU S'INSCRIRE AVEC</span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white shadow-sm" onClick={handleGoogleSignup} disabled={isSubmitting}>
+                <GoogleIcon className="mr-3 h-6 w-6" /> Google
+              </Button>
+              <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white shadow-sm" onClick={handleFacebookSignup} disabled={isSubmitting}>
+                <FacebookIcon className="mr-3 h-6 w-6" /> Facebook
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </div>
+
+      <p className="py-6 text-center text-sm text-muted-foreground">
+        Déjà un compte?{" "}
+        <Link href="/login" className="font-semibold text-[#0B7E58]">
+          Se connecter
+        </Link>
+      </p>
     </div>
   );
 }
