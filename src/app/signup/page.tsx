@@ -13,6 +13,7 @@ import {
   FormField,
   FormItem,
   FormControl,
+  FormMessage,
 } from "@/components/ui/form";
 import { useState, useCallback } from "react";
 import {
@@ -184,7 +185,6 @@ export default function SignupPage() {
       return;
     }
     setIsSubmitting(true);
-    // Continue with signup...
   };
   
   const handleFacebookSignup = async () => {
@@ -193,7 +193,6 @@ export default function SignupPage() {
       return;
     }
     setIsSubmitting(true);
-    // Continue with signup...
   };
 
 
@@ -211,7 +210,7 @@ export default function SignupPage() {
     </button>
   );
 
-  const InputField = ({ name, placeholder, icon: Icon, type = "text", isPassword = false, onToggleVisibility, isVisible = false }: any) => (
+  const InputField = ({ name, placeholder, icon: Icon, type = "text", isPassword = false, onToggleVisibility, isVisible = false, className }: any) => (
     <FormField
       control={form.control}
       name={name}
@@ -224,7 +223,7 @@ export default function SignupPage() {
                 type={isVisible ? "text" : type}
                 placeholder={placeholder}
                 {...field}
-                className="pl-12 pr-12 h-14 bg-gray-100/50 border-gray-200 rounded-xl text-base"
+                className={cn("pl-12 pr-12 h-14 bg-gray-100/50 border-gray-200 rounded-xl text-base", className)}
               />
               {isPassword && (
                 <button type="button" onClick={onToggleVisibility} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
@@ -233,6 +232,7 @@ export default function SignupPage() {
               )}
             </div>
           </FormControl>
+          <FormMessage />
         </FormItem>
       )}
     />
@@ -241,31 +241,31 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <div className="relative bg-gradient-to-b from-[#22C58B] to-[#4FD6B3] text-white rounded-b-[3rem]">
-          <div className="w-full max-w-md mx-auto px-4 pt-8 pb-20">
-              <div className="flex items-center justify-center relative h-10 mb-6">
+        <div className="w-full max-w-md mx-auto px-4 pt-8 pb-20">
+            <div className="flex items-center justify-center relative h-10 mb-6">
                 <Image src="/k/k white.png" alt="Kounfit Logo" width={40} height={40} className="absolute left-0" />
                 <h2 className="text-2xl font-semibold">Inscription - Étape 1/2</h2>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
+            </div>
+            <div className="grid grid-cols-3 gap-3">
                 <RoleButton role="client" label="Client" icon={User} />
                 <RoleButton role="caterer" label="Traiteur" icon={ChefHat} />
                 <RoleButton role="delivery" label="Livreur" icon={Bike} />
-              </div>
-          </div>
+            </div>
+        </div>
       </div>
 
-      <div className="flex-1 -mt-16 w-full max-w-md mx-auto px-4">
+      <div className="flex-1 w-full max-w-md mx-auto px-4">
         {selectedRole && (
           <motion.div
             key={selectedRole}
-            initial={{ opacity: 0, y: 10 }}
+            className="-mt-16"
+            initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "circOut" }}
-            className="bg-white p-6 rounded-2xl shadow-lg"
           >
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <InputField name="fullName" placeholder="Nom complet" icon={User} />
+                <InputField name="fullName" placeholder="Nom complet" icon={User} className="bg-white/50 backdrop-blur-sm border-transparent placeholder:text-gray-700" />
                 <InputField name="email" placeholder="Email" icon={Mail} />
                 <InputField
                   name="password"
@@ -292,40 +292,34 @@ export default function SignupPage() {
                 </Button>
               </form>
             </Form>
+            
+             <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-muted-foreground">OU S'INSCRIRE AVEC</span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white shadow-sm" onClick={handleGoogleSignup} disabled={isSubmitting}>
+                <GoogleIcon className="mr-3 h-6 w-6" /> Google
+              </Button>
+              <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white shadow-sm" onClick={handleFacebookSignup} disabled={isSubmitting}>
+                <FacebookIcon className="mr-3 h-6 w-6" /> Facebook
+              </Button>
+            </div>
+
           </motion.div>
         )}
       </div>
-
-      <div className="w-full max-w-md mx-auto px-4">
-        {selectedRole && (
-           <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-           >
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-muted-foreground">OU S'INSCRIRE AVEC</span>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white shadow-sm" onClick={handleGoogleSignup} disabled={isSubmitting}>
-                  <GoogleIcon className="mr-3 h-6 w-6" /> Google
-                </Button>
-                <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white shadow-sm" onClick={handleFacebookSignup} disabled={isSubmitting}>
-                  <FacebookIcon className="mr-3 h-6 w-6" /> Facebook
-                </Button>
-              </div>
-           </motion.div>
-        )}
-        <p className="py-6 text-center text-sm text-muted-foreground">
+      
+       <p className="py-6 text-center text-sm text-muted-foreground">
           Déjà un compte?{" "}
           <Link href="/login" className="font-semibold text-[#0B7E58]">
             Se connecter
           </Link>
         </p>
-      </div>
     </div>
   );
-}
+
+    
