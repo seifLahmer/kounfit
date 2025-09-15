@@ -24,7 +24,7 @@ import { auth } from "@/lib/firebase";
 import { addDeliveryPerson } from "@/lib/services/deliveryService";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, sendEmailVerification } from "firebase/auth";
 import { Loader2, Check, MapPin, Bike } from "lucide-react";
 import { LeafPattern } from "@/components/icons";
 import Image from "next/image";
@@ -84,6 +84,8 @@ export default function SignupDeliveryStep2Page() {
           region: data.region,
           status: 'pending' // Set default status
       });
+
+      await sendEmailVerification(currentUser);
 
       router.push("/signup/pending-approval");
 

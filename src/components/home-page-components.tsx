@@ -181,28 +181,58 @@ const MealNutritionInfo = ({ meals }: { meals: Meal[] }) => {
 }
 
 export const MealCard = ({ title, meals, onAdd, defaultImage }: { title: string; meals: Meal[]; onAdd: () => void; defaultImage: string; }) => {
-  return (
-    <Card className="relative rounded-2xl overflow-hidden shadow-lg h-48 group" onClick={onAdd}>
-      <Image
-        src={defaultImage}
-        alt={title}
-        layout="fill"
-        objectFit="cover"
-        className="z-0 group-hover:scale-105 transition-transform duration-300"
-        data-ai-hint="healthy food"
-      />
-      <div className="absolute inset-0 bg-black/40 z-0"></div>
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10"></div>
-      
-      <CardContent className="relative z-20 flex flex-col justify-between h-full p-3 text-white">
-        <div className="flex justify-between items-start">
-            <h3 className="font-bold text-lg font-heading">{title}</h3>
-             <button className="bg-white hover:bg-gray-200 text-primary rounded-full w-8 h-8 flex items-center justify-center shrink-0 shadow-md">
-                <Plus className="w-5 h-5" />
-            </button>
-        </div>
-         <MealNutritionInfo meals={meals} />
-      </CardContent>
-    </Card>
-  );
-};
+    const hasMeals = meals.length > 0;
+    const cardImage = hasMeals ? meals[0].imageUrl : defaultImage;
+  
+    return (
+      <Card 
+        className="relative rounded-2xl overflow-hidden shadow-lg h-48 group cursor-pointer"
+        onClick={onAdd}
+      >
+        <Image
+          src={cardImage}
+          alt={title}
+          layout="fill"
+          objectFit="cover"
+          className="z-0 transition-transform duration-300 group-hover:scale-105"
+          data-ai-hint={hasMeals ? meals[0].name : "healthy food"}
+        />
+        <div className="absolute inset-0 bg-black/40 z-0"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10"></div>
+        
+        <CardContent className="relative z-20 flex flex-col justify-between h-full p-3 text-white">
+          <div className="flex justify-between items-start">
+              <h3 className="font-bold text-lg font-heading">{title}</h3>
+               <button 
+                  onClick={(e) => { 
+                      e.stopPropagation();
+                      onAdd(); 
+                  }} 
+                  className="bg-white hover:bg-gray-200 text-primary rounded-full w-8 h-8 flex items-center justify-center shrink-0 shadow-md"
+              >
+                  <Plus className="w-5 h-5" />
+              </button>
+          </div>
+          
+          <div className="flex-grow flex flex-col justify-end space-y-1 overflow-y-auto pr-2" style={{maxHeight: "80px"}}>
+              {hasMeals ? (
+                  meals.map(meal => (
+                      <div key={meal.id} className="flex items-center gap-2 bg-white/10 backdrop-blur-sm p-1.5 rounded-lg"
+                           onClick={(e) => e.stopPropagation()} // Prevent card's onAdd when clicking a meal
+                      >
+                          <Image src={meal.imageUrl} alt={meal.name} width={28} height={28} className="rounded-md w-7 h-7 object-cover"/>
+                          <span className="text-xs font-medium truncate">{meal.name}</span>
+                      </div>
+                  ))
+              ) : (
+                  <div className="flex-grow flex items-center justify-center h-full">
+                      <p className="text-sm text-white/80">Ajouter un repas</p>
+                  </div>
+              )}
+          </div>
+  
+           <MealNutritionInfo meals={meals} />
+        </CardContent>
+      </Card>
+    );
+  };

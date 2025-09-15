@@ -103,7 +103,7 @@ export default function WelcomePage() {
                     <Button asChild size="lg" className="w-full h-14 text-lg font-semibold rounded-button bg-primary hover:bg-primary/90">
                         <Link href="/login">Se connecter</Link>
                     </Button>
-                    <Button asChild size="lg" className="w-full h-14 text-lg font-semibold rounded-button bg-secondary hover:bg-secondary/90">
+                    <Button asChild size="lg" className="w-full h-14 text-lg font-semibold rounded-button bg-muted text-muted-foreground hover:bg-border">
                         <Link href="/signup">S'inscrire</Link>
                     </Button>
                     </motion.div>

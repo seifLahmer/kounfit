@@ -25,7 +25,7 @@ import { auth } from "@/lib/firebase";
 import { addCaterer } from "@/lib/services/catererService";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, sendEmailVerification } from "firebase/auth";
 import { Loader2, Check, MapPin, Building } from "lucide-react";
 import { LeafPattern } from "@/components/icons";
 import Image from "next/image";
@@ -83,6 +83,8 @@ export default function SignupCatererStep2Page() {
           region: data.region,
           status: 'pending' // Set default status
       });
+
+      await sendEmailVerification(currentUser);
 
       router.push("/signup/pending-approval");
 

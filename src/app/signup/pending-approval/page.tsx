@@ -29,6 +29,9 @@ export default function PendingApprovalPage() {
             Inscription terminée
           </h2>
           <p className="text-muted-foreground mb-4">
+            Un email a été envoyé pour vérifier votre adresse e-mail.
+          </p>
+          <p className="text-muted-foreground mb-4">
             Votre demande d'inscription a été enregistrée avec succès. Un
             administrateur va examiner votre profil et vous recevrez un email de
             confirmation dès que votre compte sera activé.

@@ -3,7 +3,6 @@
 
     <!-- Base application theme -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
-        <!-- Customize your theme here -->
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
@@ -15,13 +14,11 @@
         <item name="windowNoTitle">true</item>
     </style>
 
-    <!-- Launch theme (initial theme shown while app loads) -->
+    <!-- Launch theme (used at startup) -->
     <style name="AppTheme.NoActionBarLaunch" parent="AppTheme.NoActionBar">
-        <!-- Plain white background instead of splash -->
-        <item name="android:windowBackground">@android:color/white</item>
-        <!-- For Android 12+, also set splash screen background to white -->
-        <item name="android:windowSplashScreenBackground">@android:color/white</item>
-        <!-- Disable any splash icons or branding -->
+        <!-- Force plain white screen -->
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <!-- Disable splash icon & branding -->
         <item name="android:windowSplashScreenAnimatedIcon">@null</item>
         <item name="android:windowSplashScreenBrandingImage">@null</item>
     </style>

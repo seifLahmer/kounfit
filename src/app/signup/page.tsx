@@ -22,6 +22,7 @@ import {
   fetchSignInMethodsForEmail,
   FacebookAuthProvider,
   AuthError,
+  sendEmailVerification,
 } from "firebase/auth";
 import { auth, googleProvider, db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
@@ -94,22 +95,14 @@ export default function SignupPage() {
 
         // Redirection selon rôle
         switch (role) {
-          case "admin":
-            router.replace("/admin");
-            break;
           case "caterer":
-            router.replace("/caterer");
+            router.replace("/signup/caterer/step2");
             break;
           case "delivery":
-            router.replace("/delivery");
+            router.replace("/signup/delivery/step2");
             break;
           case "client":
-            const userDoc = await getDoc(doc(db, "users", user.uid));
-            if (userDoc.exists() && userDoc.data().mainGoal) {
               router.replace("/home");
-            } else {
-              router.replace("/signup/step2");
-            }
             break;
           default:
             router.replace("/signup/step2");
@@ -150,7 +143,26 @@ export default function SignupPage() {
         createdAt: new Date(),
       });
 
-      await handlePostSignup(userCredential.user);
+      switch (selectedRole) {
+        case 'client':
+          await sendEmailVerification(userCredential.user);
+          toast({
+            title: "E-mail de validation envoyé",
+            description: "Veuillez consulter votre boîte de réception pour valider votre compte.",
+          });
+          router.replace("/signup/pending-verification");
+          break;
+        case 'caterer':
+          router.replace("/signup/caterer/step2");
+          break;
+        case 'delivery':
+          router.replace("/signup/delivery/step2");
+          break;
+        default:
+          router.replace("/login");
+          break;
+      }
+
     } catch (error: any) {
       console.error("Signup Error:", error);
       let description = "Une erreur s'est produite lors de l'inscription.";

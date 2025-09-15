@@ -1,7 +1,8 @@
 
 import { doc, setDoc, getDoc, serverTimestamp, Timestamp, updateDoc, arrayUnion, arrayRemove, collection, getCountFromServer } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
 import type { User } from "@/lib/types";
+import { sendPasswordResetEmail } from "firebase/auth";
 
 // Firestore collection reference
 const USERS_COLLECTION = "users";
@@ -138,4 +139,17 @@ export async function getUserCount(): Promise<number> {
         console.error("Error getting user count: ", error);
         throw new Error("Could not get user count.");
     }
+}
+
+/**
+ * Sends a password reset email to the user.
+ * @param email The user's email address.
+ */
+export async function sendPasswordReset(email: string): Promise<void> {
+  try {
+    await sendPasswordResetEmail(auth, email);
+  } catch (error) {
+    console.error("Error sending password reset email: ", error);
+    throw new Error("Failed to send password reset email.");
+  }
 }

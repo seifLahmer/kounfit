@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "98685881966",
+    "firebase_url": "https://fithelath-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "fithelath",
+    "storage_bucket": "fithelath.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:98685881966:android:e2f14d27b329faf247a07f",
+        "android_client_info": {
+          "package_name": "com.android.tools.build"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "98685881966-vc8qhi1uda3k7felkcr9f0i7qgfsr6gd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCzKm8U6MfALdaUIe9chVcsaaUj5byds_8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "98685881966-397mmg3fertef0r8n5hem8ji03j2pu8k.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

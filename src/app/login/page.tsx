@@ -25,6 +25,9 @@ import {
   GoogleAuthProvider,
   linkWithCredential,
   AuthErrorCodes,
+  sendEmailVerification,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
 } from "firebase/auth";
 import { auth, db, googleProvider } from "@/lib/firebase";
 
@@ -35,12 +38,23 @@ import {
 } from "@capacitor-firebase/authentication";
 import { useToast } from "@/hooks/use-toast";
 import { getUserRole } from "@/lib/services/roleService";
-import { Loader2, Mail, Eye, EyeOff } from "lucide-react";
+import { sendPasswordReset } from "@/lib/services/userService";
+import { Loader2, Mail, Eye, EyeOff, Phone } from "lucide-react";
 import { GoogleIcon, LockIcon, FacebookIcon } from "@/components/icons";
 import { doc, getDoc } from "firebase/firestore";
 import Image from "next/image";
 
 import { FacebookAuthProvider } from "firebase/auth";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const loginSchema = z.object({
   email: z.string().email("Veuillez saisir une adresse e-mail valide."),
@@ -69,18 +83,41 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [isIos, setIsIos] = useState(false);
-  const googleCredentialRef = useRef<any>(null);
+  const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [isPhoneAuthOpen, setIsPhoneAuthOpen] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [otp, setOtp] = useState("");
+  const [confirmationResult, setConfirmationResult] = useState<any>(null);
+  const recaptchaContainerRef = useRef<HTMLDivElement>(null);
+
 
   const facebookProvider = new FacebookAuthProvider();
   facebookProvider.addScope("email");
   facebookProvider.addScope("public_profile");
-
 
   useEffect(() => {
     if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios") {
       setIsIos(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (isPhoneAuthOpen && recaptchaContainerRef.current) {
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
+            size: 'invisible',
+            callback: (response: any) => {
+              // reCAPTCHA solved, you can proceed with phone sign-in
+            },
+            'expired-callback': () => {
+              // Response expired. Ask user to solve reCAPTCHA again.
+            }
+          });
+          window.recaptchaVerifier.render();
+      }
+    }
+  }, [isPhoneAuthOpen]);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -94,6 +131,17 @@ export default function LoginPage() {
     async (user: FirebaseUser | CapacitorFirebaseUser) => {
       setIsSubmitting(true);
       try {
+        if (user.email && !user.emailVerified) {
+          toast({
+            title: "E-mail non validé",
+            description: "Veuillez valider votre e-mail avant de vous connecter.",
+            variant: "destructive",
+          });
+          await auth.signOut();
+          setIsSubmitting(false);
+          return;
+        }
+
         const role = await getUserRole(user.uid);
 
         if (role === "caterer" || role === "delivery") {
@@ -156,73 +204,6 @@ export default function LoginPage() {
     [router, toast]
   );
 
-  // Facebook
-// Facebook
-const handleFacebookSignIn = async () => {
-  setIsSubmitting(true);
-  try {
-    if (Capacitor.isNativePlatform()) {
-      // Native login avec Capacitor Firebase Auth
-      const result = await FirebaseAuthentication.signInWithFacebook();
-      console.log("Facebook result (native):", result);
-
-      if (result.user) {
-        await handleUserLogin(result.user);
-      } else {
-        setIsSubmitting(false);
-      }
-    } else {
-      // Web login avec Firebase popup
-      const result = await signInWithPopup(auth, facebookProvider);
-
-      // ✅ Récupérer les infos comme dans la documentation
-      const user = result.user;
-      const credential = FacebookAuthProvider.credentialFromResult(result);
-      const accessToken = credential?.accessToken;
-      console.log("User signed in:", user.email); // ✅ log email here
-
-      console.log("Facebook User:", user);
-      console.log("Facebook AccessToken:", accessToken);
-
-      if (user) {
-        await handleUserLogin(user);
-      } else {
-        setIsSubmitting(false);
-      }
-    }
-  } catch (error: any) {
-    console.error("Facebook Sign-In Error:", error);
-
-    // ✅ Match la documentation
-    const errorCode = error.code;
-    const errorMessage = error.message;
-    const email = error.customData?.email;
-    const credential = FacebookAuthProvider.credentialFromError(error);
-
-    console.log("Facebook Error Details:", {
-      errorCode,
-      errorMessage,
-      email,
-      credential,
-    });
-
-    if (errorCode === "auth/popup-closed-by-user") {
-      console.log("L'utilisateur a fermé le popup ou a mis trop de temps.");
-      setIsSubmitting(false);
-      return;
-    }
-
-    toast({
-      title: "Erreur de connexion Facebook",
-      description: errorMessage || "Une erreur s'est produite lors de la connexion.",
-      variant: "destructive",
-    });
-    setIsSubmitting(false);
-  }
-};
-
-
-
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
     try {
@@ -231,16 +212,18 @@ const handleFacebookSignIn = async () => {
         data.email,
         data.password
       );
-
-      if (googleCredentialRef.current && userCredential.user) {
-        await linkWithCredential(userCredential.user, googleCredentialRef.current);
-        googleCredentialRef.current = null;
+      
+      if (!userCredential.user.emailVerified) {
         toast({
-          title: "Compte Google lié!",
-          description: "Vous pouvez maintenant vous connecter avec Google.",
+          title: "E-mail non validé",
+          description: "Veuillez valider votre e-mail avant de vous connecter.",
+          action: <Button onClick={async () => await sendEmailVerification(userCredential.user)}>Renvoyer l'e-mail</Button>,
+          variant: "destructive",
         });
+        await auth.signOut();
+        setIsSubmitting(false);
+        return;
       }
-
       await handleUserLogin(userCredential.user);
     } catch (error: any) {
       console.error("Login Error:", error);
@@ -259,23 +242,10 @@ const handleFacebookSignIn = async () => {
         description: description,
         variant: "destructive",
       });
-      if (error.code === "auth/popup-closed-by-user") {
-    console.log("L'utilisateur a fermé le popup ou a mis du temps à répondre.");
-    // Tu peux juste réinitialiser le loader et ne pas afficher une erreur destructive
-    setIsSubmitting(false);
-    return;
-  }
-
-  toast({
-    title: "Erreur de connexion Facebook",
-    description:
-      error.message || "Une erreur s'est produite lors de la connexion.",
-    variant: "destructive",
-  });
       setIsSubmitting(false);
     }
   };
-
+  
   const handleGoogleSignIn = async () => {
     setIsSubmitting(true);
     try {
@@ -283,15 +253,11 @@ const handleFacebookSignIn = async () => {
         const result = await FirebaseAuthentication.signInWithGoogle();
         if (result.user) {
           await handleUserLogin(result.user);
-        } else {
-          setIsSubmitting(false);
         }
       } else {
         const result = await signInWithPopup(auth, googleProvider);
         if (result.user) {
           await handleUserLogin(result.user);
-        } else {
-          setIsSubmitting(false);
         }
       }
     } catch (error: any) {
@@ -301,7 +267,36 @@ const handleFacebookSignIn = async () => {
         description: "Une erreur s'est produite lors de la tentative de connexion avec Google.",
         variant: "destructive",
       });
-      setIsSubmitting(false);
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
+  const handleFacebookSignIn = async () => {
+    setIsSubmitting(true);
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const result = await FirebaseAuthentication.signInWithFacebook();
+        if (result.user) {
+          await handleUserLogin(result.user);
+        }
+      } else {
+        const result = await signInWithPopup(auth, facebookProvider);
+        if (result.user) {
+          await handleUserLogin(result.user);
+        }
+      }
+    } catch (error: any) {
+      console.error("Facebook Sign-In Error:", error);
+      if (error.code !== 'auth/popup-closed-by-user') {
+          toast({
+            title: "Erreur de connexion Facebook",
+            description: error.message || "Une erreur s'est produite lors de la connexion.",
+            variant: "destructive",
+          });
+      }
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
@@ -312,8 +307,6 @@ const handleFacebookSignIn = async () => {
         const result = await FirebaseAuthentication.signInWithApple();
         if (result.user) {
           await handleUserLogin(result.user);
-        } else {
-          setIsSubmitting(false);
         }
       } else {
         const provider = new OAuthProvider("apple.com");
@@ -326,9 +319,71 @@ const handleFacebookSignIn = async () => {
         description: "Une erreur s'est produite lors de la tentative de connexion avec Apple.",
         variant: "destructive",
       });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+  
+  const handlePasswordReset = async () => {
+    if (!resetEmail) {
+      toast({
+        title: "Adresse e-mail requise",
+        description: "Veuillez saisir votre adresse e-mail.",
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      await sendPasswordReset(resetEmail);
+      toast({
+        title: "E-mail de réinitialisation envoyé",
+        description: "Veuillez vérifier votre boîte de réception pour les instructions.",
+      });
+      setIsResetPasswordDialogOpen(false);
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'envoyer l'e-mail de réinitialisation. Veuillez vérifier l'adresse e-mail.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const onPhoneSignIn = async () => {
+    if (!window.recaptchaVerifier) {
+        toast({ title: "Erreur", description: "reCAPTCHA non initialisé.", variant: "destructive" });
+        return;
+    }
+    setIsSubmitting(true);
+    const appVerifier = window.recaptchaVerifier;
+    try {
+      const result = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+      setConfirmationResult(result);
+      toast({ title: "Code de vérification envoyé!" });
+    } catch (error) {
+      console.error("Phone Sign-In Error:", error);
+      toast({ title: "Erreur", description: "Impossible d'envoyer le code. Vérifiez le numéro de téléphone et réessayez.", variant: "destructive" });
+    } finally {
       setIsSubmitting(false);
     }
   };
+
+  const onOtpSubmit = async () => {
+    if (!confirmationResult) return;
+    setIsSubmitting(true);
+    try {
+      const result = await confirmationResult.confirm(otp);
+      if (result.user) {
+        await handleUserLogin(result.user);
+      }
+    } catch (error) {
+      console.error("OTP Error:", error);
+      toast({ title: "Code non valide", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -411,12 +466,20 @@ const handleFacebookSignIn = async () => {
         <div className="text-center my-4">
           <Link
             href="#"
+            onClick={() => setIsResetPasswordDialogOpen(true)}
             className="text-sm font-semibold text-gray-600 hover:text-primary"
           >
             Mot de passe oublié ?
           </Link>
         </div>
         <div className="space-y-2">
+           <Button
+            variant="outline"
+            className="w-full h-14 rounded-full text-base font-semibold border-gray-200"
+            onClick={() => setIsPhoneAuthOpen(true)}
+            disabled={isSubmitting}>
+            <Phone className="mr-2 h-5 w-5" /> Continuer avec le téléphone
+          </Button>
           <Button
             variant="outline"
             className="w-full h-14 rounded-full text-base font-semibold border-gray-200"
@@ -434,17 +497,93 @@ const handleFacebookSignIn = async () => {
             <FacebookIcon className="mr-2 h-5 w-5" /> Continuer avec Facebook
           </Button>
           {(isIos || !Capacitor.isNativePlatform()) && (
-  <Button
-    variant="outline"
-    className="w-full h-14 rounded-full text-base font-semibold border-gray-200 bg-black text-white hover:bg-gray-800 hover:text-white"
-    onClick={handleAppleSignIn}
-    disabled={isSubmitting}
-  >
-    <AppleIcon className="mr-2 h-5 w-5" /> Continuer avec Apple
-  </Button>
-)}
+            <Button
+              variant="outline"
+              className="w-full h-14 rounded-full text-base font-semibold border-gray-200 bg-black text-white hover:bg-gray-800 hover:text-white"
+              onClick={handleAppleSignIn}
+              disabled={isSubmitting}
+            >
+              <AppleIcon className="mr-2 h-5 w-5" /> Continuer avec Apple
+            </Button>
+          )}
         </div>
       </div>
+      {/* ---- Reset Password Dialog ---- */}
+      <AlertDialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Réinitialiser le mot de passe</AlertDialogTitle>
+            <AlertDialogDescription>
+              Saisissez votre adresse e-mail pour recevoir un lien de réinitialisation.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Input
+            type="email"
+            placeholder="E-mail"
+            value={resetEmail}
+            onChange={(e) => setResetEmail(e.target.value)}
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handlePasswordReset}>Envoyer</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+       {/* ---- Phone Auth Dialog ---- */}
+       <AlertDialog open={isPhoneAuthOpen} onOpenChange={setIsPhoneAuthOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Connexion par téléphone</AlertDialogTitle>
+             <div ref={recaptchaContainerRef}></div>
+          </AlertDialogHeader>
+          {!confirmationResult ? (
+            <>
+            <AlertDialogDescription>
+               Saisissez votre numéro de téléphone pour recevoir un code de vérification.
+            </AlertDialogDescription>
+              <Input
+                type="tel"
+                placeholder="Numéro de téléphone"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+              />
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={onPhoneSignIn} disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} 
+                    Envoyer le code
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          ) : (
+            <>
+             <AlertDialogDescription>
+                Saisissez le code de vérification que vous avez reçu.
+            </AlertDialogDescription>
+              <Input
+                type="text"
+                placeholder="Code de vérification"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+              />
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={onOtpSubmit} disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} 
+                    Vérifier
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          )}
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
+}
+
+declare global {
+  interface Window {
+    recaptchaVerifier: RecaptchaVerifier;
+  }
 }
