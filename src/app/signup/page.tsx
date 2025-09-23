@@ -17,19 +17,23 @@ import {
 import { useState } from "react";
 import {
   createUserWithEmailAndPassword,
-  signInWithPopup,
   updateProfile,
   sendEmailVerification,
+  signInWithRedirect,
+  signInWithPopup,
+  GoogleAuthProvider,
+  getAdditionalUserInfo,
 } from "firebase/auth";
-import { auth, googleProvider, facebookProvider, db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+
+
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, User, Mail, Lock, Eye, EyeOff, ChefHat, Bike } from "lucide-react";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import { GoogleIcon, FacebookIcon } from "@/components/icons";
 import { motion } from "framer-motion";
-
+import { GoogleIcon, LockIcon, FacebookIcon } from "@/components/icons";
 const signupSchema = z
   .object({
     fullName: z.string().min(2, "Le nom complet doit comporter au moins 2 caractères."),
@@ -51,6 +55,10 @@ export default function SignupPage() {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
+
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [loadingCheck, setLoadingCheck] = useState(false);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -96,25 +104,14 @@ export default function SignupPage() {
         createdAt: new Date(),
       });
 
-      switch (selectedRole) {
-        case 'client':
-          await sendEmailVerification(userCredential.user);
-          toast({
-            title: "E-mail de validation envoyé",
-            description: "Veuillez consulter votre boîte de réception pour valider votre compte.",
-          });
-          router.replace("/signup/pending-verification");
-          break;
-        case 'caterer':
-          router.replace("/signup/caterer/step2");
-          break;
-        case 'delivery':
-          router.replace("/signup/delivery/step2");
-          break;
-        default:
-          router.replace("/login");
-          break;
-      }
+      await sendEmailVerification(userCredential.user);
+      setCurrentUserEmail(data.email);
+      setVerificationSent(true);
+
+      toast({
+        title: "E-mail de validation envoyé",
+        description: "Veuillez consulter votre boîte de réception pour valider votre compte.",
+      });
 
     } catch (error: any) {
       console.error("Signup Error:", error);
@@ -128,8 +125,158 @@ export default function SignupPage() {
     }
   };
 
-  const handleGoogleSignup = async () => { /* Logic for Google Signup */ };
-  const handleFacebookSignup = async () => { /* Logic for Facebook Signup */ };
+  const handleGoogleSignUp = async () => {
+    if (!selectedRole) {
+      toast({
+        title: "Veuillez choisir un rôle",
+        description: "Sélectionnez si vous êtes un client, un traiteur ou un livreur.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      // Check if user is new
+      const additionalUserInfo = getAdditionalUserInfo(result);
+
+      if (additionalUserInfo?.isNewUser) {
+        let status = "active";
+        let collectionName = "users";
+
+        if (selectedRole === "caterer") {
+          collectionName = "caterers";
+          status = "pending";
+        } else if (selectedRole === "delivery") {
+          collectionName = "deliveryPeople";
+          status = "pending";
+        }
+        
+        await setDoc(doc(db, collectionName, user.uid), {
+          name: user.displayName,
+          email: user.email,
+          role: selectedRole,
+          status,
+          createdAt: new Date(),
+          photoURL: user.photoURL
+        });
+
+        // Redirect to the appropriate step 2
+        switch (selectedRole) {
+            case 'client':
+              router.replace("/signup/step2");
+              break;
+            case 'caterer':
+              router.replace("/signup/caterer/step2");
+              break;
+            case 'delivery':
+              router.replace("/signup/delivery/step2");
+              break;
+            default:
+              router.replace("/login");
+              break;
+        }
+
+      } else {
+        const userDocRef = doc(db, "users", user.uid);
+        const catererDocRef = doc(db, "caterers", user.uid);
+        const deliveryDocRef = doc(db, "deliveryPeople", user.uid);
+
+        const userDoc = await getDoc(userDocRef);
+        const catererDoc = await getDoc(catererDocRef);
+        const deliveryDoc = await getDoc(deliveryDocRef);
+
+        if (!userDoc.exists() && !catererDoc.exists() && !deliveryDoc.exists()) {
+            // If the user exists in Firebase Auth but not in Firestore, treat as a new user
+            let status = "active";
+            let collectionName = "users";
+
+            if (selectedRole === "caterer") {
+              collectionName = "caterers";
+              status = "pending";
+            } else if (selectedRole === "delivery") {
+              collectionName = "deliveryPeople";
+              status = "pending";
+            }
+            
+            await setDoc(doc(db, collectionName, user.uid), {
+              name: user.displayName,
+              email: user.email,
+              role: selectedRole,
+              status,
+              createdAt: new Date(),
+              photoURL: user.photoURL
+            });
+
+            // Redirect to the appropriate step 2
+            switch (selectedRole) {
+                case 'client':
+                  router.replace("/signup/step2");
+                  break;
+                case 'caterer':
+                  router.replace("/signup/caterer/step2");
+                  break;
+                case 'delivery':
+                  router.replace("/signup/delivery/step2");
+                  break;
+                default:
+                  router.replace("/login");
+                  break;
+            }
+        } else {
+            toast({
+              title: "Compte existant",
+              description: "Cette adresse e-mail est déjà utilisée. Veuillez vous connecter.",
+              variant: "destructive",
+            });
+            await auth.signOut();
+        }
+      }
+    } catch (error: any) {
+      console.error("Google Sign Up Error:", error);
+      toast({
+        title: "Erreur d'inscription avec Google",
+        description: "Une erreur s'est produite.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+
+  const handleCheckVerification = async () => {
+    if (!auth.currentUser) return;
+    setLoadingCheck(true);
+    await auth.currentUser.reload();
+    if (auth.currentUser.emailVerified) {
+      switch (selectedRole) {
+        case 'client':
+          router.replace("/signup/step2");
+          break;
+        case 'caterer':
+          router.replace("/signup/caterer/step2");
+          break;
+        case 'delivery':
+          router.replace("/signup/delivery/step2");
+          break;
+        default:
+          router.replace("/login");
+          break;
+      }
+    } else {
+      toast({
+        title: "Email non vérifié",
+        description: "Veuillez confirmer votre email avant de continuer.",
+        variant: "destructive",
+      });
+    }
+    setLoadingCheck(false);
+  };
 
   const RoleButton = ({ role, label, icon: Icon }: { role: string; label: string; icon: React.ElementType }) => (
     <button
@@ -175,89 +322,110 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col overflow-hidden">
-      <motion.div
-        className="relative bg-gradient-to-b from-[#22C58B] to-[#4FD6B3] text-white rounded-b-[3rem] md:rounded-b-[4rem] flex flex-col justify-center"
-        initial={false}
-        animate={{ height: selectedRole ? 'auto' : '60vh' }}
-        transition={{ duration: 0.6, ease: [0.83, 0, 0.17, 1] }}
-      >
-        <div className="w-full max-w-md mx-auto px-4 py-6">
-            <div className="flex items-center justify-center relative h-10 mb-4">
-                <Image src="/k/k white.png" alt="Kounfit Logo" width={40} height={40} className="absolute left-0" />
-                <h2 className="text-2xl font-semibold">Inscription</h2>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-                <RoleButton role="client" label="Client" icon={User} />
-                <RoleButton role="caterer" label="Traiteur" icon={ChefHat} />
-                <RoleButton role="delivery" label="Livreur" icon={Bike} />
-            </div>
-        </div>
-      </motion.div>
-
-      <div className="flex-1 w-full max-w-md mx-auto px-4 overflow-y-auto">
-        {selectedRole && (
+      {!verificationSent ? (
+        <>
           <motion.div
-            key={selectedRole}
-            className="pt-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
+            className="relative bg-gradient-to-b from-[#22C58B] to-[#4FD6B3] text-white rounded-b-[3rem] md:rounded-b-[4rem] flex flex-col justify-center"
+            initial={false}
+            animate={{ height: selectedRole ? 'auto' : '60vh' }}
+            transition={{ duration: 0.6, ease: [0.83, 0, 0.17, 1] }}
           >
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <InputField name="fullName" placeholder="Nom complet" icon={User} />
-                <InputField name="email" placeholder="Email" icon={Mail} />
-                <InputField
-                  name="password"
-                  placeholder="Mot de passe"
-                  icon={Lock}
-                  type="password"
-                  isPassword
-                  isVisible={passwordVisible}
-                  onToggleVisibility={() => setPasswordVisible(!passwordVisible)}
-                />
-                <InputField
-                  name="confirmPassword"
-                  placeholder="Confirmer mot de passe"
-                  icon={Lock}
-                  type="password"
-                  isPassword
-                  isVisible={confirmPasswordVisible}
-                  onToggleVisibility={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
-                />
-
-                <Button type="submit" className="w-full h-14 text-lg font-semibold rounded-xl bg-[#0B7E58] hover:bg-[#0a6e4d]" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                  Continuer
-                </Button>
-              </form>
-            </Form>
-            
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-muted-foreground">OU S'INSCRIRE AVEC</span>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white shadow-sm" onClick={handleGoogleSignup} disabled={isSubmitting}>
-                <GoogleIcon className="mr-3 h-6 w-6" /> Google
-              </Button>
-              <Button variant="outline" className="w-full h-14 text-base rounded-xl border-gray-300 text-gray-700 bg-white shadow-sm" onClick={handleFacebookSignup} disabled={isSubmitting}>
-                <FacebookIcon className="mr-3 h-6 w-6" /> Facebook
-              </Button>
+            <div className="w-full max-w-md mx-auto px-4 py-6">
+                <div className="flex items-center justify-center relative h-10 mb-4">
+                    <Image src="/k/k white.png" alt="Kounfit Logo" width={40} height={40} className="absolute left-0" />
+                    <h2 className="text-2xl font-semibold">Inscription</h2>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                    <RoleButton role="client" label="Client" icon={User} />
+                    <RoleButton role="caterer" label="Traiteur" icon={ChefHat} />
+                    <RoleButton role="delivery" label="Livreur" icon={Bike} />
+                </div>
             </div>
           </motion.div>
-        )}
-      </div>
 
-      <p className="py-6 text-center text-sm text-muted-foreground">
-        Déjà un compte?{" "}
-        <Link href="/login" className="font-semibold text-[#0B7E58]">
-          Se connecter
-        </Link>
-      </p>
+          <div className="flex-1 w-full max-w-md mx-auto px-4 overflow-y-auto">
+            {selectedRole && (
+              <motion.div
+                key={selectedRole}
+                className="pt-8"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+              >
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <InputField name="fullName" placeholder="Nom complet" icon={User} />
+                    <InputField name="email" placeholder="Email" icon={Mail} />
+                    <InputField
+                      name="password"
+                      placeholder="Mot de passe"
+                      icon={Lock}
+                      type="password"
+                      isPassword
+                      isVisible={passwordVisible}
+                      onToggleVisibility={() => setPasswordVisible(!passwordVisible)}
+                    />
+                    <InputField
+                      name="confirmPassword"
+                      placeholder="Confirmer mot de passe"
+                      icon={Lock}
+                      type="password"
+                      isPassword
+                      isVisible={confirmPasswordVisible}
+                      onToggleVisibility={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
+                    />
+
+                    <Button type="submit" className="w-full h-14 text-lg font-semibold rounded-xl bg-[#0B7E58] hover:bg-[#0a6e4d]" disabled={isSubmitting}>
+                      {isSubmitting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                      Continuer
+                    </Button>
+                  </form>
+                </Form>
+                
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-white px-2 text-muted-foreground">
+                      Ou continuer avec
+                    </span>
+                  </div>
+                </div>
+
+                <Button
+                  variant="outline"
+                  className="w-full h-14 text-lg font-semibold rounded-xl"
+                  onClick={handleGoogleSignUp}
+                  disabled={isSubmitting}
+                >
+                   <GoogleIcon className="mr-2 h-5 w-5" /> Continuer avec Google
+                </Button>
+
+              </motion.div>
+            )}
+          </div>
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            Déjà un compte?{" "}
+            <Link href="/login" className="font-semibold text-[#0B7E58]">
+              Se connecter
+            </Link>
+          </p>
+        </>
+      ) : (
+        // Écran de vérification email
+        <div className="flex flex-col items-center justify-center flex-1 px-6 text-center">
+          <h1 className="text-2xl font-bold mb-4">Vérifiez votre adresse e-mail</h1>
+          <p className="text-gray-600 mb-6">
+            Un e-mail de confirmation a été envoyé à <b>{currentUserEmail}</b>. <br />
+            Cliquez sur le lien dans votre boîte mail pour continuer.
+          </p>
+
+          <Button onClick={handleCheckVerification} disabled={loadingCheck}>
+            {loadingCheck ? <Loader2 className="h-5 w-5 animate-spin" /> : "J'ai vérifié mon e-mail"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

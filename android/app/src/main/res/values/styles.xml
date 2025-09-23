@@ -14,13 +14,4 @@
         <item name="windowNoTitle">true</item>
     </style>
 
-    <!-- Launch theme (used at startup) -->
-    <style name="AppTheme.NoActionBarLaunch" parent="AppTheme.NoActionBar">
-        <!-- Force plain white screen -->
-        <item name="android:windowBackground">@android:color/transparent</item>
-        <!-- Disable splash icon & branding -->
-        <item name="android:windowSplashScreenAnimatedIcon">@null</item>
-        <item name="android:windowSplashScreenBrandingImage">@null</item>
-    </style>
-
 </resources>

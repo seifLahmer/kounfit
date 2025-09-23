@@ -1,9 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-node_modules/
-
-#/node_modules
+/node_modules
+/src/node_modules
 /.pnp
 .pnp.js
 
@@ -20,12 +19,15 @@ node_modules/
 # misc
 .DS_Store
 *.pem
+*.jks
+*.keystore
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
+firebase-debug.log
+firestore-debug.log
 
 # local env files
 .env.local
@@ -40,9 +42,7 @@ pnpm-debug.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# studio
-.studio
-
-# Android Signing
-android/keystore.properties
-*.keystore
+# generated
+src/dataconnect-generated
+ios/FirebaseDataConnectGenerated
+android/app/src/main/kotlin/com/google/firebase/dataconnect/generated

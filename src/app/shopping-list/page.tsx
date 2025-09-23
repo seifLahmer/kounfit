@@ -43,40 +43,64 @@ export default function ShoppingCartPage() {
   const loadCartFromStorage = () => {
     const firebaseUser = auth.currentUser;
     if (!firebaseUser) return;
-    
+  
     try {
-        const savedData = localStorage.getItem(`dailyPlanData_${firebaseUser.uid}`);
-        if (savedData) {
-            const { date, plan } = JSON.parse(savedData);
-            if (date !== new Date().toISOString().split('T')[0]) {
-                localStorage.removeItem(`dailyPlanData_${firebaseUser.uid}`);
-                setCartItems([]);
-                return;
-            }
-            
-            const mealsFromPlan: Meal[] = Object.values(plan).flat() as Meal[];
-            
-            // Filter out any undefined or invalid meal objects before processing
-            const validMeals = mealsFromPlan.filter(meal => meal && typeof meal === 'object' && meal.id);
-
-            const items: { [id: string]: CartItem } = {};
-            validMeals.forEach(meal => {
-                if (items[meal.id]) {
-                    items[meal.id].quantity++;
-                } else {
-                    items[meal.id] = { ...meal, quantity: 1 };
-                }
-            });
-
-            setCartItems(Object.values(items));
-        } else {
-            setCartItems([]);
-        }
-    } catch(e) {
-        console.error("Could not load cart from storage", e);
+      const savedData = localStorage.getItem(`dailyPlanData_${firebaseUser.uid}`);
+      const prevRegion = localStorage.getItem(`region_${firebaseUser.uid}`);
+      const currentRegion = userProfile?.region;
+  
+      // ✅ Si panier existe ET région changée => reset
+      if (savedData && prevRegion && currentRegion && prevRegion !== currentRegion) {
+        localStorage.removeItem(`dailyPlanData_${firebaseUser.uid}`);
         setCartItems([]);
+        toast({
+          title: "Région modifiée",
+          description: "Votre panier a été réinitialisé car votre région a changé.",
+        });
+        // mettre à jour la nouvelle région en localStorage
+        localStorage.setItem(`region_${firebaseUser.uid}`, currentRegion);
+        return;
+      }
+  
+      if (savedData) {
+        const { date, plan } = JSON.parse(savedData);
+  
+        if (date !== new Date().toISOString().split("T")[0]) {
+          localStorage.removeItem(`dailyPlanData_${firebaseUser.uid}`);
+          setCartItems([]);
+          return;
+        }
+  
+        const mealsFromPlan: Meal[] = Object.values(plan).flat() as Meal[];
+  
+        const validMeals = mealsFromPlan.filter(
+          (meal) => meal && typeof meal === "object" && meal.id
+        );
+  
+        const items: { [id: string]: CartItem } = {};
+        validMeals.forEach((meal) => {
+          if (items[meal.id]) {
+            items[meal.id].quantity++;
+          } else {
+            items[meal.id] = { ...meal, quantity: 1 };
+          }
+        });
+  
+        setCartItems(Object.values(items));
+  
+        // mettre à jour la région actuelle
+        if (currentRegion) {
+          localStorage.setItem(`region_${firebaseUser.uid}`, currentRegion);
+        }
+      } else {
+        setCartItems([]);
+      }
+    } catch (e) {
+      console.error("Could not load cart from storage", e);
+      setCartItems([]);
     }
-  }
+  };
+  
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -225,7 +249,7 @@ export default function ShoppingCartPage() {
 
 
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const deliveryFee = 2.00;
+  const deliveryFee = 7.00;
   const total = subtotal + deliveryFee;
 
   if (loading) {

@@ -182,7 +182,7 @@ const MealNutritionInfo = ({ meals }: { meals: Meal[] }) => {
 
 export const MealCard = ({ title, meals, onAdd, defaultImage }: { title: string; meals: Meal[]; onAdd: () => void; defaultImage: string; }) => {
     const hasMeals = meals.length > 0;
-    const cardImage = hasMeals ? meals[0].imageUrl : defaultImage;
+    const cardImage =  defaultImage;
   
     return (
       <Card 

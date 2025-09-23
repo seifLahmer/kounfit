@@ -8,12 +8,20 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:98685881966:android:e2f14d27b329faf247a07f",
+        "mobilesdk_app_id": "1:98685881966:android:5d3883343ca7689f47a07f",
         "android_client_info": {
-          "package_name": "com.android.tools.build"
+          "package_name": "kounfit.app"
         }
       },
       "oauth_client": [
+        {
+          "client_id": "98685881966-ttnitku8eap41ek2k6i0iiuji75f3hfm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "kounfit.app",
+            "certificate_hash": "2eb8b6fce7c8fa48b16e3f5b1ab2fe9b57f91d20"
+          }
+        },
         {
           "client_id": "98685881966-vc8qhi1uda3k7felkcr9f0i7qgfsr6gd.apps.googleusercontent.com",
           "client_type": 3

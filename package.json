@@ -65,12 +65,17 @@
     "@opentelemetry/winston-transport": "^0.14.1",
     "@types/google.maps": "^3.55.11",
     "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "cordova-res": "^0.15.4",
     "genkit-cli": "^1.14.1",
     "ignore-loader": "^0.1.2",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
+  },
+  "overrides": {
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9"
   }
 }

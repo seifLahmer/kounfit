@@ -1,0 +1,26 @@
+steps:
+# Install dependencies
+- name: 'gcr.io/cloud-builders/npm'
+  args: ['install']
+
+# Sync the web app with the Android project
+- name: 'gcr.io/cloud-builders/npm'
+  args: ['run', 'cap', 'sync', 'android']
+
+# Grant execution permissions to gradlew
+- name: 'gcr.io/cloud-builders/git'
+  entrypoint: 'sh'
+  args:
+  - '-c'
+  - 'chmod +x android/gradlew'
+
+# Build the Android app
+- name: 'gcr.io/cloud-builders/gradle'
+  entrypoint: 'android/gradlew'
+  args: ['assembleDebug']
+
+# Upload the APK to Google Cloud Storage
+artifacts:
+  objects:
+    location: 'gs://98685881966-cloudbuild-artifacts/'
+    paths: ['android/app/build/outputs/apk/debug/app-debug.apk']

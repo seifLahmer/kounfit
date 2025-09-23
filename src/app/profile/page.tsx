@@ -1,4 +1,3 @@
-
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -59,8 +58,13 @@ const profileFormSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileFormSchema>
 type EditableField = keyof ProfileFormValues;
 
+// ✅ Ajout de type="button" pour éviter le refresh
 const ProfileRow = ({ label, value, icon: Icon, onEdit }: { label: string; value: string; icon: React.ElementType; onEdit: () => void; }) => (
-    <button onClick={onEdit} className="flex w-full items-center justify-between py-4 text-left border-b border-gray-100 last:border-b-0 hover:bg-gray-50/50 px-2 rounded-lg transition-colors duration-150">
+    <button
+        type="button"
+        onClick={onEdit}
+        className="flex w-full items-center justify-between py-4 text-left border-b border-gray-100 last:border-b-0 hover:bg-gray-50/50 px-2 rounded-lg transition-colors duration-150"
+    >
         <div className="flex items-center gap-4">
             <Icon className="w-5 h-5 text-muted-foreground" />
             <span className="font-medium text-gray-800">{label}</span>
@@ -149,6 +153,15 @@ export default function ProfilePage() {
             };
 
             await updateUserProfile(currentUser.uid, userProfileData);
+            if (editingField === "region" && currentUser) {
+                const regionData = {
+                    region: form.getValues("region"), // la nouvelle région
+                    status: true
+                };
+            
+                // Stocker directement sous la clé de l'UID
+                localStorage.setItem(currentUser.uid, JSON.stringify(regionData));
+            }
             setSaveStatus("saved");
             setTimeout(() => {
                 setEditingField(null);
@@ -308,7 +321,7 @@ export default function ProfilePage() {
                 <Card className="rounded-t-3xl -mt-6">
                     <CardContent className="p-4">
                        <Form {...form}>
-                        <form className="space-y-1">
+                        <form className="space-y-1" onSubmit={(e) => e.preventDefault()}>
                           {profileFields.map((field) => (
                             <ProfileRow
                                 key={field.name}

@@ -143,7 +143,7 @@ export default function AdminDashboardPage() {
       <header className="bg-gradient-to-br from-primary via-primary to-background/30 p-4 text-white">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <Image src="/kounfit/kounfit-white.png" alt="Kounfit Logo" width={100} height={25} />
+            <Image src="/kounfit/kounfit white.png" alt="Kounfit Logo" width={100} height={25} />
           </div>
           <Button variant="ghost" size="icon">
             <Bell />

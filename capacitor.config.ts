@@ -1,8 +1,7 @@
-
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.kounfit.app',
+  appId: 'kounfit.app',
   appName: 'Kounfit',
   webDir: 'out',
   server: {
@@ -11,9 +10,10 @@ const config: CapacitorConfig = {
     iosScheme: 'https'
   },
   plugins: {
-    CapacitorFirebaseAuthentication: {
+    FirebaseAuthentication: {
       skipNativeAuth: false,
-      providers: ["google.com", "apple.com"],
+      providers: ["google.com"],
+      serverClientId: "98685881966-a5og74tnmcvdb577aq52pl37sb9h6i47.apps.googleusercontent.com" // Web client ID, not Android
     },
   },
 };

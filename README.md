@@ -1,4 +1,4 @@
-# Kounfit - Plateforme de Nutrition Intelligente
+ear# Kounfit - Plateforme de Nutrition Intelligente
 
 Kounfit est une application complète qui connecte intelligemment trois types d'utilisateurs : les **Clients**, les **Traiteurs** et les **Livreurs**, le tout supervisé par des **Administrateurs**.
 

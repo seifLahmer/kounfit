@@ -1,5 +1,11 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
-import { getAuth, Auth, GoogleAuthProvider } from "firebase/auth";
+import {
+  getAuth,
+  Auth,
+  GoogleAuthProvider,
+  setPersistence,
+  browserLocalPersistence,
+} from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
 import { getStorage, FirebaseStorage } from "firebase/storage";
 
@@ -18,7 +24,6 @@ let db: Firestore;
 let storage: FirebaseStorage;
 let googleProvider: GoogleAuthProvider;
 
-
 if (getApps().length === 0) {
   app = initializeApp(firebaseConfig);
 } else {
@@ -26,9 +31,14 @@ if (getApps().length === 0) {
 }
 
 auth = getAuth(app);
+
+// 🔑 Conserver la session dans localStorage
+setPersistence(auth, browserLocalPersistence).catch((err) => {
+  console.error("Firebase persistence error:", err);
+});
+
 db = getFirestore(app);
 storage = getStorage(app);
 googleProvider = new GoogleAuthProvider();
-
 
 export { app, db, auth, storage, googleProvider };

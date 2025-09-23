@@ -30,13 +30,13 @@ import {
   signInWithPhoneNumber,
 } from "firebase/auth";
 import { auth, db, googleProvider } from "@/lib/firebase";
-
 import { Capacitor } from "@capacitor/core";
 import {
   FirebaseAuthentication,
   User as CapacitorFirebaseUser,
 } from "@capacitor-firebase/authentication";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
 import { getUserRole } from "@/lib/services/roleService";
 import { sendPasswordReset } from "@/lib/services/userService";
 import { Loader2, Mail, Eye, EyeOff, Phone } from "lucide-react";
@@ -80,6 +80,7 @@ const AppleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { user, loading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [isIos, setIsIos] = useState(false);
@@ -203,6 +204,12 @@ export default function LoginPage() {
     },
     [router, toast]
   );
+  
+  useEffect(() => {
+    if (!loading && user) {
+      handleUserLogin(user);
+    }
+  }, [user, loading, handleUserLogin]);
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
@@ -216,10 +223,15 @@ export default function LoginPage() {
       if (!userCredential.user.emailVerified) {
         toast({
           title: "E-mail non validé",
-          description: "Veuillez valider votre e-mail avant de vous connecter.",
-          action: <Button onClick={async () => await sendEmailVerification(userCredential.user)}>Renvoyer l'e-mail</Button>,
+          description: "Email non validé , veuillez refaire votre inscription",
+          
           variant: "destructive",
         });
+        try {
+          await userCredential.user.delete(); // suppression complète
+        } catch (err) {
+          console.error("Erreur suppression utilisateur:", err);
+        }
         await auth.signOut();
         setIsSubmitting(false);
         return;
@@ -384,6 +396,13 @@ export default function LoginPage() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -473,13 +492,13 @@ export default function LoginPage() {
           </Link>
         </div>
         <div className="space-y-2">
-           <Button
+       {/*  <Button
             variant="outline"
             className="w-full h-14 rounded-full text-base font-semibold border-gray-200"
             onClick={() => setIsPhoneAuthOpen(true)}
             disabled={isSubmitting}>
             <Phone className="mr-2 h-5 w-5" /> Continuer avec le téléphone
-          </Button>
+          </Button> */}
           <Button
             variant="outline"
             className="w-full h-14 rounded-full text-base font-semibold border-gray-200"
@@ -488,15 +507,15 @@ export default function LoginPage() {
           >
             <GoogleIcon className="mr-2 h-5 w-5" /> Continuer avec Google
           </Button>
-          <Button
+        {/*  <Button
             variant="outline"
             className="w-full h-14 rounded-full text-base font-semibold border-gray-200"
             onClick={handleFacebookSignIn}
             disabled={isSubmitting}
           >
             <FacebookIcon className="mr-2 h-5 w-5" /> Continuer avec Facebook
-          </Button>
-          {(isIos || !Capacitor.isNativePlatform()) && (
+          </Button>*/}
+          {/*(isIos || !Capacitor.isNativePlatform()) && (
             <Button
               variant="outline"
               className="w-full h-14 rounded-full text-base font-semibold border-gray-200 bg-black text-white hover:bg-gray-800 hover:text-white"
@@ -505,7 +524,7 @@ export default function LoginPage() {
             >
               <AppleIcon className="mr-2 h-5 w-5" /> Continuer avec Apple
             </Button>
-          )}
+          )*/}
         </div>
         <p className="mt-8 text-center text-sm text-muted-foreground">
           Vous n'avez pas de compte ?{" "}
@@ -593,5 +612,3 @@ declare global {
     recaptchaVerifier: RecaptchaVerifier;
   }
 }
-
-    
