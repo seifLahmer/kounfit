@@ -1,5 +1,5 @@
 "use client";
-import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/lib/firebase";
 import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
@@ -12,12 +12,25 @@ export function useAuthUser() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        const userDocRef = doc(db, "users", firebaseUser.uid);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()) {
-          setUser(userDoc.data() as User);
-        } else {
-          // Handle case where user is authenticated but not in Firestore
+        const collections = ["users", "caterers", "deliveryPeople", "admins"];
+        let foundUser = false;
+
+        for (const collectionName of collections) {
+          try {
+            const userDocRef = doc(db, collectionName, firebaseUser.uid);
+            const userDoc = await getDoc(userDocRef);
+            if (userDoc.exists()) {
+              setUser(userDoc.data() as User);
+              foundUser = true;
+              break;
+            }
+          } catch (error) {
+            console.error(`Error checking collection ${collectionName}:`, error);
+          }
+        }
+
+        if (!foundUser) {
+          // Handle case where user is authenticated but not in any of the collections
           setUser(null);
         }
       } else {
@@ -25,6 +38,7 @@ export function useAuthUser() {
       }
       setLoading(false);
     });
+
     return () => unsubscribe();
   }, []);
 

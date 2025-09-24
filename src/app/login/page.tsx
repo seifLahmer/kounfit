@@ -132,15 +132,21 @@ export default function LoginPage() {
     async (user: FirebaseUser | CapacitorFirebaseUser) => {
       setIsSubmitting(true);
       try {
-        if (user.email && !user.emailVerified) {
-          toast({
-            title: "E-mail non validé",
-            description: "Veuillez valider votre e-mail avant de vous connecter.",
-            variant: "destructive",
-          });
-          await auth.signOut();
-          setIsSubmitting(false);
-          return;
+        const providerId = user.providerData?.[0]?.providerId;
+
+        // 🔹 Vérifier email seulement pour password
+        if (providerId === "password") {
+          
+          if (!user.emailVerified) {
+            toast({
+              title: "E-mail non validé",
+              description: "Veuillez valider votre e-mail avant de vous connecter.",
+              variant: "destructive",
+            });
+            await auth.signOut();
+            setIsSubmitting(false);
+            return;
+          }
         }
 
         const role = await getUserRole(user.uid);
@@ -227,6 +233,7 @@ export default function LoginPage() {
           
           variant: "destructive",
         });
+
         try {
           await userCredential.user.delete(); // suppression complète
         } catch (err) {

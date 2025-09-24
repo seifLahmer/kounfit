@@ -226,7 +226,7 @@ export const MealCard = ({ title, meals, onAdd, defaultImage }: { title: string;
                   ))
               ) : (
                   <div className="flex-grow flex items-center justify-center h-full">
-                      <p className="text-sm text-white/80">Ajouter un repas</p>
+                    
                   </div>
               )}
           </div>
