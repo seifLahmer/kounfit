@@ -92,6 +92,7 @@ export type Order = {
   id: string;
   clientId: string;
   clientName: string;
+  phoneNumber: string;
   clientRegion: string;
   items: Array<{ 
     mealId: string; 

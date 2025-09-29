@@ -1,3 +1,4 @@
+// notificationService.ts
 
 import {
   collection,
@@ -7,82 +8,130 @@ import {
   where,
   getDocs,
   orderBy,
-  limit,
-  doc,
-  updateDoc,
   Timestamp,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import type { Notification } from '@/lib/types';
+  updateDoc,
+  doc,
+  deleteDoc,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import type { Notification } from "@/lib/types";
 
-const NOTIFICATIONS_COLLECTION = 'notifications';
+const NOTIFICATIONS_COLLECTION = "notifications";
 
 /**
- * Creates a new notification for a user.
- * @param userId The UID of the user to notify.
- * @param message The notification message.
+ * Crée une nouvelle notification pour un utilisateur.
+ * @param userId L'UID de l'utilisateur qui doit recevoir la notification.
+ * @param message Le contenu de la notification.
+ * @returns L'ID de la notification créée.
  */
-export async function createNotification(userId: string, message: string): Promise<void> {
+export async function createNotification(
+  userId: string,
+  message: string
+): Promise<string> {
   try {
-    await addDoc(collection(db, NOTIFICATIONS_COLLECTION), {
+    const docRef = await addDoc(collection(db, NOTIFICATIONS_COLLECTION), {
       userId,
       message,
-      isRead: false,
       createdAt: serverTimestamp(),
+      read: false,
+      readAt: null, // On stockera la date où elle est lue
     });
+    return docRef.id;
   } catch (error) {
-    console.error('Error creating notification: ', error);
-    // We don't throw here to avoid breaking the calling function (e.g., order update)
+    console.error("Erreur lors de la création de la notification :", error);
+    throw new Error("Impossible de créer la notification.");
   }
 }
 
 /**
- * Retrieves the most recent notifications for a user.
- * @param userId The UID of the user.
- * @returns A promise that resolves to an array of notifications.
+ * Récupère toutes les notifications non lues d’un utilisateur.
+ * @param userId L’UID de l’utilisateur.
+ * @returns Un tableau de notifications non lues.
  */
-export async function getNotifications(userId: string): Promise<Notification[]> {
+export async function getUserNotifications(
+  userId: string
+): Promise<Notification[]> {
   try {
-    const notificationsCollection = collection(db, NOTIFICATIONS_COLLECTION);
-    // Query only by userId to avoid needing a composite index.
+    const notificationsRef = collection(db, NOTIFICATIONS_COLLECTION);
     const q = query(
-      notificationsCollection,
-      where('userId', '==', userId)
+      notificationsRef,
+      where("userId", "==", userId),
+      where("read", "==", false),
+      orderBy("createdAt", "desc")
     );
 
     const querySnapshot = await getDocs(q);
     const notifications: Notification[] = [];
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
+
+    querySnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
       notifications.push({
-        id: doc.id,
+        id: docSnap.id,
         ...data,
-        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
+        createdAt:
+          data.createdAt instanceof Timestamp
+            ? data.createdAt.toDate()
+            : new Date(),
       } as Notification);
     });
 
-    // Sort the notifications manually in the code.
-    notifications.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    
-    // Apply the limit after sorting.
-    return notifications.slice(0, 20);
-
+    return notifications;
   } catch (error) {
-    console.error('Error fetching notifications: ', error);
-    throw new Error('Could not fetch notifications.');
+    console.error("Erreur lors de la récupération des notifications :", error);
+    throw new Error("Impossible de récupérer les notifications.");
   }
 }
 
 /**
- * Marks a specific notification as read.
- * @param notificationId The ID of the notification to update.
+ * Marque toutes les notifications d’un utilisateur comme lues.
+ * @param userId L’UID de l’utilisateur.
  */
-export async function markNotificationAsRead(notificationId: string): Promise<void> {
+export async function markAllNotificationsAsRead(userId: string): Promise<void> {
   try {
-    const notificationRef = doc(db, NOTIFICATIONS_COLLECTION, notificationId);
-    await updateDoc(notificationRef, { isRead: true });
+    const notificationsRef = collection(db, NOTIFICATIONS_COLLECTION);
+    const q = query(
+      notificationsRef,
+      where("userId", "==", userId),
+      where("read", "==", false)
+    );
+
+    const querySnapshot = await getDocs(q);
+
+    for (const docSnap of querySnapshot.docs) {
+      const notifRef = doc(db, NOTIFICATIONS_COLLECTION, docSnap.id);
+      await updateDoc(notifRef, {
+        read: true,
+        readAt: serverTimestamp(),
+      });
+    }
   } catch (error) {
-    console.error('Error marking notification as read: ', error);
-    throw new Error('Could not update the notification.');
+    console.error("Erreur lors du marquage des notifications :", error);
+    throw new Error("Impossible de marquer les notifications comme lues.");
+  }
+}
+
+/**
+ * Supprime toutes les notifications lues qui ont plus de 24h.
+ */
+export async function cleanupOldNotifications(): Promise<void> {
+  try {
+    const notificationsRef = collection(db, NOTIFICATIONS_COLLECTION);
+    const q = query(notificationsRef, where("read", "==", true));
+
+    const querySnapshot = await getDocs(q);
+    const now = Date.now();
+
+    for (const docSnap of querySnapshot.docs) {
+      const data = docSnap.data();
+      if (data.readAt instanceof Timestamp) {
+        const readAt = data.readAt.toDate().getTime();
+        if (now - readAt >= 24 * 60 * 60 * 1000) {
+          await deleteDoc(doc(db, NOTIFICATIONS_COLLECTION, docSnap.id));
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Erreur lors du nettoyage des notifications :", error);
+    throw new Error("Impossible de nettoyer les anciennes notifications.");
   }
 }

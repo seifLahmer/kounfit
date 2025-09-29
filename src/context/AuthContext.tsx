@@ -1,18 +1,20 @@
-'use client';
-
+"use client"; // ← impératif pour les hooks React et createContext
 import { createContext, useContext, PropsWithChildren } from 'react';
-import { User } from 'firebase/auth';
 import { useAuthUser } from '@/hooks/useAuthUser';
+import { User as AppUser } from '@/lib/types';
 
 interface AuthContextType {
-  user: User | null;
+  user: AppUser | null;
   loading: boolean;
+  
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: PropsWithChildren) {
-  const { user, loading } = useAuthUser();
+  const { user, loading ,error} = useAuthUser();
+
+  if (loading) return <div>Loading... {error}</div>; // empêche le white screen
 
   return (
     <AuthContext.Provider value={{ user, loading }}>

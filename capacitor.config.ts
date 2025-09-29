@@ -4,14 +4,9 @@ const config: CapacitorConfig = {
   appId: 'kounfit.app',
   appName: 'Kounfit',
   webDir: 'out',
-  server: {
-    hostname: 'fithelath.web.app',
-    androidScheme: 'https',
-    iosScheme: 'https'
-  },
   plugins: {
     FirebaseAuthentication: {
-      skipNativeAuth: false,
+      skipNativeAuth: true,
       providers: ["google.com"],
       serverClientId: "98685881966-a5og74tnmcvdb577aq52pl37sb9h6i47.apps.googleusercontent.com" // Web client ID, not Android
     },

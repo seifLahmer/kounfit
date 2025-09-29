@@ -100,6 +100,7 @@ export default function DeliveryDashboardPage() {
                                             </Avatar>
                                             <div className="flex-1">
                                                 <p className="font-semibold">{order.clientName}</p>
+                                                <p className="text-sm text-muted-foreground">Num Tel:{order.phoneNumber}</p>
                                                 <div 
                                                     className="flex items-center text-sm text-muted-foreground gap-2 mt-1 cursor-pointer hover:text-primary"
                                                     onClick={() => openInGoogleMaps(order.deliveryAddress)}

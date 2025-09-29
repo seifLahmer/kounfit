@@ -8,12 +8,15 @@ import { useAuthUser } from "@/hooks/useAuthUser";
 import { getUserRole } from "@/lib/services/roleService";
 export default function SplashPage() {
   const router = useRouter();
-  const { user, loading } = useAuthUser();
+  const { user, loading, error } = useAuthUser(); // Destructure the new error state
   const [animationComplete, setAnimationComplete] = useState(false);
 
   useEffect(() => {
     if (loading) return; // Wait until loading is false
   
+    // If there's an error, don't redirect. The error will be displayed.
+    if (error) return;
+
     const redirectUser = async () => {
       if (user) {
         try {
@@ -51,18 +54,30 @@ export default function SplashPage() {
     };
   
     redirectUser();
-  }, [user, loading, router]);
+  }, [user, loading, router, error]); // Add error to the dependency array
   
+  // If there's an error, display it
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-white p-4">
+        <h1 className="text-lg font-bold text-red-600 mb-4">System Authentication Error</h1>
+        <div className="w-full max-w-2xl p-4 bg-gray-100 rounded-lg text-sm text-left whitespace-pre-wrap overflow-auto">
+          <pre>{error}</pre>
+        </div>
+      </div>
+    );
+  }
 
-  // Conditional rendering
+  // If we're loading user data or if the user is logged in, show a loading indicator.
   if (loading || user) {
-    // If we're loading user data or if the user is logged in, don't show the splash.
-    // A blank screen will be shown, and the useEffect will handle the redirect.
-    return null;
+    return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-white overflow-hidden">
+            <p>Loading...</p>
+        </div>
+    );
   }
 
   // If we're not loading and there's no user, show the splash screen.
-  // The useEffect will redirect to /welcome after 4 seconds.
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-white overflow-hidden">
       <motion.div
@@ -105,8 +120,8 @@ export default function SplashPage() {
                 <Image
                   src="/k/ounfit.png"
                   alt="ounfit"
-                  width={220}   // ajuste selon ton image exportée
-                  height={100}   // ajuste selon ton image exportée
+                  width={80}   // ajuste selon ton image exportée
+                  height={80}   // ajuste selon ton image exportée
                   priority
                 />
               </motion.div>

@@ -8,13 +8,13 @@
   "theme_color": "#22C58B",
   "icons": [
     {
-      "src": "/k/k%20green.png",
+      "src": "/k/k%20green2.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/k/k%20green.png",
+      "src": "/k/k%20green2.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

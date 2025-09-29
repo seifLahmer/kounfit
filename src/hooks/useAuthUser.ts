@@ -8,39 +8,36 @@ import { User } from "@/lib/types";
 export function useAuthUser() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        const collections = ["users", "caterers", "deliveryPeople", "admins"];
-        let foundUser = false;
+      try {
+        if (firebaseUser) {
+          const collections = ["users", "caterers", "deliveryPeople", "admins"];
+          const promises = collections.map(async (collectionName) => {
+            const userDoc = await getDoc(doc(db, collectionName, firebaseUser.uid));
+            return userDoc.exists() ? (userDoc.data() as User) : null;
+          });
 
-        for (const collectionName of collections) {
-          try {
-            const userDocRef = doc(db, collectionName, firebaseUser.uid);
-            const userDoc = await getDoc(userDocRef);
-            if (userDoc.exists()) {
-              setUser(userDoc.data() as User);
-              foundUser = true;
-              break;
-            }
-          } catch (error) {
-            console.error(`Error checking collection ${collectionName}:`, error);
-          }
-        }
-
-        if (!foundUser) {
-          // Handle case where user is authenticated but not in any of the collections
+          const results = await Promise.all(promises);
+          const foundUser = results.find((u) => u !== null) || null;
+          setUser(foundUser);
+        } else {
           setUser(null);
         }
-      } else {
+      } catch (e: any) {
+        // Stringify the entire error object to get the raw system error
+        const errorString = JSON.stringify(e, Object.getOwnPropertyNames(e));
+        setError(errorString);
         setUser(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
-  return { user, loading };
+  return { user, loading, error };
 }

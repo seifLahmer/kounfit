@@ -2,14 +2,9 @@
 	"appId": "kounfit.app",
 	"appName": "Kounfit",
 	"webDir": "out",
-	"server": {
-		"hostname": "fithelath.web.app",
-		"androidScheme": "https",
-		"iosScheme": "https"
-	},
 	"plugins": {
 		"FirebaseAuthentication": {
-			"skipNativeAuth": false,
+			"skipNativeAuth": true,
 			"providers": [
 				"google.com"
 			],

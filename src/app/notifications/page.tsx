@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, Bell, ChevronLeft, Check, Frown } from "lucide-react";
 import { auth } from "@/lib/firebase";
-import { getNotifications, markNotificationAsRead } from "@/lib/services/notificationService";
+import { getUserNotifications, markAllNotificationsAsRead,cleanupOldNotifications } from "@/lib/services/notificationService";
 import type { Notification } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -26,7 +26,7 @@ export default function NotificationsPage() {
       if (user) {
         setLoading(true);
         try {
-          const userNotifications = await getNotifications(user.uid);
+          const userNotifications = await getUserNotifications(user.uid);
           setNotifications(userNotifications);
         } catch (error) {
           toast({
@@ -47,7 +47,7 @@ export default function NotificationsPage() {
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
-      await markNotificationAsRead(notificationId);
+      await markAllNotificationsAsRead(notificationId);
       setNotifications((prev) =>
         prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
       );
@@ -58,6 +58,8 @@ export default function NotificationsPage() {
         variant: "destructive",
       });
     }
+    //nettoyer la page de notification 
+    await cleanupOldNotifications();
   };
 
   return (
